@@ -1,0 +1,676 @@
+/* =========================================================================
+   MAIN.JS — Explorador Cósmico (Controlador Principal, HUD, Tablet & Kiosco)
+   Incluye: Ergonomía Tablet, Inercia Táctil, Shaders PBR y Modo Museo
+   ========================================================================= */
+
+const simplex = new SimplexNoise(101);
+
+/* ---------- Renderer / Scene / Camera ---------- */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, 3));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+
+/* ---------- Luz Solar y Luz Ambiental Física ---------- */
+const sunLight = new THREE.PointLight(0xfffaec, 4.5, 950, 1.2);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.width = 2048;
+sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.camera.near = 0.5;
+sunLight.shadow.camera.far = 500;
+scene.add(sunLight);
+
+const ambientLight = new THREE.AmbientLight(0x1e293b, 0.45);
+scene.add(ambientLight);
+
+/* ---------- Fondo Estelar de Vía Láctea ---------- */
+createMilkyWayBackground(scene);
+
+/* ---------- Controlador de Cámara Táctil/Ratón con Inercia para Tablet ---------- */
+const controller = {
+  target: new THREE.Vector3(0, 0, 0),
+  radius: 145, theta: 0.9, phi: 1.15,
+  targetRadius: 145, targetTheta: 0.9, targetPhi: 1.15,
+  minRadius: 6, maxRadius: 350,
+  dragging: false, lastX: 0, lastY: 0,
+  init() {
+    this.update();
+    window.addEventListener('pointerdown', e => {
+      if (e.target.closest('header') || e.target.closest('.info-panel') ||
+          e.target.closest('.bottom-bar') || e.target.closest('.modal-overlay') ||
+          e.target.closest('.tour-bar') || e.target.closest('.floating-controls')) return;
+      this.dragging = true;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+    });
+    window.addEventListener('pointermove', e => {
+      if (!this.dragging) return;
+      const dx = e.clientX - this.lastX;
+      const dy = e.clientY - this.lastY;
+      this.lastX = e.clientX;
+      this.lastY = e.clientY;
+      this.targetTheta -= dx * 0.0055;
+      this.targetPhi = Math.max(0.08, Math.min(Math.PI - 0.08, this.targetPhi - dy * 0.0055));
+    });
+    window.addEventListener('pointerup', () => this.dragging = false);
+    window.addEventListener('wheel', e => {
+      if (e.target.closest('.info-panel') || e.target.closest('.modal-overlay')) return;
+      this.targetRadius = Math.max(this.minRadius, Math.min(this.maxRadius, this.targetRadius + e.deltaY * 0.08));
+    }, { passive: true });
+
+    // Gestos Táctiles Pinch-to-Zoom para iPad / Android Tablet
+    let touchDist = 0;
+    window.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        touchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        const d = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const delta = (touchDist - d) * 0.45;
+        touchDist = d;
+        this.targetRadius = Math.max(this.minRadius, Math.min(this.maxRadius, this.targetRadius + delta));
+      }
+    }, { passive: true });
+  },
+  update() {
+    // Amortiguación suave e inercia cinemática (Damping)
+    this.theta += (this.targetTheta - this.theta) * 0.12;
+    this.phi += (this.targetPhi - this.phi) * 0.12;
+    this.radius += (this.targetRadius - this.radius) * 0.12;
+
+    const x = this.target.x + this.radius * Math.sin(this.phi) * Math.sin(this.theta);
+    const y = this.target.y + this.radius * Math.cos(this.phi);
+    const z = this.target.z + this.radius * Math.sin(this.phi) * Math.cos(this.theta);
+    camera.position.set(x, y, z);
+    camera.lookAt(this.target);
+  }
+};
+controller.init();
+
+/* ---------- Sistema de Audio Web Audio API ---------- */
+let audioCtx = null, audioMuted = false;
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playCosmicChime(freq = 432, duration = 1.2) {
+  if (audioMuted) return;
+  initAudio();
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + duration * 0.4);
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {}
+}
+
+/* ---------- Construcción de la Escena ---------- */
+const focusables = {};
+const { sunMesh, planetsGroup, orbitsGroup } = createSolarSystem(scene, focusables);
+const deepGroup = createDeepSpace(scene, focusables);
+deepGroup.visible = false;
+const constellationsGroup = createConstellationsSystem(scene, focusables);
+constellationsGroup.visible = false;
+
+/* ---------- Estado Global de la Aplicación ---------- */
+let mode = 'solar'; // 'solar' | 'deep' | 'constelaciones'
+let simSpeed = 1.0;
+let currentLevel = 'primaria'; // 'primaria' | 'secundaria' | 'avanzado'
+let currentFocusData = null;
+let activeTourKey = null;
+let tourStepIdx = 0;
+let kioskActive = true;
+let kioskTimer = null;
+const KIOSK_TIMEOUT_MS = 90000; // 90 segundos
+
+/* ---------- 1. Modo Kiosco de Museo (Auto-Reset tras Inactividad) ---------- */
+function resetKioskTimer() {
+  if (!kioskActive) return;
+  if (kioskTimer) clearTimeout(kioskTimer);
+  kioskTimer = setTimeout(() => {
+    triggerKioskAutoReset();
+  }, KIOSK_TIMEOUT_MS);
+}
+
+function triggerKioskAutoReset() {
+  showToast('🏛️ Modo Museo: Reiniciando para el próximo explorador...', 4000);
+  setMode('solar');
+  closeInfoPanel();
+  closeModal();
+  exitTour();
+  focusObject('sol');
+  simSpeed = 1.0;
+  updateSpeedButtons(1);
+  controller.targetRadius = 145;
+  controller.targetTheta = 0.9;
+  controller.targetPhi = 1.15;
+  controller.target.set(0, 0, 0);
+}
+
+function toggleKioskMode() {
+  kioskActive = !kioskActive;
+  const badge = document.getElementById('kioskBadge');
+  const btn = document.getElementById('btnKiosk');
+  if (kioskActive) {
+    badge.classList.remove('inactive');
+    badge.innerHTML = '🏛️ Modo Museo: ACTIVO';
+    btn.classList.add('active-kiosk');
+    showToast('🏛️ Modo Kiosco de Museo activado (Auto-reset tras 90s)', 3000);
+    resetKioskTimer();
+  } else {
+    badge.classList.add('inactive');
+    badge.innerHTML = '🏛️ Modo Museo: INACTIVO';
+    btn.classList.remove('active-kiosk');
+    if (kioskTimer) clearTimeout(kioskTimer);
+    showToast('Modo Kiosco desactivado', 2500);
+  }
+}
+
+['mousemove', 'mousedown', 'touchstart', 'keydown', 'click'].forEach(evt => {
+  window.addEventListener(evt, resetKioskTimer, { passive: true });
+});
+resetKioskTimer();
+
+/* ---------- 2. Gestión de Modos ('solar' | 'deep' | 'constelaciones') ---------- */
+function setMode(newMode) {
+  mode = newMode;
+  document.getElementById('btnSolar').classList.toggle('active', mode === 'solar');
+  document.getElementById('btnDeep').classList.toggle('active', mode === 'deep');
+  const btnConst = document.getElementById('btnConstelaciones');
+  if (btnConst) btnConst.classList.toggle('active', mode === 'constelaciones');
+
+  if (mode === 'solar') {
+    planetsGroup.visible = true;
+    orbitsGroup.visible = true;
+    deepGroup.visible = false;
+    if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    controller.target.set(0, 0, 0);
+    controller.targetRadius = 145;
+    renderPlanetChips();
+  } else if (mode === 'deep') {
+    planetsGroup.visible = false;
+    orbitsGroup.visible = false;
+    deepGroup.visible = true;
+    if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    controller.target.set(0, -2, -26);
+    controller.targetRadius = 160;
+    renderDeepChips();
+  } else if (mode === 'constelaciones') {
+    planetsGroup.visible = false;
+    orbitsGroup.visible = false;
+    deepGroup.visible = false;
+    if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = true;
+    controller.target.set(0, 0, 0);
+    controller.targetRadius = 290;
+    renderConstellationChips();
+  }
+  closeInfoPanel();
+  playCosmicChime(mode === 'solar' ? 528 : mode === 'deep' ? 396 : 741);
+}
+
+/* ---------- 3. Fichas Rápidas en la Barra Inferior (con Scroll Táctil Tablet) ---------- */
+const chipsContainer = document.getElementById('planetChips');
+function renderPlanetChips() {
+  chipsContainer.innerHTML = '';
+  PLANETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'planet-chip';
+    btn.innerHTML = `<span style="color:#${p.color.toString(16).padStart(6,'0')}">●</span> ${p.name}`;
+    btn.onclick = () => focusObject(p.id);
+    chipsContainer.appendChild(btn);
+  });
+}
+
+function renderDeepChips() {
+  chipsContainer.innerHTML = '';
+  DEEPSPACE.forEach(d => {
+    const btn = document.createElement('button');
+    btn.className = 'planet-chip';
+    btn.innerHTML = `✦ ${d.name.split(' ')[0]}`;
+    btn.onclick = () => focusObject(d.id);
+    chipsContainer.appendChild(btn);
+  });
+}
+
+function renderConstellationChips() {
+  chipsContainer.innerHTML = '';
+  if (typeof CONSTELLATIONS !== 'undefined') {
+    CONSTELLATIONS.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'planet-chip';
+      btn.innerHTML = `✨ ${c.name.split(' ')[0]}`;
+      btn.onclick = () => focusObject(c.id);
+      chipsContainer.appendChild(btn);
+    });
+  }
+}
+renderPlanetChips();
+
+/* ---------- 4. Enfocar Astro y Abrir Panel Informativo ---------- */
+const visitedSet = new Set();
+function focusObject(id) {
+  const item = focusables[id];
+  if (!item) return;
+  currentFocusData = item.data;
+
+  if (PLANETS.some(p => p.id === id) && mode !== 'solar') setMode('solar');
+  if (DEEPSPACE.some(d => d.id === id) && mode !== 'deep') setMode('deep');
+  if (typeof CONSTELLATIONS !== 'undefined' && CONSTELLATIONS.some(c => c.id === id) && mode !== 'constelaciones') {
+    setMode('constelaciones');
+  }
+
+  const freqs = { sol: 396, tierra: 528, jupiter: 417, saturno: 639, agujero: 285, pulsar: 741 };
+  playCosmicChime(freqs[id] || 639);
+
+  const targetPos = new THREE.Vector3();
+  item.mesh.getWorldPosition(targetPos);
+  controller.target.copy(targetPos);
+
+  if (mode === 'solar') {
+    controller.targetRadius = item.data.id === 'sol' ? 18 : item.data.radius * 6.5;
+  } else if (mode === 'constelaciones') {
+    controller.targetRadius = 310;
+    // Resaltar la constelación seleccionada y atenuar el resto en la bóveda
+    if (typeof CONSTELLATIONS !== 'undefined') {
+      CONSTELLATIONS.forEach(c => {
+        const isSel = c.id === id;
+        const itemC = focusables[c.id];
+        if (itemC && itemC.lineMaterials) {
+          itemC.lineMaterials.forEach(mat => {
+            mat.opacity = isSel ? 1.0 : 0.28;
+            mat.color.setHex(isSel ? 0xfacc15 : (c.color || 0x818cf8));
+            mat.linewidth = isSel ? 2.5 : 1.0;
+          });
+        }
+      });
+    }
+  } else {
+    controller.targetRadius = item.data.id === 'agujero' ? 24 : item.data.id === 'nebulosa' ? 42 : 28;
+  }
+
+  updateInfoPanel(currentFocusData);
+  document.getElementById('infoPanel').classList.add('show');
+
+  visitedSet.add(id);
+  checkBadges();
+}
+
+/* ---------- 5. Selector de Nivel Didáctico & Comparador de Escalas ---------- */
+function setEduLevel(lvl) {
+  currentLevel = lvl;
+  document.querySelectorAll('.edu-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab${lvl.charAt(0).toUpperCase() + lvl.slice(1)}`).classList.add('active');
+  if (currentFocusData) updateInfoPanel(currentFocusData);
+  playCosmicChime(580, 0.4);
+}
+
+function updateInfoPanel(data) {
+  document.getElementById('infoType').textContent = data.type;
+  document.getElementById('infoTitle').textContent = data.name;
+
+  const descText = (data.descLevels && data.descLevels[currentLevel]) || data.desc;
+  document.getElementById('infoDesc').textContent = descText;
+
+  const scaleBox = document.getElementById('scaleComparator');
+  if (data.scaleComp) {
+    scaleBox.style.display = 'flex';
+    document.getElementById('scaleRefBadge').textContent = `Ref: ${data.scaleComp.ref}`;
+    document.getElementById('scaleSizeText').textContent = data.scaleComp.sizeStr;
+    document.getElementById('scaleMassText').textContent = data.scaleComp.massStr;
+  } else {
+    scaleBox.style.display = 'none';
+  }
+
+  const factsUl = document.getElementById('infoFacts');
+  factsUl.innerHTML = '';
+  (data.facts || []).forEach(f => {
+    const li = document.createElement('li');
+    li.textContent = f;
+    factsUl.appendChild(li);
+  });
+
+  document.getElementById('infoFun').textContent = data.fun || '';
+}
+
+function closeInfoPanel() {
+  document.getElementById('infoPanel').classList.remove('show');
+}
+
+/* ---------- 6. Tours Temáticos Guiados para Docentes ---------- */
+function openToursModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `
+    <h2 class="modal-title">🚀 Tours Didácticos para Docentes</h2>
+    <p class="modal-subtitle">Selecciona una ruta escolar curada para explorar el cosmos paso a paso:</p>
+    <div class="tour-card" onclick="startTour('estrellas')">
+      <div>
+        <div class="tour-card-title">✦ El Ciclo de Vida de las Estrellas</div>
+        <div class="tour-card-desc">5 etapas: Nacimiento, Gigante Roja, Enana Blanca, Púlsar y Agujero Negro.</div>
+      </div>
+      <span style="font-size:20px">➔</span>
+    </div>
+    <div class="tour-card" onclick="startTour('oceanos')">
+      <div>
+        <div class="tour-card-title">✦ Mundos Océano y Habitabilidad</div>
+        <div class="tour-card-desc">5 etapas: Tierra, Marte y lunas heladas del Sistema Solar.</div>
+      </div>
+      <span style="font-size:20px">➔</span>
+    </div>
+    <div class="tour-card" onclick="startTour('gigantes')">
+      <div>
+        <div class="tour-card-title">✦ Los Colosos del Sistema Solar</div>
+        <div class="tour-card-desc">4 etapas: Júpiter, Saturno, Urano y Neptuno.</div>
+      </div>
+      <span style="font-size:20px">➔</span>
+    </div>
+    <div style="text-align:right; margin-top:20px">
+      <button class="btn-hud" onclick="closeModal()">Cerrar</button>
+    </div>
+  `;
+  overlay.classList.add('show');
+}
+
+function startTour(tourKey) {
+  closeModal();
+  activeTourKey = tourKey;
+  tourStepIdx = 0;
+  document.getElementById('btnTours').classList.add('active-tour');
+  document.getElementById('tourBar').classList.add('show');
+  navigateToTourStep();
+}
+
+function navigateToTourStep() {
+  const tour = TOURS[activeTourKey];
+  if (!tour) return;
+  const step = tour.steps[tourStepIdx];
+  document.getElementById('tourStepBadge').textContent = `${tour.title} — Paso ${tourStepIdx + 1} de ${tour.steps.length}`;
+  document.getElementById('tourStepTitle').textContent = step.title;
+  focusObject(step.id);
+}
+
+function tourNext() {
+  const tour = TOURS[activeTourKey];
+  if (!tour) return;
+  if (tourStepIdx < tour.steps.length - 1) {
+    tourStepIdx++;
+    navigateToTourStep();
+  } else {
+    showToast('🎉 ¡Has completado el tour didáctico con éxito!', 4000);
+    exitTour();
+  }
+}
+
+function tourPrev() {
+  if (tourStepIdx > 0) {
+    tourStepIdx--;
+    navigateToTourStep();
+  }
+}
+
+function exitTour() {
+  activeTourKey = null;
+  tourStepIdx = 0;
+  document.getElementById('btnTours').classList.remove('active-tour');
+  document.getElementById('tourBar').classList.remove('show');
+}
+
+/* ---------- 7. Cuestionario Cósmico (Quiz) ---------- */
+function openQuizModal() {
+  const q = QUIZ[Math.floor(Math.random() * QUIZ.length)];
+  const overlay = document.getElementById('modalOverlay');
+  const content = document.getElementById('modalContent');
+  let optsHTML = '';
+  q.opts.forEach((o, i) => {
+    optsHTML += `<div class="tour-card" onclick="checkQuizAnswer(${i}, ${q.ans}, '${q.exp.replace(/'/g, "\\'")}')">
+      <span class="tour-card-title">${o}</span>
+    </div>`;
+  });
+  content.innerHTML = `
+    <h2 class="modal-title">🧠 Desafío Astrofísico</h2>
+    <p class="modal-subtitle">${q.q}</p>
+    ${optsHTML}
+    <div id="quizResult" style="margin-top:16px; font-weight:700"></div>
+    <div style="text-align:right; margin-top:20px">
+      <button class="btn-hud" onclick="closeModal()">Cerrar</button>
+    </div>
+  `;
+  overlay.classList.add('show');
+}
+
+function checkQuizAnswer(selected, correct, explanation) {
+  const res = document.getElementById('quizResult');
+  if (selected === correct) {
+    res.style.color = '#34d399';
+    res.innerHTML = `¡CORRECTO! 🌟 <br><span style="font-size:13px; font-weight:400; color:#e2e8f0">${explanation}</span>`;
+    playCosmicChime(880, 0.8);
+    showToast('🏆 ¡Reto superado! Has ganado la insignia Explorador Sabio', 4000);
+    document.getElementById('badgeQuiz').classList.add('unlocked');
+  } else {
+    res.style.color = '#ef4444';
+    res.innerHTML = `Incorrecto. Intenta otra opción.`;
+    playCosmicChime(220, 0.4);
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+/* ---------- 8. Insignias de Logros ---------- */
+function checkBadges() {
+  if (visitedSet.size >= 4) {
+    const b = document.getElementById('badgePlanets');
+    if (!b.classList.contains('unlocked')) {
+      b.classList.add('unlocked');
+      showToast('🌟 ¡Logro desbloqueado! Navegante Planetario', 3500);
+    }
+  }
+  if (visitedSet.has('agujero') && visitedSet.has('pulsar') && visitedSet.has('nebulosa')) {
+    const b = document.getElementById('badgeDeep');
+    if (!b.classList.contains('unlocked')) {
+      b.classList.add('unlocked');
+      showToast('🚀 ¡Logro desbloqueado! Explorador del Espacio Profundo', 3500);
+    }
+  }
+}
+
+/* ---------- 9. Toast de Notificaciones ---------- */
+let toastTimeout = null;
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+/* ---------- 10. Raycaster e Interacción Táctil Directa ---------- */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+window.addEventListener('pointerdown', e => {
+  if (e.target.closest('header') || e.target.closest('.info-panel') ||
+      e.target.closest('.bottom-bar') || e.target.closest('.modal-overlay') ||
+      e.target.closest('.tour-bar') || e.target.closest('.floating-controls')) return;
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const meshes = Object.values(focusables).map(x => x.mesh);
+  const hits = raycaster.intersectObjects(meshes, true);
+  if (hits.length > 0) {
+    let top = hits[0].object;
+    while (top.parent && top.parent !== scene && top.parent !== planetsGroup && top.parent !== deepGroup && !top.parent.isGroup) {
+      top = top.parent;
+    }
+    const foundEntry = Object.entries(focusables).find(([k, v]) => v.mesh === top || v.mesh.children.includes(top));
+    if (foundEntry) {
+      focusObject(foundEntry[0]);
+    }
+  }
+});
+
+/* ---------- 11. Controles HUD Event Listeners ---------- */
+document.getElementById('btnSolar').onclick = () => setMode('solar');
+document.getElementById('btnDeep').onclick = () => setMode('deep');
+const btnConstEl = document.getElementById('btnConstelaciones');
+if (btnConstEl) btnConstEl.onclick = () => setMode('constelaciones');
+document.getElementById('btnKiosk').onclick = toggleKioskMode;
+document.getElementById('btnTours').onclick = openToursModal;
+document.getElementById('btnQuiz').onclick = openQuizModal;
+document.getElementById('closeInfoBtn').onclick = closeInfoPanel;
+
+document.getElementById('tourPrevBtn').onclick = tourPrev;
+document.getElementById('tourNextBtn').onclick = tourNext;
+document.getElementById('tourExitBtn').onclick = exitTour;
+
+document.getElementById('tabPrimaria').onclick = () => setEduLevel('primaria');
+document.getElementById('tabSecundaria').onclick = () => setEduLevel('secundaria');
+document.getElementById('tabAvanzado').onclick = () => setEduLevel('avanzado');
+
+document.getElementById('btnResetCam').onclick = () => {
+  if (mode === 'solar') focusObject('sol');
+  else if (mode === 'constelaciones') focusObject('osa_mayor');
+  else focusObject('agujero');
+  showToast('🎯 Vista centrada', 2000);
+};
+
+function updateSpeedButtons(speedVal) {
+  simSpeed = speedVal;
+  document.querySelectorAll('.speedbtn').forEach(btn => btn.classList.remove('active'));
+  if (speedVal === 0) document.getElementById('btnSpeed0').classList.add('active');
+  else if (speedVal === 1) document.getElementById('btnSpeed1').classList.add('active');
+  else if (speedVal === 2) document.getElementById('btnSpeed2').classList.add('active');
+  else if (speedVal === 5) document.getElementById('btnSpeed5').classList.add('active');
+}
+document.getElementById('btnSpeed0').onclick = () => updateSpeedButtons(0);
+document.getElementById('btnSpeed1').onclick = () => updateSpeedButtons(1);
+document.getElementById('btnSpeed2').onclick = () => updateSpeedButtons(2);
+document.getElementById('btnSpeed5').onclick = () => updateSpeedButtons(5);
+
+const audioToggleBtn = document.getElementById('audioToggle');
+audioToggleBtn.onclick = () => {
+  audioMuted = !audioMuted;
+  audioToggleBtn.innerHTML = audioMuted ? '🔇' : '🔊';
+  showToast(audioMuted ? 'Sonido silenciado' : 'Sonido activado', 2000);
+};
+
+/* ---------- 12. Bucle de Animación PBR HD (60 FPS) ---------- */
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t = clock.getElapsedTime();
+
+  // Rotación y órbita de los planetas
+  PLANETS.forEach((p, i) => {
+    const item = focusables[p.id];
+    if (!item) return;
+    if (i > 0) {
+      if (item.pivot) item.pivot.rotation.y += dt * 0.18 * p.speed * simSpeed;
+      item.mesh.rotation.y += dt * 0.4 * simSpeed;
+      // Nubes de la Tierra giran de forma independiente
+      if (item.mesh.userData.cloudMesh) {
+        item.mesh.userData.cloudMesh.rotation.y += dt * 0.48 * simSpeed;
+      }
+      if (item.moonMeshes) {
+        item.moonMeshes.forEach(m => {
+          const ang = t * 0.5 * m.data.s * simSpeed;
+          m.mesh.position.x = Math.cos(ang) * m.data.d;
+          m.mesh.position.z = Math.sin(ang) * m.data.d;
+        });
+      }
+    } else {
+      item.mesh.rotation.y += dt * 0.08 * simSpeed;
+    }
+  });
+
+  // Animación de astros del Universo Profundo
+  const pulsarItem = focusables['pulsar'];
+  if (pulsarItem && pulsarItem.mat) {
+    pulsarItem.mat.uniforms.uTime.value = t;
+    pulsarItem.mesh.rotation.y += dt * 3.5 * simSpeed;
+  }
+
+  const agujeroItem = focusables['agujero'];
+  if (agujeroItem) {
+    if (agujeroItem.diskMat) agujeroItem.diskMat.uniforms.uTime.value = t;
+    if (agujeroItem.lensMat) agujeroItem.lensMat.uniforms.uTime.value = t;
+    if (agujeroItem.photonMat) agujeroItem.photonMat.uniforms.uTime.value = t;
+    if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.35 * simSpeed;
+  }
+
+  const giganteItem = focusables['gigante'];
+  if (giganteItem && giganteItem.mat) {
+    giganteItem.mat.uniforms.uTime.value = t;
+    giganteItem.mesh.rotation.y += dt * 0.12 * simSpeed;
+  }
+
+  const enanaItem = focusables['enana'];
+  if (enanaItem && enanaItem.mat) {
+    enanaItem.mat.uniforms.uTime.value = t;
+    enanaItem.mesh.rotation.y += dt * 0.8 * simSpeed;
+  }
+
+  const nebItem = focusables['nebulosa'];
+  if (nebItem && nebItem.mesh) {
+    nebItem.mesh.rotation.y += dt * 0.015 * simSpeed;
+  }
+
+  const galItem = focusables['galaxia'];
+  if (galItem && galItem.galaxyStars) {
+    galItem.galaxyStars.rotation.y += dt * 0.04 * simSpeed;
+  }
+
+  // Actualizar Sol GLSL y Corona
+  const solItem = focusables['sol'];
+  if (solItem && solItem.mesh) {
+    if (solItem.mat) solItem.mat.uniforms.uTime.value = t;
+    if (solItem.mesh.userData.coronaMat) {
+      solItem.mesh.userData.coronaMat.uniforms.viewVector.value.subVectors(camera.position, solItem.mesh.position);
+    }
+  }
+
+  controller.update();
+  renderer.render(scene, camera);
+}
+
+/* ---------- 13. Carga y Redimensionado de Ventana ---------- */
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const l = document.getElementById('loading');
+    if (l) {
+      l.style.opacity = '0';
+      setTimeout(() => l.remove(), 750);
+    }
+  }, 1100);
+});
+
+animate();

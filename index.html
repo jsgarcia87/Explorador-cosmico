@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Explorador Cósmico — HD & Modo Didáctico de Museo</title>
+  <!-- Estilos Visuales Modulares -->
+  <link rel="stylesheet" href="css/estilos.css">
+  <!-- Bibliotecas externas de Three.js y SimplexNoise -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+</head>
+<body>
+
+  <!-- Lienzo WebGL -->
+  <canvas id="c"></canvas>
+
+  <!-- Pantalla de Carga Estelar -->
+  <div id="loading">
+    <div class="loader-spinner"></div>
+    <h1>EXPLORADOR CÓSMICO</h1>
+    <p>Cargando Shaders Volumétricos, Astros HD y Módulos Didácticos...</p>
+  </div>
+
+  <!-- Cabecera y Controles HUD Superiores -->
+  <header>
+    <div class="title-area">
+      <div class="logo-icon">🪐</div>
+      <div>
+        <h1>EXPLORADOR CÓSMICO</h1>
+        <div class="subtitle">Simulador Astrofísico para Museos & Colegios</div>
+      </div>
+      <div id="kioskBadge" class="kiosk-badge">🏛️ Modo Museo: ACTIVO</div>
+    </div>
+
+    <!-- Pestañas de Navegación de Modo -->
+    <div class="mode-switch">
+      <button id="btnSolar" class="mode-btn active">☀ Sistema Solar</button>
+      <button id="btnDeep" class="mode-btn">🌌 Universo Profundo</button>
+      <button id="btnConstelaciones" class="mode-btn">✨ Constelaciones</button>
+    </div>
+
+    <!-- Botones de Acción Didácticos -->
+    <div class="header-actions">
+      <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ Modo Museo</button>
+      <button id="btnTours" class="btn-hud">🚀 Tours Didácticos</button>
+      <button id="btnQuiz" class="btn-hud">🧠 Desafío Astrofísico</button>
+    </div>
+  </header>
+
+  <!-- Insignias de Logros Cósmicos -->
+  <div class="badge-bar">
+    <div id="badgePlanets" class="badge">🌟 Navegante Planetario</div>
+    <div id="badgeDeep" class="badge">🚀 Explorador Profundo</div>
+    <div id="badgeQuiz" class="badge">🏆 Sabio Astrofísico</div>
+  </div>
+
+  <!-- Panel Informativo Lateral con Glassmorphism -->
+  <aside id="infoPanel" class="info-panel">
+    <div class="drawer-handle"></div>
+    <div class="info-header">
+      <div>
+        <div id="infoType" class="info-type">Planeta rocoso</div>
+        <h2 id="infoTitle" class="info-title">Marte</h2>
+      </div>
+      <button id="closeInfoBtn" class="close-btn">✖</button>
+    </div>
+
+    <!-- 1. Selector de Nivel Didáctico (Primaria, Secundaria, Avanzado) -->
+    <div class="edu-tabs">
+      <button id="tabPrimaria" class="edu-tab active">🎒 Primaria</button>
+      <button id="tabSecundaria" class="edu-tab">🔬 Secundaria</button>
+      <button id="tabAvanzado" class="edu-tab">🔭 Avanzado</button>
+    </div>
+
+    <!-- 2. Comparador Visual de Escalas vs. Tierra / Sol -->
+    <div id="scaleComparator" class="scale-comparator">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="scale-comparator-title">⚖️ Comparador de Escala</span>
+        <span id="scaleRefBadge" class="scale-badge">Ref: Tierra</span>
+      </div>
+      <div class="scale-metrics">
+        <span id="scaleSizeText">1.0x tamaño de referencia</span>
+        <span id="scaleMassText">1.0x masa de referencia</span>
+      </div>
+    </div>
+
+    <!-- Descripción Científica Adaptable al Nivel -->
+    <p id="infoDesc" style="font-size:14.5px; line-height:1.6; color:#e2e8f0; margin-bottom:16px;"></p>
+
+    <!-- Lista de Hechos Clave -->
+    <ul id="infoFacts" class="info-facts"></ul>
+
+    <!-- Dato Curioso / Fun Fact -->
+    <div id="infoFun" class="info-fun"></div>
+  </aside>
+
+  <!-- Barra Flotante para Tours Didácticos Guiados -->
+  <div id="tourBar" class="tour-bar">
+    <div class="tour-info">
+      <div id="tourStepBadge" class="tour-step-badge">Ruta Didáctica</div>
+      <div id="tourStepTitle" class="tour-step-title">1. El Sol — Secuencia Principal</div>
+    </div>
+    <div class="tour-controls">
+      <button id="tourPrevBtn" class="btn-hud">← Anterior</button>
+      <button id="tourNextBtn" class="btn-hud">Siguiente →</button>
+      <button id="tourExitBtn" class="btn-hud" style="background:rgba(239,68,68,0.25); border-color:#f87171;">Salir ✖</button>
+    </div>
+  </div>
+
+  <!-- Barra Inferior HUD: Botones de Velocidad & Planetas/Astros -->
+  <div class="bottom-bar" style="flex-direction:column; align-items:center; gap:10px;">
+    <div class="speed-controls">
+      <button id="btnSpeed0" class="speedbtn">⏸ Pausa</button>
+      <button id="btnSpeed1" class="speedbtn active">▶ 1x</button>
+      <button id="btnSpeed2" class="speedbtn">▶▶ 2x</button>
+      <button id="btnSpeed5" class="speedbtn">⚡ 5x</button>
+    </div>
+    <div id="planetChips" class="planet-chips"></div>
+  </div>
+
+  <!-- Botones Flotantes de Cámara y Audio para Tablet -->
+  <div class="floating-controls">
+    <button id="btnResetCam" class="floating-btn" title="Centrar Vista">🎯</button>
+    <button id="audioToggle" class="floating-btn" title="Alternar Sonido">🔊</button>
+  </div>
+
+  <!-- Diálogos Modales (Tours y Cuestionarios) -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div id="modalContent" class="modal-box"></div>
+  </div>
+
+  <!-- Notificaciones en Pantalla -->
+  <div id="toast"></div>
+
+  <!-- Módulos JavaScript Desacoplados -->
+  <script src="js/datos-cosmicos.js"></script>
+  <script src="js/shaders-espacio.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
