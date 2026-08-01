@@ -8,7 +8,7 @@ const simplex = new SimplexNoise(101);
 /* ---------- Renderer / Scene / Camera ---------- */
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, 3));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, window.innerWidth < 768 ? 2 : 3));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.25;
@@ -133,6 +133,38 @@ deepGroup.visible = false;
 const constellationsGroup = createConstellationsSystem(scene, focusables);
 constellationsGroup.visible = false;
 
+/* ---------- Post-Procesado Bloom (UnrealBloomPass) ---------- */
+let composer = null;
+if (typeof THREE.EffectComposer !== 'undefined') {
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  const bloomPass = new THREE.UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.65, 0.5, 0.82
+  );
+  composer.addPass(bloomPass);
+  composer.bloomPass = bloomPass;
+}
+
+/* ---------- Auto-Ocultar UI tras Inactividad ---------- */
+let uiHideTimer = null;
+const UI_HIDE_DELAY = 5000;
+function showUI() {
+  document.body.classList.remove('ui-hidden');
+  if (uiHideTimer) clearTimeout(uiHideTimer);
+  uiHideTimer = setTimeout(() => {
+    if (!document.getElementById('infoPanel').classList.contains('show') &&
+        !document.getElementById('tourBar').classList.contains('show') &&
+        !document.getElementById('modalOverlay').classList.contains('show')) {
+      document.body.classList.add('ui-hidden');
+    }
+  }, UI_HIDE_DELAY);
+}
+['mousemove', 'mousedown', 'touchstart', 'keydown', 'wheel'].forEach(evt => {
+  window.addEventListener(evt, showUI, { passive: true });
+});
+showUI();
+
 /* ---------- Estado Global de la Aplicación ---------- */
 let mode = 'solar'; // 'solar' | 'deep' | 'constelaciones'
 let simSpeed = 1.0;
@@ -205,6 +237,7 @@ function setMode(newMode) {
     orbitsGroup.visible = true;
     deepGroup.visible = false;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    sunLight.castShadow = true;
     controller.target.set(0, 0, 0);
     controller.targetRadius = 145;
     renderPlanetChips();
@@ -213,6 +246,7 @@ function setMode(newMode) {
     orbitsGroup.visible = false;
     deepGroup.visible = true;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    sunLight.castShadow = false;
     controller.target.set(0, -2, -26);
     controller.targetRadius = 160;
     renderDeepChips();
@@ -221,6 +255,7 @@ function setMode(newMode) {
     orbitsGroup.visible = false;
     deepGroup.visible = false;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = true;
+    sunLight.castShadow = false;
     controller.target.set(0, 0, 0);
     controller.targetRadius = 290;
     renderConstellationChips();
@@ -699,15 +734,59 @@ function animate() {
     }
   }
 
+  // Centelleo estelar — actualizar uTime del fondo
+  if (scene.children) {
+    scene.children.forEach(child => {
+      if (child.isPoints && child.material?.uniforms?.uTime) {
+        child.material.uniforms.uTime.value = t;
+      }
+    });
+  }
+
+  // Deriva sutil de cámara cuando el usuario está inactivo
+  if (document.body.classList.contains('ui-hidden')) {
+    controller.targetTheta += Math.sin(t * 0.15) * 0.00012;
+    controller.targetPhi += Math.cos(t * 0.1) * 0.00006;
+  }
+
+  // Barra de escala dinámica
+  const scaleLabel = document.getElementById('scaleBarLabel');
+  if (scaleLabel) {
+    if (mode === 'solar') {
+      const auPerUnit = 0.02;
+      const visibleAU = controller.radius * auPerUnit;
+      if (visibleAU < 0.5) scaleLabel.textContent = Math.round(visibleAU * 1496e5) + ' km';
+      else scaleLabel.textContent = visibleAU.toFixed(1) + ' UA';
+    } else if (mode === 'deep') {
+      const lyPerUnit = 0.8;
+      const visibleLY = controller.radius * lyPerUnit;
+      if (visibleLY > 1000) scaleLabel.textContent = (visibleLY / 1000).toFixed(1) + ' kly';
+      else scaleLabel.textContent = Math.round(visibleLY) + ' al';
+    } else {
+      scaleLabel.textContent = Math.round(controller.radius * 0.35) + ' grados';
+    }
+  }
+
   controller.update();
-  renderer.render(scene, camera);
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 /* ---------- 13. Carga y Redimensionado de Ventana ---------- */
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, window.innerWidth < 768 ? 2 : 3));
   renderer.setSize(window.innerWidth, window.innerHeight);
+  if (composer) {
+    composer.setSize(window.innerWidth, window.innerHeight);
+    if (composer.bloomPass) {
+      composer.bloomPass.resolution.set(window.innerWidth, window.innerHeight);
+    }
+  }
 });
 
 window.addEventListener('load', () => {

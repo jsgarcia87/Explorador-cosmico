@@ -255,7 +255,8 @@ function makeGlowMesh(radius, hexColor, opacity = 0.4) {
 
 /* ---------- 8. Fondo Estelar Multi-Espectral y Vía Láctea ---------- */
 function createMilkyWayBackground(scene) {
-  const sCount = 14000;
+  const isMobile = window.innerWidth < 768;
+  const sCount = isMobile ? 7000 : 14000;
   const sGeo = new THREE.BufferGeometry();
   const sPos = new Float32Array(sCount * 3);
   const sCol = new Float32Array(sCount * 3);
@@ -315,23 +316,29 @@ function createMilkyWayBackground(scene) {
 
   // ShaderMaterial con tamaño por vértice y centelleo sutil
   const sMat = new THREE.ShaderMaterial({
-    uniforms: { uDot: { value: DOT } },
+    uniforms: { uDot: { value: DOT }, uTime: { value: 0.0 } },
     vertexShader: `
       attribute float aSize;
+      uniform float uTime;
       varying vec3 vColor;
+      varying float vTwinkle;
       void main() {
         vColor = color;
+        float phase = fract(sin(dot(position.xy, vec2(12.9898, 78.233))) * 43758.5453);
+        float twinkle = 0.72 + 0.28 * sin(uTime * (1.2 + phase * 3.5) + phase * 6.2831);
+        vTwinkle = twinkle;
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = aSize * (300.0 / -mvPosition.z);
+        gl_PointSize = aSize * twinkle * (300.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
       }
     `,
     fragmentShader: `
       uniform sampler2D uDot;
       varying vec3 vColor;
+      varying float vTwinkle;
       void main() {
         vec4 texel = texture2D(uDot, gl_PointCoord);
-        gl_FragColor = vec4(vColor * texel.rgb, texel.a);
+        gl_FragColor = vec4(vColor * texel.rgb * vTwinkle, texel.a * smoothstep(0.0, 0.5, vTwinkle));
       }
     `,
     vertexColors: true,
