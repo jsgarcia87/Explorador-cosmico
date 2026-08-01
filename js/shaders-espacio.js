@@ -40,61 +40,85 @@ function softDot() {
   tex.magFilter = THREE.LinearFilter;
   return tex;
 }
-const DOT = softDot();/* ---------- 1. Generadores de Texturas Realistas de Alta Calidad ---------- */
+const DOT = softDot();
+
+/* ---------- 1. Generadores de Texturas Realistas de Alta Calidad ---------- */
 function planetTexture(baseHex, opts = {}) {
+  const { bands = false, bandSoft = false, blotches = true, craters = false,
+          poles = false, poleSize = 0.16, spot = null } = opts;
   const w = 512, h = 256;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = baseHex; ctx.fillRect(0, 0, w, h);
-  // bands
-  if (opts.bands) {
-    const n = opts.bandSoft ? 14 : 24;
-    for (let i = 0; i < n; i++) {
-      const y = (i / n) * h;
-      const th = h / n * (0.4 + Math.random() * 0.6);
-      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
-      ctx.fillRect(0, y, w, th);
+  const base = new THREE.Color(baseHex);
+  ctx.fillStyle = base.getStyle(); ctx.fillRect(0, 0, w, h);
+
+  if (bands) {
+    const bandCount = bandSoft ? 14 : 20;
+    for (let i = 0; i < bandCount; i++) {
+      const y = (h / bandCount) * i;
+      const shade = base.clone().offsetHSL(0, (Math.random() - 0.5) * 0.03,
+        (Math.random() - 0.5) * (bandSoft ? 0.08 : 0.16));
+      ctx.fillStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${bandSoft ? 0.28 + Math.random() * 0.22 : 0.4 + Math.random() * 0.35})`;
+      ctx.fillRect(0, y, w, h / bandCount + 3);
+      if (!bandSoft) {
+        for (let s = 0; s < 3; s++) {
+          ctx.fillStyle = `rgba(255,255,255,${0.03 + Math.random() * 0.05})`;
+          ctx.beginPath();
+          ctx.ellipse(Math.random() * w, y + (h / bandCount) / 2, 30 + Math.random() * 60, (h / bandCount) * 0.4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
   }
-  // soft blotches
-  for (let i = 0; i < 40; i++) {
-    const r = 8 + Math.random() * 28;
-    const x = Math.random() * w, y = Math.random() * h;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    const dark = Math.random() > 0.5;
-    g.addColorStop(0, dark ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.12)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-  }
-  // craters
-  if (opts.craters) {
-    for (let i = 0; i < 80; i++) {
-      const r = 2 + Math.random() * 9;
-      const x = Math.random() * w, y = Math.random() * h;
-      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = 'rgba(0,0,0,0.22)';
-      ctx.beginPath(); ctx.arc(x + 1, y + 1, r * 0.75, 0, Math.PI * 2); ctx.fill();
+  if (blotches && !craters) {
+    for (let i = 0; i < 50; i++) {
+      const shade = base.clone().offsetHSL(0, (Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.18);
+      ctx.fillStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${0.12 + Math.random() * 0.22})`;
+      const rx = 10 + Math.random() * 40, ry = rx * (0.5 + Math.random() * 0.5);
+      ctx.beginPath();
+      ctx.ellipse(Math.random() * w, Math.random() * h, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
-  // spot (Jupiter red spot)
-  if (opts.spot) {
-    const { u, v, r } = opts.spot;
-    const x = u * w, y = v * h, rad = r * h;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, 'rgba(210,60,30,0.85)');
-    g.addColorStop(0.7, 'rgba(180,40,20,0.5)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+  if (craters) {
+    for (let i = 0; i < 70; i++) {
+      const shade = base.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.1);
+      ctx.fillStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${0.1 + Math.random() * 0.15})`;
+      const rx = 8 + Math.random() * 30, ry = rx * (0.6 + Math.random() * 0.4);
+      ctx.beginPath();
+      ctx.ellipse(Math.random() * w, Math.random() * h, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (let i = 0; i < 55; i++) {
+      const cx = Math.random() * w, cy = Math.random() * h, r = 3 + Math.random() * 16;
+      const dark = base.clone().offsetHSL(0, 0, -0.22);
+      const light = base.clone().offsetHSL(0, 0, 0.2);
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${dark.r*255|0},${dark.g*255|0},${dark.b*255|0},0.5)`; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, r * 1.18, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(${light.r*255|0},${light.g*255|0},${light.b*255|0},0.35)`;
+      ctx.lineWidth = Math.max(1, r * 0.22); ctx.stroke();
+    }
   }
-  // poles
-  if (opts.poles) {
-    const ph = h * (opts.poleSize || 0.14);
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillRect(0, 0, w, ph);
-    ctx.fillRect(0, h - ph, w, ph);
+  if (spot) {
+    const sc = new THREE.Color(spot.color || 0xb5451f);
+    const sx = (spot.x || spot.u || 0.64) * w, sy = (spot.y || spot.v || 0.58) * h;
+    const srx = spot.rx || (spot.r ? spot.r * h : 26), sry = spot.ry || srx * 0.58;
+    const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, srx);
+    g.addColorStop(0, `rgba(${sc.r*255|0},${sc.g*255|0},${sc.b*255|0},0.85)`);
+    g.addColorStop(0.7, `rgba(${sc.r*255|0},${sc.g*255|0},${sc.b*255|0},0.45)`);
+    g.addColorStop(1, `rgba(${sc.r*255|0},${sc.g*255|0},${sc.b*255|0},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(sx, sy, srx, sry, -0.2, 0, Math.PI * 2); ctx.fill();
+  }
+  if (poles) {
+    const capH = h * poleSize;
+    const gTop = ctx.createLinearGradient(0, 0, 0, capH * 1.6);
+    gTop.addColorStop(0, 'rgba(255,255,255,0.95)'); gTop.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gTop; ctx.fillRect(0, 0, w, capH * 1.6);
+    const gBot = ctx.createLinearGradient(0, h - capH * 1.6, 0, h);
+    gBot.addColorStop(0, 'rgba(255,255,255,0)'); gBot.addColorStop(1, 'rgba(255,255,255,0.95)');
+    ctx.fillStyle = gBot; ctx.fillRect(0, h - capH * 1.6, w, capH * 1.6);
   }
   const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
@@ -104,16 +128,26 @@ function sunTexture() {
   const w = 512, h = 256;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#ffe600'); g.addColorStop(0.5, '#ffaa00'); g.addColorStop(1, '#ffe600');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-  for (let i = 0; i < 120; i++) {
-    const r = 4 + Math.random() * 16;
-    const x = Math.random() * w, y = Math.random() * h;
-    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
-    rg.addColorStop(0, 'rgba(255,255,255,0.35)');
-    rg.addColorStop(1, 'rgba(255,120,0,0)');
-    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  const base = new THREE.Color(0xffcf5e);
+  ctx.fillStyle = base.getStyle(); ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 260; i++) {
+    const shade = base.clone().offsetHSL((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.22);
+    ctx.fillStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${0.25 + Math.random() * 0.35})`;
+    const r = 4 + Math.random() * 10;
+    ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); ctx.fill();
+  }
+  for (let i = 0; i < 18; i++) {
+    ctx.fillStyle = `rgba(255,255,255,${0.08 + Math.random() * 0.12})`;
+    const rx = 20 + Math.random() * 60, ry = rx * 0.3;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, Math.random() * h, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (let i = 0; i < 6; i++) {
+    const dark = base.clone().offsetHSL(0, 0.1, -0.32);
+    ctx.fillStyle = `rgba(${dark.r*255|0},${dark.g*255|0},${dark.b*255|0},0.55)`;
+    const r = 6 + Math.random() * 10;
+    ctx.beginPath(); ctx.arc(Math.random() * w, Math.random() * h, r, 0, Math.PI * 2); ctx.fill();
   }
   const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
@@ -123,32 +157,31 @@ function earthTexture() {
   const w = 1024, h = 512;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  // ocean
-  const og = ctx.createLinearGradient(0, 0, 0, h);
-  og.addColorStop(0, '#1a3d7a'); og.addColorStop(0.5, '#1c5fc9'); og.addColorStop(1, '#1a3d7a');
-  ctx.fillStyle = og; ctx.fillRect(0, 0, w, h);
-  // continents
-  ctx.fillStyle = '#3a6e3c';
-  for (let i = 0; i < 70; i++) {
-    const x = Math.random() * w, y = h * 0.2 + Math.random() * h * 0.6;
-    const rx = 30 + Math.random() * 90, ry = 15 + Math.random() * 45;
-    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
+  const oceanGrad = ctx.createLinearGradient(0, 0, 0, h);
+  oceanGrad.addColorStop(0, '#1a3d7a'); oceanGrad.addColorStop(0.5, '#1c5fc9'); oceanGrad.addColorStop(1, '#1a3d7a');
+  ctx.fillStyle = oceanGrad; ctx.fillRect(0, 0, w, h);
+  const landTones = ['rgba(58,110,60,0.92)', 'rgba(96,133,63,0.88)', 'rgba(150,124,80,0.85)', 'rgba(120,150,90,0.8)'];
+  for (let i = 0; i < 22; i++) {
+    ctx.fillStyle = landTones[i % landTones.length];
+    const rx = 16 + Math.random() * 46, ry = rx * (0.35 + Math.random() * 0.5);
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, 30 + Math.random() * (h - 60), rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.fillStyle = '#60853f';
-  for (let i = 0; i < 50; i++) {
-    const x = Math.random() * w, y = h * 0.25 + Math.random() * h * 0.5;
-    const rx = 20 + Math.random() * 60, ry = 10 + Math.random() * 30;
-    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  for (let i = 0; i < 14; i++) {
+    ctx.fillStyle = 'rgba(150,110,70,0.4)';
+    const rx = 6 + Math.random() * 16, ry = rx * 0.5;
+    ctx.beginPath();
+    ctx.ellipse(Math.random() * w, 30 + Math.random() * (h - 60), rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
-  ctx.fillStyle = '#967c50';
-  for (let i = 0; i < 30; i++) {
-    const x = Math.random() * w, y = h * 0.3 + Math.random() * h * 0.4;
-    ctx.beginPath(); ctx.arc(x, y, 15 + Math.random() * 35, 0, Math.PI * 2); ctx.fill();
-  }
-  // poles
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillRect(0, 0, w, h * 0.11);
-  ctx.fillRect(0, h * 0.89, w, h * 0.11);
+  const capH = h * 0.14;
+  const gTop = ctx.createLinearGradient(0, 0, 0, capH * 1.5);
+  gTop.addColorStop(0, 'rgba(255,255,255,0.97)'); gTop.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gTop; ctx.fillRect(0, 0, w, capH * 1.5);
+  const gBot = ctx.createLinearGradient(0, h - capH * 1.5, 0, h);
+  gBot.addColorStop(0, 'rgba(255,255,255,0)'); gBot.addColorStop(1, 'rgba(255,255,255,0.97)');
+  ctx.fillStyle = gBot; ctx.fillRect(0, h - capH * 1.5, w, capH * 1.5);
   const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
 }
@@ -168,20 +201,37 @@ function cloudsTexture() {
   return tex;
 }
 
-function ringTexture(hex, innerRatio = 0.5) {
-  const w = 512, h = 1;
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
+function ringTexture(hex, innerRatio = 0.56) {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
   const ctx = c.getContext('2d');
-  const col = new THREE.Color(hex);
-  ctx.clearRect(0, 0, w, h);
-  for (let x = 0; x < w; x++) {
-    const t = x / w;
-    if (t < innerRatio) continue;
-    if (t > 0.72 && t < 0.75) continue; // Cassini division
-    if (t > 0.88 && t < 0.89) continue;
-    const alpha = (0.3 + 0.65 * Math.sin((t - innerRatio) / (1 - innerRatio) * Math.PI)) * (0.6 + 0.4 * Math.random());
-    ctx.fillStyle = `rgba(${Math.floor(col.r * 255)},${Math.floor(col.g * 255)},${Math.floor(col.b * 255)},${alpha})`;
-    ctx.fillRect(x, 0, 1, 1);
+  const cx = size / 2, cy = size / 2, R = size / 2;
+  const base = new THREE.Color(hex);
+  const bands = [
+    { r0: innerRatio, r1: innerRatio + 0.045, alpha: 0.28, light: -0.08 },
+    { r0: innerRatio + 0.045, r1: innerRatio + 0.18, alpha: 0.5, light: -0.02 },
+    { r0: innerRatio + 0.18, r1: 0.855, alpha: 0.95, light: 0.09 },
+    { r0: 0.855, r1: 0.872, alpha: 0.04, light: -0.35 },
+    { r0: 0.872, r1: 0.955, alpha: 0.78, light: 0.02 },
+    { r0: 0.955, r1: 0.965, alpha: 0.12, light: -0.28 },
+    { r0: 0.965, r1: 1.0, alpha: 0.42, light: 0.06 },
+  ];
+  bands.forEach(b => {
+    const rMid = (b.r0 + b.r1) / 2 * R;
+    const lw = Math.max(1, (b.r1 - b.r0) * R);
+    const shade = base.clone().offsetHSL(0, 0, b.light);
+    ctx.beginPath(); ctx.arc(cx, cy, rMid, 0, Math.PI * 2);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${b.alpha})`;
+    ctx.stroke();
+  });
+  for (let i = 0; i < 260; i++) {
+    const rr = innerRatio + Math.random() * (1 - innerRatio);
+    const shade = base.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.14);
+    ctx.beginPath(); ctx.arc(cx, cy, rr * R, 0, Math.PI * 2);
+    ctx.lineWidth = 0.5 + Math.random() * 1.3;
+    ctx.strokeStyle = `rgba(${shade.r*255|0},${shade.g*255|0},${shade.b*255|0},${0.06 + Math.random() * 0.12})`;
+    ctx.stroke();
   }
   const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
@@ -210,8 +260,8 @@ function diskGradientTexture() {
   return tex;
 }
 
-function atmosphereMesh(radius, hexColor, opacity = 0.35) {
-  const geo = new THREE.SphereGeometry(radius * 1.04, 32, 32);
+function atmosphereMesh(radius, hexColor, opacity = 0.4) {
+  const geo = new THREE.SphereGeometry(radius * 1.12, 32, 32);
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       color: { value: new THREE.Color(hexColor) },
@@ -517,6 +567,16 @@ function createSolarSystem(scene, focusables) {
   sunMesh.add(coronaMesh);
   sunMesh.userData.coronaMat = coronaMat;
 
+  // Corona Multicapa de Glow Sprites (complementa el shader corona)
+  [[6, 0.95], [9, 0.55], [13, 0.3], [18, 0.15]].forEach(([scale, op]) => {
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTexture(0xffd166), transparent: true,
+      blending: THREE.AdditiveBlending, opacity: op
+    }));
+    glow.scale.set(4.8 * scale, 4.8 * scale, 1);
+    sunMesh.add(glow);
+  });
+
   // Prominencias y Fulgores Solares
   for (let i = 0; i < 6; i++) {
     const pMat = new THREE.SpriteMaterial({
@@ -666,7 +726,28 @@ function createSolarSystem(scene, focusables) {
     focusables[p.id] = { mesh: pMesh, data: p, pivot, moonMeshes };
   }
 
-  // Activar sombras en el renderer
+  // Cinturón de Asteroides entre Marte y Júpiter
+  (function asteroidBelt() {
+    const count = 1400;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    const col = new Float32Array(count * 3);
+    const beltBase = new THREE.Color(0xaa9c86);
+    for (let i = 0; i < count; i++) {
+      const r = 32 + Math.random() * 5.5;
+      const a = Math.random() * Math.PI * 2;
+      pos[i * 3] = Math.cos(a) * r;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 1.3;
+      pos[i * 3 + 2] = Math.sin(a) * r;
+      const shade = beltBase.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.25);
+      col[i * 3] = shade.r; col[i * 3 + 1] = shade.g; col[i * 3 + 2] = shade.b;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: 0.3, vertexColors: true, map: DOT, transparent: true, depthWrite: false });
+    planetsGroup.add(new THREE.Points(geo, mat));
+  })();
+
   return { sunMesh, planetsGroup, orbitsGroup };
 }
 
