@@ -260,6 +260,58 @@ h1 {
   padding: 3px 8px; border-radius: 6px;
 }
 
+/* ---------- HUD Telemetría Astrofísica NASA ---------- */
+.nasa-telemetry-hud {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(0, 240, 255, 0.28);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.12), inset 0 0 12px rgba(0, 240, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.telemetry-header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 11px; font-weight: 800; color: #00f0ff;
+  text-transform: uppercase; letter-spacing: 1px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.18);
+  padding-bottom: 8px; margin-bottom: 10px;
+}
+.telemetry-status {
+  background: rgba(0, 240, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  color: #7ef2ff; font-size: 10px; font-weight: 800;
+  padding: 2px 6px; border-radius: 4px;
+  animation: pulse-telemetry 2s infinite;
+}
+@keyframes pulse-telemetry {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+}
+.telemetry-item {
+  display: flex; flex-direction: column;
+}
+.telemetry-label {
+  font-size: 9.5px; font-weight: 700; color: #94a3b8;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.telemetry-value {
+  font-size: 12.5px; font-weight: 700; color: #f8fafc;
+  font-family: monospace, sans-serif;
+}
+.btn-hud.active-drift {
+  background: rgba(0, 240, 255, 0.25);
+  border-color: #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+}
+
 /* ---------- Hechos y Dato Curioso en Ficha ---------- */
 .info-facts {
   list-style: none; display: flex; flex-direction: column; gap: 10px;

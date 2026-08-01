@@ -48,6 +48,7 @@
 
     <!-- Botones de Acción Didácticos -->
     <div class="header-actions">
+      <button id="btnDriftTop" class="btn-hud">🛸 Deriva Telescópica</button>
       <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ Modo Museo</button>
       <button id="btnTours" class="btn-hud">🚀 Tours Didácticos</button>
       <button id="btnQuiz" class="btn-hud">🧠 Desafío Astrofísico</button>
@@ -88,6 +89,40 @@
       <div class="scale-metrics">
         <span id="scaleSizeText">1.0x tamaño de referencia</span>
         <span id="scaleMassText">1.0x masa de referencia</span>
+      </div>
+    </div>
+
+    <!-- Panel de Telemetría Astrofísica NASA en Tiempo Real -->
+    <div id="nasaTelemetryHud" class="nasa-telemetry-hud" style="display:none;">
+      <div class="telemetry-header">
+        <span>🛰️ TELEMETRÍA ASTROFÍSICA NASA</span>
+        <span id="telemetryStatus" class="telemetry-status">ONLINE</span>
+      </div>
+      <div class="telemetry-grid">
+        <div class="telemetry-item">
+          <span class="telemetry-label">CLASE ESPECTRAL</span>
+          <span id="telemClass" class="telemetry-value">--</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">TEMPERATURA (TEFF)</span>
+          <span id="telemTeff" class="telemetry-value">--</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">MASA REAL</span>
+          <span id="telemMass" class="telemetry-value">--</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">LUMINOSIDAD</span>
+          <span id="telemLuminosity" class="telemetry-value">--</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">VEL. KEPLERIANA</span>
+          <span id="telemVelocity" class="telemetry-value">--</span>
+        </div>
+        <div class="telemetry-item">
+          <span class="telemetry-label">DENSIDAD MED.</span>
+          <span id="telemDensity" class="telemetry-value">--</span>
+        </div>
       </div>
     </div>
 

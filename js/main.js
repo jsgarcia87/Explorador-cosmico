@@ -40,6 +40,7 @@ const controller = {
   targetRadius: 145, targetTheta: 0.9, targetPhi: 1.15,
   minRadius: 6, maxRadius: 350,
   dragging: false, lastX: 0, lastY: 0,
+  cameraDriftMode: false, driftPhase: 0, driftSpeed: 0.00035,
   init() {
     this.update();
     window.addEventListener('pointerdown', e => {
@@ -92,6 +93,13 @@ const controller = {
     this.theta += (this.targetTheta - this.theta) * 0.12;
     this.phi += (this.targetPhi - this.phi) * 0.12;
     this.radius += (this.targetRadius - this.radius) * 0.12;
+
+    // Modo Deriva Telescópica (Simulación de micro-deriva de propulsores de actitud de JWST/Hubble)
+    if (this.cameraDriftMode && !this.dragging) {
+      this.driftPhase += 0.008;
+      this.targetTheta += Math.sin(this.driftPhase * 0.7) * this.driftSpeed;
+      this.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.targetPhi + Math.cos(this.driftPhase * 0.5) * (this.driftSpeed * 0.5)));
+    }
 
     const x = this.target.x + this.radius * Math.sin(this.phi) * Math.sin(this.theta);
     const y = this.target.y + this.radius * Math.cos(this.phi);
@@ -198,6 +206,19 @@ function triggerKioskAutoReset() {
   controller.targetTheta = 0.9;
   controller.targetPhi = 1.15;
   controller.target.set(0, 0, 0);
+}
+
+function toggleDriftMode() {
+  controller.cameraDriftMode = !controller.cameraDriftMode;
+  const btn = document.getElementById('btnDriftTop');
+  if (btn) btn.classList.toggle('active-drift', controller.cameraDriftMode);
+  showToast(
+    controller.cameraDriftMode
+      ? '🛸 Deriva Telescópica ACTIVADA (JWST/Hubble Micro-drift)'
+      : '🎯 Deriva Telescópica DESACTIVADA',
+    3000
+  );
+  playCosmicChime(controller.cameraDriftMode ? 640 : 400, 0.4);
 }
 
 function toggleKioskMode() {
@@ -375,6 +396,19 @@ function updateInfoPanel(data) {
     document.getElementById('scaleMassText').textContent = data.scaleComp.massStr;
   } else {
     scaleBox.style.display = 'none';
+  }
+
+  const telemHud = document.getElementById('nasaTelemetryHud');
+  if (telemHud && (data.teff || data.spectralClass || data.mass || data.keplerianVelocity)) {
+    telemHud.style.display = 'block';
+    document.getElementById('telemClass').textContent = data.spectralClass || 'N/A';
+    document.getElementById('telemTeff').textContent = data.teff ? `${data.teff} K` : 'N/A';
+    document.getElementById('telemMass').textContent = data.mass || 'N/A';
+    document.getElementById('telemLuminosity').textContent = data.luminosity || 'N/A';
+    document.getElementById('telemVelocity').textContent = data.keplerianVelocity || 'N/A';
+    document.getElementById('telemDensity').textContent = data.density || 'N/A';
+  } else if (telemHud) {
+    telemHud.style.display = 'none';
   }
 
   const factsUl = document.getElementById('infoFacts');
@@ -615,6 +649,8 @@ document.getElementById('btnSolar').onclick = () => setMode('solar');
 document.getElementById('btnDeep').onclick = () => setMode('deep');
 const btnConstEl = document.getElementById('btnConstelaciones');
 if (btnConstEl) btnConstEl.onclick = () => setMode('constelaciones');
+const btnDriftEl = document.getElementById('btnDriftTop');
+if (btnDriftEl) btnDriftEl.onclick = toggleDriftMode;
 document.getElementById('btnKiosk').onclick = toggleKioskMode;
 document.getElementById('btnTours').onclick = openToursModal;
 document.getElementById('btnQuiz').onclick = openQuizModal;
@@ -701,6 +737,14 @@ function animate() {
     if (agujeroItem.disk) agujeroItem.disk.rotation.z -= dt * 0.25 * simSpeed;
     if (agujeroItem.lensedDisk) agujeroItem.lensedDisk.rotation.z += dt * 0.25 * simSpeed;
     if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.08 * simSpeed;
+    if (agujeroItem.s2Star) {
+      // Órbita Kepleriana elíptica de la estrella hiperveloz S2 alrededor de Gargantua (e=0.88)
+      const s2Angle = t * 0.65 * simSpeed;
+      const rS2 = 4.8 / (1 + 0.58 * Math.cos(s2Angle));
+      agujeroItem.s2Star.position.x = rS2 * Math.cos(s2Angle);
+      agujeroItem.s2Star.position.z = rS2 * Math.sin(s2Angle) * 0.6;
+      agujeroItem.s2Star.position.y = Math.sin(s2Angle * 2.0) * 0.45;
+    }
   }
 
   const giganteItem = focusables['gigante'];
@@ -723,6 +767,21 @@ function animate() {
   const galItem = focusables['galaxia'];
   if (galItem && galItem.galaxyStars) {
     galItem.galaxyStars.rotation.y += dt * 0.04 * simSpeed;
+  }
+
+  const protoItem = focusables['protoplanetario'];
+  if (protoItem) {
+    if (protoItem.diskMat?.uniforms?.uTime) protoItem.diskMat.uniforms.uTime.value = t;
+    if (protoItem.jetMat?.uniforms?.uTime) protoItem.jetMat.uniforms.uTime.value = t;
+    if (protoItem.protoDisk) protoItem.protoDisk.rotation.z -= dt * 0.35 * simSpeed;
+    if (protoItem.mesh) protoItem.mesh.rotation.y += dt * 0.05 * simSpeed;
+  }
+
+  const binItem = focusables['binario'];
+  if (binItem) {
+    if (binItem.streamMat?.uniforms?.uTime) binItem.streamMat.uniforms.uTime.value = t;
+    if (binItem.mesh) binItem.mesh.rotation.y += dt * 0.45 * simSpeed;
+    if (binItem.accDisk) binItem.accDisk.rotation.z -= dt * 0.8 * simSpeed;
   }
 
   // Actualizar Sol GLSL y Corona

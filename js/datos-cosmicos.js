@@ -165,6 +165,10 @@ const DEEPSPACE = [
     name: 'Agujero Negro Relativista ("Gargantua")',
     type: 'Singularidad Gravitacional Supermasiva',
     pos: [0, -2, -26],
+    teff: 25000,
+    spectralClass: 'Accretion X-Ray / UV Continuum',
+    keplerianVelocity: '0.45c - 0.72c (ISCO)',
+    density: 'Singularidad + Disco (10^-8 g/cm³)',
     desc: 'Un agujero negro relativista modelado con precisión astrofísica. Su inmenso campo gravitatorio curva el espacio-tiempo, doblando la trayectoria de la luz en un Anillo de Einstein y acelerando su disco de acreción hasta temperaturas de rayos X con efecto Doppler relativista (beaming).',
     descLevels: {
       primaria: '¡Es el objeto con más fuerza de atracción del universo! Su gravedad es tan poderosa que ni siquiera la luz puede escapar. A su alrededor hay un disco de gas caliente brillando.',
@@ -184,6 +188,10 @@ const DEEPSPACE = [
     name: 'Púlsar de Neutrones Magnetizado',
     type: 'Estrella de Neutrones en Rotación Ultrarrápida',
     pos: [110, 35, -125],
+    teff: 1000000,
+    spectralClass: 'Magnetar Synchrotron Beams',
+    keplerianVelocity: '0.2c (Haz sincrotrón dipolar)',
+    density: '10^14 g/cm³ (Fluido nuclear degenerado)',
     desc: 'El núcleo colapsado remanente de una supernova masiva. Con apenas 20 km de diámetro y una densidad equivalente a mil millones de toneladas por centímetro cúbico, gira a 30 revoluciones por segundo emitiendo haces de radiación sincrotrón como un faro cósmico.',
     descLevels: {
       primaria: '¡Es como el faro más rápido del espacio! Es una pequeña bola superdensa que gira rapidísimo lanzando rayos láser cósmicos por sus polos.',
@@ -203,6 +211,10 @@ const DEEPSPACE = [
     name: 'Nebulosa de Emisión H-alpha ("Pilares")',
     type: 'Nube Interestelar de Ionización y Vivero Estelar',
     pos: [-115, -28, -130],
+    teff: 8000,
+    spectralClass: 'SHO Narrowband (H-alpha / OIII / SII)',
+    keplerianVelocity: '25 km/s (Turbulencia interestelar)',
+    density: '100 - 1000 part./cm³ (Nube molecular)',
     desc: 'Una vasta catedral de gas ionizado y polvo interestelar a miles de años luz. Modelada con paletas de astrofotografía (H-alpha en rojo carmín, [OIII] en cian luminoso y [SII] en ámbar dorado), alberga un cúmulo de jóvenes estrellas supergigantes O y B que esculpen la nube con sus vientos ultravioleta.',
     descLevels: {
       primaria: '¡Es una fábrica de estrellas bebé en el cielo! Son nubes gigantescas de gas de colores rosa, celeste y oro donde nacen nuevos soles.',
@@ -222,6 +234,10 @@ const DEEPSPACE = [
     name: 'Galaxia Espiral Barrada (Tipo SBbc)',
     type: 'Isla Universal de 100 Mil Millones de Soles',
     pos: [-45, 68, -195],
+    teff: 5800,
+    spectralClass: 'SBbc (Disco de Población I + Bulbo de Población II)',
+    keplerianVelocity: '220 km/s (Velocidad en el radio óptico)',
+    density: '0.1 átomo/cm³ (Media del disco interestelar)',
     desc: 'Una estructura galáctica majestuosa con un núcleo bulbo amarillo de estrellas viejas (Población II) y brazos espirales azules colmados de estrellas calientes (Población I) y corredores oscuros de polvo molecular absorbiendo la luz estelar de fondo.',
     descLevels: {
       primaria: '¡Una gigantesca espiral formada por cien mil millones de estrellas! Nuestra propia Vía Láctea es una galaxia hermana muy parecida a esta.',
@@ -241,6 +257,10 @@ const DEEPSPACE = [
     name: 'Gigante Roja en Fase Asintótica',
     type: 'Estrella Evolucionada en Expansión Masiva',
     pos: [85, -45, -160],
+    teff: 3100,
+    spectralClass: 'M8III (Rama Gigante Asintótica AGB)',
+    keplerianVelocity: '15 km/s (Velocidad terminal de viento estelar)',
+    density: '10^-7 g/cm³ (Envoltura convectiva ultrararefacta)',
     desc: 'Una estrella evolutivamente anciana que ha agotado su hidrógeno central y quema helio en sus capas externas. Su superficie ha crecido hasta alcanzar 250 veces el diámetro del Sol, mostrando células de convección gigantescas, pulsaciones térmicas y un viento estelar supermasivo.',
     descLevels: {
       primaria: '¡Una estrella anciana que se hincha como un globo rojo gigante! Dentro de 5 mil millones de años nuestro Sol se convertirá en una estrella así.',
@@ -260,6 +280,10 @@ const DEEPSPACE = [
     name: 'Enana Blanca Degenerada con Disco',
     type: 'Remanente Estelar de Alta Densidad con Anillo de Escombros',
     pos: [-80, 20, -110],
+    teff: 25000,
+    spectralClass: 'DA2 Degenerate White Dwarf',
+    keplerianVelocity: '50 km/s (Disco de escombros circunestelar)',
+    density: '10^6 g/cm³ (Degeneración de Fermi electrónica)',
     desc: 'El núcleo de carbono-oxígeno expuesto tras la expulsión de una nebulosa planetaria. Sostenida únicamente por la presión de degeneración de electrones, esta brasa cósmica caliente está rodeada por un anillo de escombros de asteroides y planetas rocosos destruidos por fuerzas de marea.',
     descLevels: {
       primaria: '¡Es el corazón brillante que queda cuando una estrella como el Sol envejece! Tiene el tamaño de la Tierra, pero pesa tanto como el Sol entero.',
@@ -267,7 +291,58 @@ const DEEPSPACE = [
       avanzado: 'Remanente estelar sostenido contra el colapso gravitatorio por presión de degeneración electrónica de Fermi. Su anillo circumestelar proviene de la disrupción planetaria por el límite de Roche.'
     },
     scaleComp: { ref: 'Tierra', sizeStr: '1.0x tamaño (diámetro terrestre)', massStr: '330,000x masa (densidad extrema)' },
+    facts: [
+      'Sin fusión nuclear propia: su altísima luminosidad ultravioleta proviene de su calor térmico residual.',
+      'Límite de Chandrasekhar: la masa máxima de una enana blanca es 1.44 masas solares antes de colapsar o explotar.',
+      'Su anillo circumestelar contiene minerales silicatos de exoplanetas rocosos destruidos por mareas gravitacionales.'
+    ],
     fun: '¡Una cuchara de materia tomada del corazón de esta pequeña estrella blanca pesaría en la Tierra tanto como un autobús escolar entero!'
+  },
+  {
+    id: 'protoplanetario',
+    name: 'Disco Protoplanetario Herbig-Haro (HH-24)',
+    type: 'Estrella T-Tauri Joven con Chorro Bipolar Colimado',
+    pos: [-65, -48, -155],
+    teff: 4200,
+    spectralClass: 'K7Vp (T-Tauri) + Shock HII Jets',
+    keplerianVelocity: '35 km/s (Disco interior) - 5 km/s (Borde externo)',
+    density: '10^10 part./cm³ (Plano medio del disco de acreción)',
+    desc: 'Una estrella recién nacida envuelta en un disco circunestelar de polvo y gas que gira bajo las leyes de Kepler. En las ranuras o "gaps" del disco, protoplanetas emergentes despejan sus órbitas, mientras que los campos magnéticos coliman y expulsan materia en chorros supersónicos bipolares.',
+    descLevels: {
+      primaria: '¡Así nació nuestro Sistema Solar hace 4,600 millones de años! Un disco de polvo gira alrededor de un bebé de sol mientras las rocas se juntan para formar planetas.',
+      secundaria: 'Los discos protoplanetarios muestran anillos oscuros donde planetas en formación están limpiando su órbita por gravedad, lanzando chorros de gas por los polos de la estrella.',
+      avanzado: 'Sistema Herbig-Haro accionado por acreción magnetocentrífuga. El perfil del disco obedece la rotación kepleriana (T² ∝ a³), con brechas dinámicas abiertas por resonancias planetarias de Lindblad.'
+    },
+    scaleComp: { ref: 'Sol', sizeStr: 'Diámetro de Disco: ~200 AU (30,000 millones km)', massStr: '1.1x masa solar (Estrella + Disco)' },
+    facts: [
+      'Brechas Keplerianas: los surcos vacíos en el disco revelan planetas jóvenes en formación.',
+      'Chorros colimados HH: eyecciones bipolares que superan los 250 km/s colisionando con el medio interestelar.',
+      'El telescopio ALMA ha cartografiado estos discos en milimétrico con resolución sin precedentes.'
+    ],
+    fun: '¡En este disco de polvo cósmico se están construyendo futuros planetas como la Tierra, Marte o Júpiter ahora mismo!'
+  },
+  {
+    id: 'binario',
+    name: 'Sistema Binario de Contacto (Lóbulo de Roche L1)',
+    type: 'Binaria Semi-Desprendida con Transferencia de Masa',
+    pos: [130, -25, -180],
+    teff: 12500,
+    spectralClass: 'B8V + K2III (Accretion Stream L1)',
+    keplerianVelocity: '310 km/s (Órbita sincrónica mutua)',
+    density: 'Plasma de Acreción L1 (10^-9 g/cm³)',
+    desc: 'Un par de estrellas orbitando tan estrechamente que la estrella gigante llena su Lóbulo de Roche. A través del Punto de Lagrange interno (L1), una corriente de plasma ardiente fluye hacia la estrella azul principal, formando un disco de acreción circunestelar en su entorno.',
+    descLevels: {
+      primaria: '¡Dos soles bailando muy juntos! Uno de ellos se ha hecho tan grande que le está pasando su fuego y materia al otro como una cascada cósmica.',
+      secundaria: 'Cuando una estrella en un sistema doble envejece y se expande más allá de su lóbulo de gravedad (Roche), su masa es atraída por su compañera a través del punto L1.',
+      avanzado: 'Binaria interactuante semi-desprendida en transferencia de masa térmica conservativa. El flujo de plasma en el punto de Lagrange L1 genera un impacto de frente de choque (hot spot) al colisionar con el disco de la primaria.'
+    },
+    scaleComp: { ref: 'Sol', sizeStr: 'Separación orbital: ~0.1 AU (15 millones de km)', massStr: '3.5x masa solar combinada' },
+    facts: [
+      'Lóbulo de Roche: el límite gravitacional máximo que una estrella puede ocupar en un sistema binario.',
+      'Punto de Lagrange L1: punto de equilibrio gravitacional por donde se transfiere el plasma entre ambas estrellas.',
+      'Órbita ultracorta: completan una vuelta mutua en solo pocas horas a cientos de kilómetros por segundo.'
+    ],
+    fun: '¡Estas dos estrellas están tan unidas que una vuelta completa a su alrededor dura menos de un día terrestre!'
   }
 ];
 
@@ -576,13 +651,23 @@ const CONSTELLATIONS = [
 const TOURS = {
   estrellas: {
     title: 'El Ciclo de Vida de las Estrellas',
-    desc: 'Un viaje a través de las etapas evolutivas estelares: desde el nacimiento y el esplendor en secuencia principal hasta sus destinos relativistas.',
+    desc: 'Un viaje a través de las etapas evolutivas estelares: desde el nacimiento en discos protoplanetarios y el esplendor en secuencia principal hasta sus destinos relativistas.',
     steps: [
-      { id: 'sol', title: '1. El Sol — Secuencia Principal', type: 'planet' },
-      { id: 'gigante', title: '2. Gigante Roja — La Expansión Final', type: 'deep' },
-      { id: 'enana', title: '3. Enana Blanca — El Núcleo Degenerado', type: 'deep' },
-      { id: 'pulsar', title: '4. Púlsar de Neutrones — El Faro Cósmico', type: 'deep' },
-      { id: 'agujero', title: '5. Agujero Negro — La Singularidad Relativista', type: 'deep' }
+      { id: 'protoplanetario', title: '1. Disco Protoplanetario — Nacimiento Planetario en Gaps Keplerianos', type: 'deep' },
+      { id: 'sol', title: '2. El Sol — Secuencia Principal', type: 'planet' },
+      { id: 'gigante', title: '3. Gigante Roja — La Expansión Final', type: 'deep' },
+      { id: 'enana', title: '4. Enana Blanca — El Núcleo Degenerado', type: 'deep' },
+      { id: 'pulsar', title: '5. Púlsar de Neutrones — El Faro Cósmico', type: 'deep' },
+      { id: 'agujero', title: '6. Agujero Negro — La Singularidad Relativista', type: 'deep' }
+    ]
+  },
+  sistemas_multiples: {
+    title: 'Sistemas Estelares Múltiples y Acretantes',
+    desc: 'Descubre cómo interactúan gravitacionalmente los sistemas binarios, discos protoplanetarios y singularidades celestes.',
+    steps: [
+      { id: 'protoplanetario', title: '1. Disco Protoplanetario — Nacimiento Planetario en Gaps Keplerianos', type: 'deep' },
+      { id: 'binario', title: '2. Binaria de Contacto — Transferencia de Masa por el Lóbulo de Roche', type: 'deep' },
+      { id: 'agujero', title: '3. Gargantua y Estrella S2 — Precesión Relativista de Periastro', type: 'deep' }
     ]
   },
   constelaciones: {
@@ -692,6 +777,28 @@ const QUIZ = [
     ],
     ans: 0,
     exp: 'Saturno es el planeta menos denso del Sistema Solar (0.687 g/cm³), por lo que es inferior a la densidad del agua (1.0 g/cm³).'
+  },
+  {
+    q: '¿Por qué la parte interna de un disco protoplanetario gira a mucha mayor velocidad que su borde exterior?',
+    opts: [
+      'Por la Tercera Ley de Kepler (T² ∝ a³), donde la gravedad central exige mayores velocidades en órbitas más cercanas',
+      'Porque los vientos del viento solar empujan la periferia frenándola',
+      'Porque el polvo del exterior es más pesado que el del interior',
+      'Por la repulsión magnética de los planetas gigantes exclusivamente'
+    ],
+    ans: 0,
+    exp: 'Según la mecánica orbital kepleriana, la velocidad orbital varía inversamente con la raíz cuadrada de la distancia (v ∝ r^-1/2). Por ello, el disco interno gira muy rápido mientras que la periferia avanza despacio.'
+  },
+  {
+    q: '¿Qué es el Lóbulo de Roche en un sistema binario de estrellas?',
+    opts: [
+      'El volumen de espacio alrededor de una estrella donde el material está ligado gravitacionalmente a ella',
+      'Una nube interestelar en forma de lóbulo que bloquea los rayos X',
+      'El anillo brillante que rodea a un agujero negro',
+      'El centro magnético de un púlsar'
+    ],
+    ans: 0,
+    exp: 'El Lóbulo de Roche define la región gravitacional propia de cada estrella en un sistema binario. Si una estrella se expande más allá de ese límite, transfiere materia a su compañera a través del punto de Lagrange L1.'
   }
 ];
 

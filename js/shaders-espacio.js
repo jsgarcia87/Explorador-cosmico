@@ -124,6 +124,56 @@ function planetTexture(baseHex, opts = {}) {
   return tex;
 }
 
+function generateNormalMap(opts = {}) {
+  const { roughnessFactor = 1.0, craterDepth = 2.5 } = opts;
+  const w = 512, h = 256;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const imgData = ctx.createImageData(w, h);
+  const data = imgData.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const nx = Math.sin(x * 0.05) * Math.cos(y * 0.05) * roughnessFactor;
+      const ny = Math.cos(x * 0.08) * Math.sin(y * 0.08) * roughnessFactor;
+      const idx = (y * w + x) * 4;
+      data[idx]     = Math.min(255, Math.max(0, 128 + nx * 60 * craterDepth)); // R -> normal X
+      data[idx + 1] = Math.min(255, Math.max(0, 128 + ny * 60 * craterDepth)); // G -> normal Y
+      data[idx + 2] = 255;                                                     // B -> normal Z
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function generateRoughnessMap(opts = {}) {
+  const { baseRoughness = 0.65, variance = 0.3 } = opts;
+  const w = 512, h = 256;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const imgData = ctx.createImageData(w, h);
+  const data = imgData.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const noise = (Math.sin(x * 0.04) * Math.cos(y * 0.04) + 1.0) * 0.5;
+      const rVal = Math.min(255, Math.max(0, (baseRoughness + (noise - 0.5) * variance) * 255));
+      const idx = (y * w + x) * 4;
+      data[idx]     = rVal;
+      data[idx + 1] = rVal;
+      data[idx + 2] = rVal;
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function sunTexture() {
   const w = 512, h = 256;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -306,21 +356,22 @@ function makeGlowMesh(radius, hexColor, opacity = 0.4) {
 /* ---------- 8. Fondo Estelar Multi-Espectral y Vía Láctea ---------- */
 function createMilkyWayBackground(scene) {
   const isMobile = window.innerWidth < 768;
-  const sCount = isMobile ? 7000 : 14000;
+  const sCount = isMobile ? 12000 : 35000;
   const sGeo = new THREE.BufferGeometry();
   const sPos = new Float32Array(sCount * 3);
   const sCol = new Float32Array(sCount * 3);
   const sSiz = new Float32Array(sCount);
 
-  // Clases espectrales ponderadas por población estelar real
-  // (M rojizas más comunes, O/B azules muy raras)
+  // Clases espectrales Planckianas / Cuerpo Negro (Kelvin -> RGB NASA-calibrado)
+  // Con ponderación por Función Inicial de Masa (IMF): M rojas muy frecuentes, O/B azules muy raras
   const starTypes = [
-    { color: new THREE.Color(0x9db4ff), weight: 0.02 }, // O/B (azul, raras)
-    { color: new THREE.Color(0xbbccff), weight: 0.05 }, // A (azul-blanco)
-    { color: new THREE.Color(0xfbf8ff), weight: 0.08 }, // F (blanco)
-    { color: new THREE.Color(0xfff4e8), weight: 0.15 }, // G (amarillo, Sol)
-    { color: new THREE.Color(0xffddb4), weight: 0.25 }, // K (naranja)
-    { color: new THREE.Color(0xffb78c), weight: 0.45 }  // M (rojo, mayoritarias)
+    { color: new THREE.Color(0x9bb0ff), weight: 0.005, temp: 40000 }, // Clase O (40,000K actinic blue)
+    { color: new THREE.Color(0xbbccff), weight: 0.015, temp: 18000 }, // Clase B (18,000K blue-white)
+    { color: new THREE.Color(0xf8f9ff), weight: 0.050, temp: 9000 },  // Clase A (9,000K white)
+    { color: new THREE.Color(0xfff4e8), weight: 0.130, temp: 6800 },  // Clase F (6,800K yellow-white)
+    { color: new THREE.Color(0xffeaaf), weight: 0.200, temp: 5800 },  // Clase G (5,800K solar yellow)
+    { color: new THREE.Color(0xffd2a1), weight: 0.250, temp: 4300 },  // Clase K (4,300K orange)
+    { color: new THREE.Color(0xffae76), weight: 0.350, temp: 3100 }   // Clase M (3,100K crimson orange)
   ];
   const cumWeights = [];
   let tw = 0;
@@ -329,42 +380,51 @@ function createMilkyWayBackground(scene) {
   for (let i = 0; i < sCount; i++) {
     const th = Math.random() * Math.PI * 2;
 
-    // 55 % concentradas en la banda de la Vía Láctea (plano galáctico)
-    // 45 % distribuidas uniformemente por toda la bóveda celeste
+    // 60% en el plano de la Vía Láctea (disco galáctico), 40% halo esférico
     let ph;
-    if (Math.random() < 0.55) {
+    if (Math.random() < 0.60) {
       const g = (Math.random() + Math.random() + Math.random()) / 3.0;
-      ph = Math.PI / 2 + (g - 0.5) * 0.7;
+      ph = Math.PI / 2 + (g - 0.5) * 0.65;
     } else {
       ph = Math.acos(2 * Math.random() - 1);
     }
 
-    const r = 450 + Math.random() * 850;
+    // 3 Capas de profundidad de paralaje (Foreground: 280-520, Midground: 520-1100, Background Halo: 1100-2200)
+    const layerRand = Math.random();
+    let r;
+    if (layerRand < 0.18) {
+      r = 280 + Math.random() * 240; // Capa 1: Vecindario solar cercano
+    } else if (layerRand < 0.65) {
+      r = 520 + Math.random() * 580; // Capa 2: Disco galáctico medio
+    } else {
+      r = 1100 + Math.random() * 1100; // Capa 3: Bulbo y halo profundo
+    }
+
     sPos[i * 3]     = r * Math.sin(ph) * Math.cos(th);
     sPos[i * 3 + 1] = r * Math.cos(ph);
     sPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
 
-    // Selección espectral ponderada
+    // Selección espectral de cuerpo negro según IMF
     const rnd = Math.random() * tw;
     let ci = 0;
     for (let j = 0; j < cumWeights.length; j++) {
       if (rnd <= cumWeights[j]) { ci = j; break; }
     }
     const c = starTypes[ci].color;
-    const vary = 0.04;
-    sCol[i * 3]     = Math.min(1, c.r + (Math.random() - 0.5) * vary);
-    sCol[i * 3 + 1] = Math.min(1, c.g + (Math.random() - 0.5) * vary);
-    sCol[i * 3 + 2] = Math.min(1, c.b + (Math.random() - 0.5) * vary);
+    const vary = 0.035;
+    sCol[i * 3]     = Math.min(1, Math.max(0, c.r + (Math.random() - 0.5) * vary));
+    sCol[i * 3 + 1] = Math.min(1, Math.max(0, c.g + (Math.random() - 0.5) * vary));
+    sCol[i * 3 + 2] = Math.min(1, Math.max(0, c.b + (Math.random() - 0.5) * vary));
 
-    // Distribución de magnitudes (muchas débiles, pocas brillantes)
-    const mag = Math.pow(Math.random(), 3.0);
-    sSiz[i] = 0.2 + mag * (ci < 2 ? 2.8 : 1.6);
+    // Escala astronómica de magnitud visual (10^-0.4m) con diferenciación por capa
+    const mag = Math.pow(Math.random(), 2.8);
+    sSiz[i] = (0.18 + mag * (ci < 2 ? 3.2 : 1.7)) * (r < 500 ? 1.4 : (r < 1100 ? 1.0 : 0.65));
   }
   sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
   sGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3));
   sGeo.setAttribute('aSize', new THREE.BufferAttribute(sSiz, 1));
 
-  // ShaderMaterial con tamaño por vértice y centelleo sutil
+  // ShaderMaterial con tamaño por vértice y centelleo atmosférico dependiente de la magnitud
   const sMat = new THREE.ShaderMaterial({
     uniforms: { uDot: { value: DOT }, uTime: { value: 0.0 } },
     vertexShader: `
@@ -375,10 +435,10 @@ function createMilkyWayBackground(scene) {
       void main() {
         vColor = color;
         float phase = fract(sin(dot(position.xy, vec2(12.9898, 78.233))) * 43758.5453);
-        float twinkle = 0.72 + 0.28 * sin(uTime * (1.2 + phase * 3.5) + phase * 6.2831);
+        float twinkle = 0.70 + 0.30 * sin(uTime * (1.1 + phase * 3.8) + phase * 6.2831);
         vTwinkle = twinkle;
         vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = aSize * twinkle * (300.0 / -mvPosition.z);
+        gl_PointSize = aSize * twinkle * (320.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
       }
     `,
@@ -388,7 +448,7 @@ function createMilkyWayBackground(scene) {
       varying float vTwinkle;
       void main() {
         vec4 texel = texture2D(uDot, gl_PointCoord);
-        gl_FragColor = vec4(vColor * texel.rgb * vTwinkle, texel.a * smoothstep(0.0, 0.5, vTwinkle));
+        gl_FragColor = vec4(vColor * texel.rgb * vTwinkle, texel.a * smoothstep(0.0, 0.45, vTwinkle));
       }
     `,
     vertexColors: true,
@@ -1058,9 +1118,17 @@ function createDeepSpace(scene, focusables) {
     eventHorizon.add(jetTop);
     eventHorizon.add(jetBot);
 
+    // --- Estrella Hiperveloz S2 (Clase B0V, 18,000K) en Órbita Kepleriana Elíptica ---
+    const s2Geo = new THREE.SphereGeometry(0.38, 24, 24);
+    const s2Mat = new THREE.MeshBasicMaterial({ color: 0x9fbfff });
+    const s2Star = new THREE.Mesh(s2Geo, s2Mat);
+    s2Star.add(makeGlowMesh(0.75, 0x6e9fff, 0.45));
+    s2Star.position.set(rs * 4.2, 0.5, 0);
+    eventHorizon.add(s2Star);
+
     focusables[d.id] = {
       mesh: eventHorizon, data: d,
-      disk, lensedDisk, photonRing,
+      disk, lensedDisk, photonRing, s2Star,
       einsteinMat, diskMat, lensedMat, photonMat, jetMat,
       mat: einsteinMat
     };
@@ -1157,12 +1225,13 @@ function createDeepSpace(scene, focusables) {
     const col = new Float32Array(count * 3);
     const size = new Float32Array(count);
 
+    // Paletas de Banda Estrecha Hubble SHO (H-alpha, [OIII], [SII]) y Polvo Oscuro Barnard
     const palettes = [
-      [0.92, 0.18, 0.38],
-      [0.85, 0.28, 0.65],
-      [0.15, 0.78, 0.72],
-      [0.22, 0.55, 0.95],
-      [0.98, 0.68, 0.22]
+      [0.98, 0.22, 0.32], // 0: H-alpha (crimson pink/red emisión de hidrógeno)
+      [0.10, 0.82, 0.85], // 1: [OIII] (teal/cian oxígeno doblemente ionizado)
+      [0.99, 0.68, 0.18], // 2: [SII] (ámbar dorado sulfuro ionizado)
+      [0.06, 0.05, 0.08], // 3: Polvo molecular oscuro tipo Barnard (absorción interestelar)
+      [0.35, 0.60, 0.98]  // 4: Reflexión azul de estrellas calientes
     ];
 
     for (let i = 0; i < count; i++) {
@@ -1182,13 +1251,20 @@ function createDeepSpace(scene, focusables) {
 
       let colorIdx = 0;
       const dist = Math.sqrt(x * x + y * y + z * z);
-      if (dist < 6.0) colorIdx = Math.random() < 0.7 ? 2 : 3;
-      else if (dist < 14.0) colorIdx = Math.random() < 0.6 ? 0 : 1;
-      else colorIdx = Math.random() < 0.5 ? 4 : 0;
+      const laneNoise = Math.sin(x * 0.7) * Math.cos(z * 0.7);
+      if (laneNoise > 0.42 && dist < 12.0) {
+        colorIdx = 3; // Polvo oscuro interestelar (Barnard dust lanes)
+      } else if (dist < 5.5) {
+        colorIdx = Math.random() < 0.65 ? 1 : 4; // [OIII] y Reflexión azul en núcleo caliente
+      } else if (dist < 13.5) {
+        colorIdx = Math.random() < 0.70 ? 0 : 2; // H-alpha y [SII]
+      } else {
+        colorIdx = Math.random() < 0.60 ? 2 : 0; // [SII] y H-alpha en periferia
+      }
 
       const c = palettes[colorIdx];
       col[i * 3] = c[0]; col[i * 3 + 1] = c[1]; col[i * 3 + 2] = c[2];
-      size[i] = 1.8 + Math.random() * 2.8;
+      size[i] = (colorIdx === 3 ? 2.4 : 1.8) + Math.random() * 2.8;
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -1334,6 +1410,179 @@ function createDeepSpace(scene, focusables) {
     deepGroup.add(galaxyStars);
 
     focusables[d.id] = { mesh: coreMesh, data: d, galaxyStars };
+  }
+
+  // 7. Disco Protoplanetario Herbig-Haro (HH-24) — Estrella T-Tauri, Disco Kepleriano con Brechas y Chorros Bipolares
+  {
+    const d = DEEPSPACE.find(x => x.id === 'protoplanetario');
+    if (d) {
+      const protoGroup = new THREE.Group();
+      protoGroup.position.set(...d.pos);
+      deepGroup.add(protoGroup);
+
+      // Estrella joven central T-Tauri (4300K - naranja rojiza cálida)
+      const starGeo = new THREE.SphereGeometry(1.4, 32, 32);
+      const starMat = new THREE.MeshBasicMaterial({ color: 0xffa050 });
+      const protoStar = new THREE.Mesh(starGeo, starMat);
+      protoStar.add(makeGlowMesh(1.4 * 1.6, 0xff8c42, 0.45));
+      protoGroup.add(protoStar);
+
+      // Disco Protoplanetario con Brechas de Acreción Keplerianas
+      const diskGeo = new THREE.RingGeometry(2.2, 11.5, 128, 8);
+      const diskMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: `
+          varying vec3 vPos;
+          void main() {
+            vPos = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying vec3 vPos;
+          void main() {
+            float r = length(vPos.xz);
+            float theta = atan(vPos.z, vPos.x);
+            float normR = clamp((r - 2.2) / 9.3, 0.0, 1.0);
+            // Brechas keplerianas donde protoplanetas han limpiado la órbita (gaps en r~4.6 y r~8.2)
+            float gap1 = smoothstep(4.2, 4.6, r) * (1.0 - smoothstep(4.6, 5.0, r));
+            float gap2 = smoothstep(7.7, 8.2, r) * (1.0 - smoothstep(8.2, 8.7, r));
+            float density = 1.0 - gap1 * 0.88 - gap2 * 0.92;
+            density *= smoothstep(2.2, 2.8, r) * smoothstep(11.5, 10.5, r);
+            // Rotación diferencial Kepleriana y textura de polvo
+            float spiral = sin(theta * 4.0 - r * 3.5 + uTime * 0.4) * 0.15 + 0.85;
+            vec3 warmDust = vec3(0.98, 0.65, 0.35);
+            vec3 coolDust = vec3(0.65, 0.45, 0.30);
+            vec3 col = mix(warmDust, coolDust, normR) * density * spiral;
+            gl_FragColor = vec4(col * 1.5, density * 0.85);
+          }
+        `,
+        side: THREE.DoubleSide,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const protoDisk = new THREE.Mesh(diskGeo, diskMat);
+      protoDisk.rotation.x = Math.PI / 2 - 0.28;
+      protoGroup.add(protoDisk);
+
+      // Chorros Bipolares Colimados Herbig-Haro (Norte y Sur)
+      const jetLen = 22;
+      const jetGeo = new THREE.CylinderGeometry(0.1, 1.6, jetLen, 24, 1, true);
+      jetGeo.translate(0, jetLen / 2, 0);
+      const jetMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: `
+          varying float vAlpha;
+          varying vec3 vPos;
+          void main() {
+            vPos = position;
+            vAlpha = clamp(1.0 - abs(position.y) / 18.0, 0.0, 1.0);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying float vAlpha;
+          varying vec3 vPos;
+          void main() {
+            float shock = sin(vPos.y * 1.5 - uTime * 6.0) * 0.35 + 0.65;
+            vec3 col = mix(vec3(0.1, 0.9, 1.0), vec3(1.0, 0.2, 0.5), vAlpha) * shock;
+            gl_FragColor = vec4(col * 1.8, vAlpha * 0.55 * shock);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const jetNorth = new THREE.Mesh(jetGeo, jetMat);
+      const jetSouth = new THREE.Mesh(jetGeo, jetMat);
+      jetSouth.rotation.z = Math.PI;
+      protoGroup.add(jetNorth);
+      protoGroup.add(jetSouth);
+
+      focusables[d.id] = {
+        mesh: protoGroup, data: d,
+        protoStar, protoDisk, jetNorth, jetSouth,
+        diskMat, jetMat, mat: diskMat
+      };
+    }
+  }
+
+  // 8. Sistema Binario de Contacto (Transferencia de Masa y Lóbulo de Roche L1)
+  {
+    const d = DEEPSPACE.find(x => x.id === 'binario');
+    if (d) {
+      const binGroup = new THREE.Group();
+      binGroup.position.set(...d.pos);
+      deepGroup.add(binGroup);
+
+      // Estrella Primaria Caliente (Clase B, 12500K - Azul Blanco)
+      const primaryGeo = new THREE.SphereGeometry(1.6, 32, 32);
+      const primaryMat = new THREE.MeshBasicMaterial({ color: 0x9bbcff });
+      const primaryStar = new THREE.Mesh(primaryGeo, primaryMat);
+      primaryStar.add(makeGlowMesh(1.6 * 1.5, 0x7da4ff, 0.45));
+      primaryStar.position.set(-2.8, 0, 0);
+      binGroup.add(primaryStar);
+
+      // Estrella Secundaria Gigante (Clase K, 4500K - Naranja, llenando su lóbulo de Roche)
+      const secondaryGeo = new THREE.SphereGeometry(1.4, 32, 32);
+      const secondaryMat = new THREE.MeshBasicMaterial({ color: 0xffa85e });
+      const secondaryStar = new THREE.Mesh(secondaryGeo, secondaryMat);
+      secondaryStar.add(makeGlowMesh(1.4 * 1.4, 0xff883e, 0.4));
+      secondaryStar.position.set(2.8, 0, 0);
+      binGroup.add(secondaryStar);
+
+      // Disco de acreción alrededor de la estrella primaria
+      const accGeo = new THREE.RingGeometry(1.8, 3.5, 64);
+      const accMat = new THREE.MeshBasicMaterial({
+        color: 0x99ddff, side: THREE.DoubleSide,
+        transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending
+      });
+      const accDisk = new THREE.Mesh(accGeo, accMat);
+      accDisk.rotation.x = Math.PI / 2 - 0.2;
+      primaryStar.add(accDisk);
+
+      // Corriente de Acreción L1 (Puente de Plasma entre Secundaria y Primaria)
+      const streamCurve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(2.8, 0, 0),
+        new THREE.Vector3(0.0, 1.2, 0.8),
+        new THREE.Vector3(-2.8, 0, 0)
+      );
+      const streamGeo = new THREE.TubeGeometry(streamCurve, 32, 0.18, 12, false);
+      const streamMat = new THREE.ShaderMaterial({
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: `
+          varying float vUvX;
+          void main() {
+            vUvX = uv.x;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying float vUvX;
+          void main() {
+            float flow = sin(vUvX * 18.0 - uTime * 8.0) * 0.4 + 0.6;
+            vec3 col = mix(vec3(1.0, 0.65, 0.25), vec3(0.6, 0.85, 1.0), vUvX) * flow;
+            gl_FragColor = vec4(col * 2.0, 0.85 * flow);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const l1Stream = new THREE.Mesh(streamGeo, streamMat);
+      binGroup.add(l1Stream);
+
+      focusables[d.id] = {
+        mesh: binGroup, data: d,
+        primaryStar, secondaryStar, accDisk, l1Stream,
+        streamMat, mat: streamMat
+      };
+    }
   }
 
   return deepGroup;
