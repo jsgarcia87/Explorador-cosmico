@@ -315,22 +315,34 @@ function atmosphereMesh(radius, hexColor, opacity = 0.4) {
   const mat = new THREE.ShaderMaterial({
     uniforms: {
       color: { value: new THREE.Color(hexColor) },
-      op: { value: opacity }
+      op: { value: opacity },
+      sunDirection: { value: new THREE.Vector3(-1, 0, 0) }
     },
     vertexShader: `
       varying vec3 vNormal;
+      varying vec3 vWorldPos;
       void main() {
         vNormal = normalize(normalMatrix * normal);
+        vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: `
       uniform vec3 color;
       uniform float op;
+      uniform vec3 sunDirection;
       varying vec3 vNormal;
+      varying vec3 vWorldPos;
       void main() {
-        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
-        gl_FragColor = vec4(color, intensity * op);
+        float rim = pow(0.62 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+        // Rayleigh scattering: intensify on sun-facing limb
+        vec3 toSun = normalize(sunDirection - vWorldPos);
+        float scatter = max(0.0, dot(normalize(-vNormal), toSun));
+        float rayleigh = pow(scatter, 1.8) * 0.6 + 0.4;
+        // Blue shift for forward scattering
+        vec3 scatteredColor = mix(color, color * vec3(0.7, 0.85, 1.3), scatter * 0.4);
+        float intensity = rim * rayleigh;
+        gl_FragColor = vec4(scatteredColor, intensity * op);
       }
     `,
     side: THREE.BackSide,
@@ -448,7 +460,10 @@ function createMilkyWayBackground(scene) {
       varying float vTwinkle;
       void main() {
         vec4 texel = texture2D(uDot, gl_PointCoord);
-        gl_FragColor = vec4(vColor * texel.rgb * vTwinkle, texel.a * smoothstep(0.0, 0.45, vTwinkle));
+        // Subtle chromatic scintillation (atmospheric dispersion simulation)
+        float chromatic = vTwinkle * 0.08;
+        vec3 tintedColor = vColor + vec3(chromatic, -chromatic * 0.5, -chromatic);
+        gl_FragColor = vec4(tintedColor * texel.rgb * vTwinkle, texel.a * smoothstep(0.0, 0.40, vTwinkle));
       }
     `,
     vertexColors: true,

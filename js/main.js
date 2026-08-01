@@ -11,14 +11,15 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, window.innerWidth < 768 ? 2 : 3));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.25;
+renderer.toneMappingExposure = 1.2;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
 
-/* ---------- Luz Solar y Luz Ambiental Física ---------- */
+/* ---------- Luz Solar, HemisphereLight (Fake GI) y Ambiental ---------- */
 const sunLight = new THREE.PointLight(0xfff2cc, 3.6, 600, 1.35);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.width = 2048;
@@ -27,7 +28,10 @@ sunLight.shadow.camera.near = 0.5;
 sunLight.shadow.camera.far = 500;
 scene.add(sunLight);
 
-const ambientLight = new THREE.AmbientLight(0x2a3060, 0.55);
+const hemiLight = new THREE.HemisphereLight(0x1a2040, 0x080410, 0.35);
+scene.add(hemiLight);
+
+const ambientLight = new THREE.AmbientLight(0x2a3060, 0.35);
 scene.add(ambientLight);
 
 /* ---------- Fondo Estelar de Vía Láctea ---------- */
@@ -94,11 +98,13 @@ const controller = {
     this.phi += (this.targetPhi - this.phi) * 0.12;
     this.radius += (this.targetRadius - this.radius) * 0.12;
 
-    // Modo Deriva Telescópica (Simulación de micro-deriva de propulsores de actitud de JWST/Hubble)
+    // Modo Deriva Telescópica con Perlin Noise (JWST/Hubble micro-drift simulation)
     if (this.cameraDriftMode && !this.dragging) {
-      this.driftPhase += 0.008;
-      this.targetTheta += Math.sin(this.driftPhase * 0.7) * this.driftSpeed;
-      this.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.targetPhi + Math.cos(this.driftPhase * 0.5) * (this.driftSpeed * 0.5)));
+      this.driftPhase += 0.006;
+      const n1 = simplex.noise2D(this.driftPhase * 0.4, 0.0);
+      const n2 = simplex.noise2D(0.0, this.driftPhase * 0.3);
+      this.targetTheta += n1 * this.driftSpeed * 1.2;
+      this.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.targetPhi + n2 * this.driftSpeed * 0.6));
     }
 
     const x = this.target.x + this.radius * Math.sin(this.phi) * Math.sin(this.theta);
@@ -109,29 +115,6 @@ const controller = {
   }
 };
 controller.init();
-
-/* ---------- Sistema de Audio Web Audio API ---------- */
-let audioCtx = null, audioMuted = false;
-function initAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
-function playCosmicChime(freq = 432, duration = 1.2) {
-  if (audioMuted) return;
-  initAudio();
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioCtx.currentTime + duration * 0.4);
-    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  } catch (e) {}
-}
 
 /* ---------- Construcción de la Escena ---------- */
 const focusables = {};
@@ -148,10 +131,35 @@ if (typeof THREE.EffectComposer !== 'undefined') {
   composer.addPass(new THREE.RenderPass(scene, camera));
   const bloomPass = new THREE.UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.65, 0.5, 0.82
+    0.55, 0.45, 0.88
   );
   composer.addPass(bloomPass);
   composer.bloomPass = bloomPass;
+}
+
+/* ---------- Rendimiento Adaptativo (FPS Detection) ---------- */
+let perfFrames = 0, perfLast = performance.now(), perfQuality = 'high';
+function checkPerformance() {
+  perfFrames++;
+  const now = performance.now();
+  if (now - perfLast >= 3000) {
+    const fps = perfFrames / ((now - perfLast) / 1000);
+    perfFrames = 0;
+    perfLast = now;
+    if (fps < 24 && perfQuality === 'high') {
+      perfQuality = 'medium';
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      if (composer && composer.bloomPass) {
+        composer.bloomPass.resolution.set(window.innerWidth * 0.5, window.innerHeight * 0.5);
+      }
+    } else if (fps < 18 && perfQuality === 'medium') {
+      perfQuality = 'low';
+      renderer.setPixelRatio(1);
+      if (composer && composer.bloomPass) {
+        composer.bloomPass.strength = 0.4;
+      }
+    }
+  }
 }
 
 /* ---------- Auto-Ocultar UI tras Inactividad ---------- */
@@ -218,7 +226,7 @@ function toggleDriftMode() {
       : '🎯 Deriva Telescópica DESACTIVADA',
     3000
   );
-  playCosmicChime(controller.cameraDriftMode ? 640 : 400, 0.4);
+
 }
 
 function toggleKioskMode() {
@@ -282,7 +290,6 @@ function setMode(newMode) {
     renderConstellationChips();
   }
   closeInfoPanel();
-  playCosmicChime(mode === 'solar' ? 528 : mode === 'deep' ? 396 : 741);
 }
 
 /* ---------- 3. Fichas Rápidas en la Barra Inferior (con Scroll Táctil Tablet) ---------- */
@@ -336,9 +343,6 @@ function focusObject(id) {
     setMode('constelaciones');
   }
 
-  const freqs = { sol: 396, tierra: 528, jupiter: 417, saturno: 639, agujero: 285, pulsar: 741 };
-  playCosmicChime(freqs[id] || 639);
-
   const targetPos = new THREE.Vector3();
   item.mesh.getWorldPosition(targetPos);
   controller.target.copy(targetPos);
@@ -378,7 +382,6 @@ function setEduLevel(lvl) {
   document.querySelectorAll('.edu-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(`tab${lvl.charAt(0).toUpperCase() + lvl.slice(1)}`).classList.add('active');
   if (currentFocusData) updateInfoPanel(currentFocusData);
-  playCosmicChime(580, 0.4);
 }
 
 function updateInfoPanel(data) {
@@ -564,13 +567,11 @@ function checkQuizAnswer(selected, correct, explanation) {
   if (selected === correct) {
     res.style.color = '#34d399';
     res.innerHTML = `¡CORRECTO! 🌟 <br><span style="font-size:13px; font-weight:400; color:#e2e8f0">${explanation}</span>`;
-    playCosmicChime(880, 0.8);
     showToast('🏆 ¡Reto superado! Has ganado la insignia Explorador Sabio', 4000);
     document.getElementById('badgeQuiz').classList.add('unlocked');
   } else {
     res.style.color = '#ef4444';
     res.innerHTML = `Incorrecto. Intenta otra opción.`;
-    playCosmicChime(220, 0.4);
   }
 }
 
@@ -684,26 +685,21 @@ document.getElementById('btnSpeed1').onclick = () => updateSpeedButtons(1);
 document.getElementById('btnSpeed2').onclick = () => updateSpeedButtons(2);
 document.getElementById('btnSpeed5').onclick = () => updateSpeedButtons(5);
 
-const audioToggleBtn = document.getElementById('audioToggle');
-audioToggleBtn.onclick = () => {
-  audioMuted = !audioMuted;
-  audioToggleBtn.innerHTML = audioMuted ? '🔇' : '🔊';
-  showToast(audioMuted ? 'Sonido silenciado' : 'Sonido activado', 2000);
-};
-
 /* ---------- 12. Bucle de Animación PBR HD (60 FPS) ---------- */
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
   const t = clock.getElapsedTime();
+  checkPerformance();
 
-  // Rotación y órbita de los planetas
+  // Rotación y órbita Kepleriana de los planetas (v ∝ r^-0.5)
   PLANETS.forEach((p, i) => {
     const item = focusables[p.id];
     if (!item) return;
     if (i > 0) {
-      if (item.pivot) item.pivot.rotation.y += dt * 0.18 * p.speed * simSpeed;
+      const keplerSpeed = p.dist > 0 ? 1.0 / Math.sqrt(p.dist / 11.0) : 1.0;
+      if (item.pivot) item.pivot.rotation.y += dt * 0.12 * keplerSpeed * simSpeed;
       item.mesh.rotation.y += dt * 0.4 * simSpeed;
       // Nubes de la Tierra giran de forma independiente
       if (item.mesh.userData.cloudMesh) {
@@ -802,10 +798,10 @@ function animate() {
     });
   }
 
-  // Deriva sutil de cámara cuando el usuario está inactivo
+  // Deriva sutil de cámara con Perlin noise cuando el usuario está inactivo
   if (document.body.classList.contains('ui-hidden')) {
-    controller.targetTheta += Math.sin(t * 0.15) * 0.00012;
-    controller.targetPhi += Math.cos(t * 0.1) * 0.00006;
+    controller.targetTheta += simplex.noise2D(t * 0.08, 1.5) * 0.00015;
+    controller.targetPhi += simplex.noise2D(1.5, t * 0.06) * 0.00008;
   }
 
   // Barra de escala dinámica
