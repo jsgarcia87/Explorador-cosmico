@@ -19,7 +19,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
 
 /* ---------- Luz Solar y Luz Ambiental Física ---------- */
-const sunLight = new THREE.PointLight(0xfffaec, 4.5, 950, 1.2);
+const sunLight = new THREE.PointLight(0xfff2cc, 3.6, 600, 1.35);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
@@ -27,7 +27,7 @@ sunLight.shadow.camera.near = 0.5;
 sunLight.shadow.camera.far = 500;
 scene.add(sunLight);
 
-const ambientLight = new THREE.AmbientLight(0x1e293b, 0.45);
+const ambientLight = new THREE.AmbientLight(0x2a3060, 0.55);
 scene.add(ambientLight);
 
 /* ---------- Fondo Estelar de Vía Láctea ---------- */
@@ -357,6 +357,37 @@ function closeInfoPanel() {
   document.getElementById('infoPanel').classList.remove('show');
 }
 
+/* ---------- 5b. Gesto Swipe-Down para Cerrar Drawer ---------- */
+{
+  const panel = document.getElementById('infoPanel');
+  let startY = 0, currentY = 0, swiping = false;
+  panel.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    if (e.target.closest('.drawer-handle') || panel.scrollTop <= 0) {
+      startY = t.clientY;
+      currentY = startY;
+      swiping = true;
+    }
+  }, { passive: true });
+  panel.addEventListener('touchmove', e => {
+    if (!swiping) return;
+    currentY = e.touches[0].clientY;
+    const dy = currentY - startY;
+    if (dy > 0) {
+      panel.style.transform = `translateY(${dy}px)`;
+      panel.style.transition = 'none';
+    }
+  }, { passive: true });
+  panel.addEventListener('touchend', () => {
+    if (!swiping) return;
+    swiping = false;
+    const dy = currentY - startY;
+    panel.style.transition = '';
+    panel.style.transform = '';
+    if (dy > 80) closeInfoPanel();
+  });
+}
+
 /* ---------- 6. Tours Temáticos Guiados para Docentes ---------- */
 function openToursModal() {
   const overlay = document.getElementById('modalOverlay');
@@ -509,7 +540,20 @@ function showToast(msg, duration = 3000) {
 /* ---------- 10. Raycaster e Interacción Táctil Directa ---------- */
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
+let pointerDownPos = null;
 window.addEventListener('pointerdown', e => {
+  if (e.target.closest('header') || e.target.closest('.info-panel') ||
+      e.target.closest('.bottom-bar') || e.target.closest('.modal-overlay') ||
+      e.target.closest('.tour-bar') || e.target.closest('.floating-controls')) return;
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('pointerup', e => {
+  if (!pointerDownPos) return;
+  const dx = e.clientX - pointerDownPos.x;
+  const dy = e.clientY - pointerDownPos.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  pointerDownPos = null;
+  if (dist > 6) return;
   if (e.target.closest('header') || e.target.closest('.info-panel') ||
       e.target.closest('.bottom-bar') || e.target.closest('.modal-overlay') ||
       e.target.closest('.tour-bar') || e.target.closest('.floating-controls')) return;
@@ -608,27 +652,30 @@ function animate() {
 
   // Animación de astros del Universo Profundo
   const pulsarItem = focusables['pulsar'];
-  if (pulsarItem && pulsarItem.mat) {
+  if (pulsarItem && pulsarItem.mat && pulsarItem.mat.uniforms?.uTime) {
     pulsarItem.mat.uniforms.uTime.value = t;
     pulsarItem.mesh.rotation.y += dt * 3.5 * simSpeed;
   }
 
   const agujeroItem = focusables['agujero'];
   if (agujeroItem) {
-    if (agujeroItem.diskMat) agujeroItem.diskMat.uniforms.uTime.value = t;
-    if (agujeroItem.lensMat) agujeroItem.lensMat.uniforms.uTime.value = t;
-    if (agujeroItem.photonMat) agujeroItem.photonMat.uniforms.uTime.value = t;
-    if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.35 * simSpeed;
+    [agujeroItem.einsteinMat, agujeroItem.diskMat, agujeroItem.lensedMat,
+     agujeroItem.photonMat, agujeroItem.jetMat].forEach(m => {
+      if (m?.uniforms?.uTime) m.uniforms.uTime.value = t;
+    });
+    if (agujeroItem.disk) agujeroItem.disk.rotation.z -= dt * 0.25 * simSpeed;
+    if (agujeroItem.lensedDisk) agujeroItem.lensedDisk.rotation.z += dt * 0.25 * simSpeed;
+    if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.08 * simSpeed;
   }
 
   const giganteItem = focusables['gigante'];
-  if (giganteItem && giganteItem.mat) {
+  if (giganteItem && giganteItem.mat && giganteItem.mat.uniforms?.uTime) {
     giganteItem.mat.uniforms.uTime.value = t;
     giganteItem.mesh.rotation.y += dt * 0.12 * simSpeed;
   }
 
   const enanaItem = focusables['enana'];
-  if (enanaItem && enanaItem.mat) {
+  if (enanaItem && enanaItem.mat && enanaItem.mat.uniforms?.uTime) {
     enanaItem.mat.uniforms.uTime.value = t;
     enanaItem.mesh.rotation.y += dt * 0.8 * simSpeed;
   }
@@ -646,8 +693,8 @@ function animate() {
   // Actualizar Sol GLSL y Corona
   const solItem = focusables['sol'];
   if (solItem && solItem.mesh) {
-    if (solItem.mat) solItem.mat.uniforms.uTime.value = t;
-    if (solItem.mesh.userData.coronaMat) {
+    if (solItem.mat && solItem.mat.uniforms?.uTime) solItem.mat.uniforms.uTime.value = t;
+    if (solItem.mesh.userData.coronaMat?.uniforms?.viewVector) {
       solItem.mesh.userData.coronaMat.uniforms.viewVector.value.subVectors(camera.position, solItem.mesh.position);
     }
   }

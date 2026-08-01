@@ -40,406 +40,304 @@ function softDot() {
   tex.magFilter = THREE.LinearFilter;
   return tex;
 }
-const DOT = softDot();
-
-/* ---------- 1. Generador de Normal Maps PBR (Relieve de Montañas y Cráteres) ---------- */
-function planetNormalTexture(opts = {}) {
-  const { craters = false, mountains = true, scale = 1.0 } = opts;
-  const w = 1024, h = 512;
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-
-  // Función de altura en punto (u, v)
-  function getHeight(u, v) {
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    const lon = u * Math.PI * 2;
-    const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-    let hVal = 0, amp = 1, freq = 3.0, norm = 0;
-    for (let o = 0; o < 6; o++) {
-      hVal += simplex.noise3D(nx * freq, ny * freq, nz * freq) * amp;
-      norm += amp; amp *= 0.48; freq *= 2.05;
-    }
-    hVal /= norm;
-    if (craters) {
-      const c1 = simplex.noise3D(nx * 20, ny * 20, nz * 20);
-      if (c1 > 0.45) hVal -= (c1 - 0.45) * 2.0;
-    }
-    return hVal * scale;
-  }
-
-  const epsU = 1.0 / w, epsV = 1.0 / h;
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const idx = (y * w + x) * 4;
-      const h0 = getHeight(u, v);
-      const hU = getHeight(u + epsU, v);
-      const hV = getHeight(u, v + epsV);
-
-      // Calcular vector normal en espacio tangente
-      const dx = (h0 - hU) * 8.0;
-      const dy = (h0 - hV) * 8.0;
-      const dz = 1.0;
-      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-      d[idx]     = Math.floor(((dx / len) * 0.5 + 0.5) * 255);
-      d[idx + 1] = Math.floor(((dy / len) * 0.5 + 0.5) * 255);
-      d[idx + 2] = Math.floor(((dz / len) * 0.5 + 0.5) * 255);
-      d[idx + 3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
-  return tex;
-}
-
-/* ---------- 2. Generador de Roughness Maps PBR (Océanos brillantes, tierra rugosa) ---------- */
-function planetRoughnessTexture(opts = {}) {
-  const { isEarth = false } = opts;
-  const w = 1024, h = 512;
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-      let n = 0, amp = 1, freq = 2.0, norm = 0;
-      for (let o = 0; o < 6; o++) {
-        n += simplex.noise3D(nx * freq, ny * freq, nz * freq) * amp;
-        norm += amp; amp *= 0.48; freq *= 2.05;
-      }
-      n /= norm;
-      let roughness = 0.75;
-      if (isEarth) {
-        // Océanos más brillantes/especulares (0.22), Tierra firme rugosa (0.85)
-        roughness = n < 0.0 ? 0.22 : 0.85;
-      } else {
-        roughness = THREE.MathUtils.lerp(0.6, 0.95, (n + 1) * 0.5);
-      }
-      const val = Math.floor(roughness * 255);
-      d[idx] = val; d[idx + 1] = val; d[idx + 2] = val; d[idx + 3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  return tex;
-}
-
-/* ---------- 3. Mapa Emisor de Luces Nocturnas de la Tierra ---------- */
-function earthNightShader() {
-  const w = 1024, h = 512;
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-
-      let n = 0, amp = 1, freq = 2.0, norm = 0;
-      for (let o = 0; o < 7; o++) {
-        n += simplex.noise3D(nx * freq, ny * freq, nz * freq) * amp;
-        norm += amp; amp *= 0.48; freq *= 2.05;
-      }
-      n /= norm;
-
-      let cityLight = 0;
-      // Ciudades costeras y en tierra firme (donde n > 0.01 y n < 0.25)
-      if (n > 0.01 && n < 0.28) {
-        const cityNoise = simplex.noise3D(nx * 22, ny * 22, nz * 22);
-        if (cityNoise > 0.35) {
-          cityLight = Math.pow((cityNoise - 0.35) * 1.5, 1.6);
-        }
-      }
-
-      const r = Math.min(255, cityLight * 255 * 1.2);
-      const gCol = Math.min(255, cityLight * 185 * 1.1);
-      const b = Math.min(255, cityLight * 60);
-
-      d[idx] = r; d[idx + 1] = gCol; d[idx + 2] = b; d[idx + 3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  return tex;
-}
-
-/* ---------- 4. Textura Albedo de Planetas con Ruido fBm ---------- */
+const DOT = softDot();/* ---------- 1. Generadores de Texturas Realistas de Alta Calidad ---------- */
 function planetTexture(baseHex, opts = {}) {
-  const { bands = false, bandSoft = false, craters = false, poles = false, poleSize = 0.16, spot = null } = opts;
-  const w = 1024, h = 512;
+  const w = 512, h = 256;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-  const base = new THREE.Color(baseHex);
-  const hsl = {}; base.getHSL(hsl);
-
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-
-      let n = 0, amp = 1, freq = 2.2, norm = 0;
-      for (let o = 0; o < 6; o++) {
-        n += simplex.noise3D(nx * freq, ny * freq, nz * freq) * amp;
-        norm += amp; amp *= 0.48; freq *= 2.05;
-      }
-      n /= norm;
-
-      let l = hsl.l + n * 0.16;
-      let s = hsl.s;
-      let hCol = hsl.h;
-
-      if (bands) {
-        const bFreq = bandSoft ? 14 : 26;
-        const bNoise = simplex.noise3D(nx * 1.5, ny * bFreq, nz * 1.5) * 0.5;
-        const bVal = Math.sin(ny * bFreq + bNoise * 3.0);
-        l += bVal * 0.08;
-        if (bVal > 0.3) s *= 1.15;
-      }
-
-      if (craters) {
-        const c1 = simplex.noise3D(nx * 18, ny * 18, nz * 18);
-        const c2 = simplex.noise3D(nx * 42, ny * 42, nz * 42);
-        if (c1 > 0.45 || c2 > 0.62) {
-          l *= 0.65; s *= 0.4;
-        }
-      }
-
-      if (poles) {
-        const pDist = Math.min(v, 1 - v);
-        if (pDist < poleSize) {
-          const mix = 1 - (pDist / poleSize);
-          const pNoise = simplex.noise3D(nx * 8, ny * 8, nz * 8) * 0.15;
-          if (mix + pNoise > 0.3) {
-            l = THREE.MathUtils.lerp(l, 0.94, Math.min(1, mix * 1.5));
-            s *= 0.2;
-          }
-        }
-      }
-
-      if (spot) {
-        const dx = u - spot.u, dy = (v - spot.v) * 2.0;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < spot.r) {
-          const sm = 1 - dist / spot.r;
-          hCol = spot.h;
-          l = THREE.MathUtils.lerp(l, spot.l, sm);
-          s = THREE.MathUtils.lerp(s, spot.s, sm);
-        }
-      }
-
-      l = Math.max(0.02, Math.min(0.98, l));
-      s = Math.max(0, Math.min(1, s));
-      const col = new THREE.Color().setHSL(hCol, s, l);
-      d[idx] = col.r * 255; d[idx + 1] = col.g * 255; d[idx + 2] = col.b * 255; d[idx + 3] = 255;
+  ctx.fillStyle = baseHex; ctx.fillRect(0, 0, w, h);
+  // bands
+  if (opts.bands) {
+    const n = opts.bandSoft ? 14 : 24;
+    for (let i = 0; i < n; i++) {
+      const y = (i / n) * h;
+      const th = h / n * (0.4 + Math.random() * 0.6);
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.1)';
+      ctx.fillRect(0, y, w, th);
     }
   }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
+  // soft blotches
+  for (let i = 0; i < 40; i++) {
+    const r = 8 + Math.random() * 28;
+    const x = Math.random() * w, y = Math.random() * h;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const dark = Math.random() > 0.5;
+    g.addColorStop(0, dark ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.12)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  // craters
+  if (opts.craters) {
+    for (let i = 0; i < 80; i++) {
+      const r = 2 + Math.random() * 9;
+      const x = Math.random() * w, y = Math.random() * h;
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.beginPath(); ctx.arc(x + 1, y + 1, r * 0.75, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // spot (Jupiter red spot)
+  if (opts.spot) {
+    const { u, v, r } = opts.spot;
+    const x = u * w, y = v * h, rad = r * h;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, 'rgba(210,60,30,0.85)');
+    g.addColorStop(0.7, 'rgba(180,40,20,0.5)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill();
+  }
+  // poles
+  if (opts.poles) {
+    const ph = h * (opts.poleSize || 0.14);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(0, 0, w, ph);
+    ctx.fillRect(0, h - ph, w, ph);
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
 }
 
-/* ---------- 5. Textura Solar HD de Granulación ---------- */
 function sunTexture() {
-  const w = 1024, h = 512;
+  const w = 512, h = 256;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-      let n = 0, amp = 1, freq = 4.0, norm = 0;
-      for (let o = 0; o < 6; o++) {
-        n += Math.abs(simplex.noise3D(nx * freq, ny * freq, nz * freq)) * amp;
-        norm += amp; amp *= 0.5; freq *= 2.1;
-      }
-      n = 1.0 - (n / norm);
-      n = Math.pow(n, 1.8);
-      const r = THREE.MathUtils.lerp(0.95, 1.0, n);
-      const gCol = THREE.MathUtils.lerp(0.35, 0.85, n);
-      const b = THREE.MathUtils.lerp(0.0, 0.25, n * n);
-      d[idx] = r * 255; d[idx + 1] = gCol * 255; d[idx + 2] = b * 255; d[idx + 3] = 255;
-    }
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#ffe600'); g.addColorStop(0.5, '#ffaa00'); g.addColorStop(1, '#ffe600');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 120; i++) {
+    const r = 4 + Math.random() * 16;
+    const x = Math.random() * w, y = Math.random() * h;
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, 'rgba(255,255,255,0.35)');
+    rg.addColorStop(1, 'rgba(255,120,0,0)');
+    ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
 }
 
-/* ---------- 6. Textura Terrestre HD con Océanos y Continentes ---------- */
-function earthShader() {
+function earthTexture() {
   const w = 1024, h = 512;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-
-      let n = 0, amp = 1, freq = 2.0, norm = 0;
-      for (let o = 0; o < 7; o++) {
-        n += simplex.noise3D(nx * freq, ny * freq, nz * freq) * amp;
-        norm += amp; amp *= 0.48; freq *= 2.05;
-      }
-      n /= norm;
-
-      let col;
-      if (n < -0.05) {
-        const depth = Math.min(1, Math.abs(n) * 2.5);
-        col = new THREE.Color().setHSL(0.58, 0.85, 0.18 + depth * 0.15);
-      } else if (n < 0.02) {
-        col = new THREE.Color(0xd4a373);
-      } else if (n < 0.35) {
-        const green = (n - 0.02) * 2.5;
-        col = new THREE.Color().setHSL(0.31, 0.65, 0.28 - green * 0.08);
-      } else {
-        col = new THREE.Color(0x8d6e63);
-      }
-
-      const pDist = Math.min(v, 1 - v);
-      if (pDist < 0.15) {
-        const mix = 1 - (pDist / 0.15);
-        if (mix > 0.2) col.lerp(new THREE.Color(0xffffff), mix);
-      }
-
-      d[idx] = col.r * 255; d[idx + 1] = col.g * 255; d[idx + 2] = col.b * 255; d[idx + 3] = 255;
-    }
+  // ocean
+  const og = ctx.createLinearGradient(0, 0, 0, h);
+  og.addColorStop(0, '#1a3d7a'); og.addColorStop(0.5, '#1c5fc9'); og.addColorStop(1, '#1a3d7a');
+  ctx.fillStyle = og; ctx.fillRect(0, 0, w, h);
+  // continents
+  ctx.fillStyle = '#3a6e3c';
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * w, y = h * 0.2 + Math.random() * h * 0.6;
+    const rx = 30 + Math.random() * 90, ry = 15 + Math.random() * 45;
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 16;
+  ctx.fillStyle = '#60853f';
+  for (let i = 0; i < 50; i++) {
+    const x = Math.random() * w, y = h * 0.25 + Math.random() * h * 0.5;
+    const rx = 20 + Math.random() * 60, ry = 10 + Math.random() * 30;
+    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#967c50';
+  for (let i = 0; i < 30; i++) {
+    const x = Math.random() * w, y = h * 0.3 + Math.random() * h * 0.4;
+    ctx.beginPath(); ctx.arc(x, y, 15 + Math.random() * 35, 0, Math.PI * 2); ctx.fill();
+  }
+  // poles
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(0, 0, w, h * 0.11);
+  ctx.fillRect(0, h * 0.89, w, h * 0.11);
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
 }
 
-/* ---------- 7. Textura de Nubes Terrestres 3D con Sombra ---------- */
-function earthCloudsTexture() {
+function cloudsTexture() {
   const w = 1024, h = 512;
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d');
-  const img = ctx.createImageData(w, h);
-  const d = img.data;
-
-  for (let y = 0; y < h; y++) {
-    const v = y / h;
-    const lat = (v - 0.5) * Math.PI;
-    const cosLat = Math.cos(lat);
-    for (let x = 0; x < w; x++) {
-      const u = x / w;
-      const lon = u * Math.PI * 2;
-      const nx = cosLat * Math.cos(lon), ny = Math.sin(lat), nz = cosLat * Math.sin(lon);
-      const idx = (y * w + x) * 4;
-
-      let cn = 0, camp = 1, cf = 3.5, cnorm = 0;
-      for (let o = 0; o < 5; o++) {
-        cn += simplex.noise3D(nx * cf + 50, ny * cf + 50, nz * cf + 50) * camp;
-        cnorm += camp; camp *= 0.5; cf *= 2.0;
-      }
-      cn /= cnorm;
-      let alpha = 0;
-      if (cn > 0.16) {
-        alpha = Math.min(255, (cn - 0.16) * 4.0 * 255);
-      }
-      d[idx] = 255; d[idx + 1] = 255; d[idx + 2] = 255; d[idx + 3] = alpha;
-    }
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for (let i = 0; i < 100; i++) {
+    const x = Math.random() * w, y = Math.random() * h;
+    const r = 15 + Math.random() * 50;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
   return tex;
+}
+
+function ringTexture(hex, innerRatio = 0.5) {
+  const w = 512, h = 1;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const col = new THREE.Color(hex);
+  ctx.clearRect(0, 0, w, h);
+  for (let x = 0; x < w; x++) {
+    const t = x / w;
+    if (t < innerRatio) continue;
+    if (t > 0.72 && t < 0.75) continue; // Cassini division
+    if (t > 0.88 && t < 0.89) continue;
+    const alpha = (0.3 + 0.65 * Math.sin((t - innerRatio) / (1 - innerRatio) * Math.PI)) * (0.6 + 0.4 * Math.random());
+    ctx.fillStyle = `rgba(${Math.floor(col.r * 255)},${Math.floor(col.g * 255)},${Math.floor(col.b * 255)},${alpha})`;
+    ctx.fillRect(x, 0, 1, 1);
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
+  return tex;
+}
+
+function diskGradientTexture() {
+  const w = 512, h = 512;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const cx = w / 2, cy = h / 2;
+  const g = ctx.createRadialGradient(cx, cy, w * 0.14, cx, cy, w * 0.5);
+  g.addColorStop(0, 'rgba(235,245,255,0.95)');
+  g.addColorStop(0.28, 'rgba(255,244,214,0.85)');
+  g.addColorStop(0.55, 'rgba(255,178,110,0.6)');
+  g.addColorStop(0.8, 'rgba(255,110,70,0.35)');
+  g.addColorStop(1, 'rgba(140,40,30,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < 160; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = w * 0.16 + Math.random() * w * 0.32;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    ctx.fillStyle = `rgba(255,255,255,${0.05 + Math.random() * 0.1})`;
+    ctx.beginPath(); ctx.arc(x, y, 1 + Math.random() * 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
+  return tex;
+}
+
+function atmosphereMesh(radius, hexColor, opacity = 0.35) {
+  const geo = new THREE.SphereGeometry(radius * 1.04, 32, 32);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      color: { value: new THREE.Color(hexColor) },
+      op: { value: opacity }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 color;
+      uniform float op;
+      varying vec3 vNormal;
+      void main() {
+        float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+        gl_FragColor = vec4(color, intensity * op);
+      }
+    `,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    depthWrite: false
+  });
+  return new THREE.Mesh(geo, mat);
+}
+
+function makeGlowMesh(radius, hexColor, opacity = 0.4) {
+  const geo = new THREE.SphereGeometry(radius, 32, 32);
+  const mat = new THREE.MeshBasicMaterial({
+    color: hexColor,
+    transparent: true,
+    opacity: opacity,
+    blending: THREE.AdditiveBlending,
+    side: THREE.BackSide
+  });
+  return new THREE.Mesh(geo, mat);
 }
 
 /* ---------- 8. Fondo Estelar Multi-Espectral y Vía Láctea ---------- */
 function createMilkyWayBackground(scene) {
-  const sCount = 7000;
+  const sCount = 14000;
   const sGeo = new THREE.BufferGeometry();
   const sPos = new Float32Array(sCount * 3);
   const sCol = new Float32Array(sCount * 3);
+  const sSiz = new Float32Array(sCount);
 
-  // Clases espectrales reales (O azulado, B, A, F, G amarillo, K, M rojizo)
-  const starColors = [
-    new THREE.Color(0x9db4ff), // O/B
-    new THREE.Color(0xbbccff), // A
-    new THREE.Color(0xfbf8ff), // F
-    new THREE.Color(0xfff4e8), // G (Sol)
-    new THREE.Color(0xffddb4), // K
-    new THREE.Color(0xffb78c)  // M
+  // Clases espectrales ponderadas por población estelar real
+  // (M rojizas más comunes, O/B azules muy raras)
+  const starTypes = [
+    { color: new THREE.Color(0x9db4ff), weight: 0.02 }, // O/B (azul, raras)
+    { color: new THREE.Color(0xbbccff), weight: 0.05 }, // A (azul-blanco)
+    { color: new THREE.Color(0xfbf8ff), weight: 0.08 }, // F (blanco)
+    { color: new THREE.Color(0xfff4e8), weight: 0.15 }, // G (amarillo, Sol)
+    { color: new THREE.Color(0xffddb4), weight: 0.25 }, // K (naranja)
+    { color: new THREE.Color(0xffb78c), weight: 0.45 }  // M (rojo, mayoritarias)
   ];
+  const cumWeights = [];
+  let tw = 0;
+  starTypes.forEach(s => { tw += s.weight; cumWeights.push(tw); });
 
   for (let i = 0; i < sCount; i++) {
-    const u = Math.random(), v = Math.random();
-    const th = u * Math.PI * 2;
-    const ph = Math.acos(2 * v - 1);
-    const r = 400 + Math.random() * 800;
-    sPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
+    const th = Math.random() * Math.PI * 2;
+
+    // 55 % concentradas en la banda de la Vía Láctea (plano galáctico)
+    // 45 % distribuidas uniformemente por toda la bóveda celeste
+    let ph;
+    if (Math.random() < 0.55) {
+      const g = (Math.random() + Math.random() + Math.random()) / 3.0;
+      ph = Math.PI / 2 + (g - 0.5) * 0.7;
+    } else {
+      ph = Math.acos(2 * Math.random() - 1);
+    }
+
+    const r = 450 + Math.random() * 850;
+    sPos[i * 3]     = r * Math.sin(ph) * Math.cos(th);
     sPos[i * 3 + 1] = r * Math.cos(ph);
     sPos[i * 3 + 2] = r * Math.sin(ph) * Math.sin(th);
 
-    const c = starColors[Math.floor(Math.random() * starColors.length)];
-    sCol[i * 3] = c.r; sCol[i * 3 + 1] = c.g; sCol[i * 3 + 2] = c.b;
+    // Selección espectral ponderada
+    const rnd = Math.random() * tw;
+    let ci = 0;
+    for (let j = 0; j < cumWeights.length; j++) {
+      if (rnd <= cumWeights[j]) { ci = j; break; }
+    }
+    const c = starTypes[ci].color;
+    const vary = 0.04;
+    sCol[i * 3]     = Math.min(1, c.r + (Math.random() - 0.5) * vary);
+    sCol[i * 3 + 1] = Math.min(1, c.g + (Math.random() - 0.5) * vary);
+    sCol[i * 3 + 2] = Math.min(1, c.b + (Math.random() - 0.5) * vary);
+
+    // Distribución de magnitudes (muchas débiles, pocas brillantes)
+    const mag = Math.pow(Math.random(), 3.0);
+    sSiz[i] = 0.2 + mag * (ci < 2 ? 2.8 : 1.6);
   }
   sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
   sGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3));
+  sGeo.setAttribute('aSize', new THREE.BufferAttribute(sSiz, 1));
 
-  const sMat = new THREE.PointsMaterial({
-    size: 0.65, vertexColors: true, map: DOT,
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  // ShaderMaterial con tamaño por vértice y centelleo sutil
+  const sMat = new THREE.ShaderMaterial({
+    uniforms: { uDot: { value: DOT } },
+    vertexShader: `
+      attribute float aSize;
+      varying vec3 vColor;
+      void main() {
+        vColor = color;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = aSize * (300.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uDot;
+      varying vec3 vColor;
+      void main() {
+        vec4 texel = texture2D(uDot, gl_PointCoord);
+        gl_FragColor = vec4(vColor * texel.rgb, texel.a);
+      }
+    `,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
   });
   const deepStars = new THREE.Points(sGeo, sMat);
   scene.add(deepStars);
@@ -642,53 +540,36 @@ function createSolarSystem(scene, focusables) {
     const orbitLine = new THREE.Line(oGeo, oMat);
     orbitsGroup.add(orbitLine);
 
-    // Texturas personalizadas
-    let tex, nTex = null, rTex = null, emTex = null;
+    // Texturas personalizadas y Material PBR limpio y realista
+    let tex;
     if (p.id === 'tierra') {
-      tex = earthShader();
-      nTex = planetNormalTexture({ mountains: true });
-      rTex = planetRoughnessTexture({ isEarth: true });
-      emTex = earthNightShader();
+      tex = earthTexture();
     } else if (p.id === 'mercurio') {
-      tex = planetTexture(0x9b9b9b, { craters: true });
-      nTex = planetNormalTexture({ craters: true });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { craters: true });
     } else if (p.id === 'venus') {
-      tex = planetTexture(0xe8c170, { bands: true, bandSoft: true });
-      nTex = planetNormalTexture({ scale: 0.3 });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { bands: true, bandSoft: true });
     } else if (p.id === 'marte') {
-      tex = planetTexture(0xef4444, { craters: true, poles: true });
-      nTex = planetNormalTexture({ craters: true, scale: 1.2 });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { craters: true, poles: true });
     } else if (p.id === 'jupiter') {
-      tex = planetTexture(0xf59e0b, {
+      tex = planetTexture(p.color, {
         bands: true, bandSoft: false,
-        spot: { u: 0.65, v: 0.68, r: 0.08, h: 0.04, s: 0.9, l: 0.45 }
+        spot: p.spot || { u: 0.65, v: 0.68, r: 0.08, h: 0.04, s: 0.9, l: 0.45 }
       });
-      rTex = planetRoughnessTexture();
     } else if (p.id === 'saturno') {
-      tex = planetTexture(0xfde047, { bands: true, bandSoft: true });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { bands: true, bandSoft: true });
     } else if (p.id === 'urano') {
-      tex = planetTexture(0x22d3ee, { bands: true, bandSoft: true });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { bands: true, bandSoft: true });
     } else if (p.id === 'neptuno') {
-      tex = planetTexture(0x2563eb, { bands: true, bandSoft: false });
-      rTex = planetRoughnessTexture();
+      tex = planetTexture(p.color, { bands: true, bandSoft: false });
+    } else {
+      tex = planetTexture(p.color, { bands: !!p.bands, bandSoft: !!p.bandSoft, craters: !!p.craters, poles: !!p.poles });
     }
 
-    const pGeo = new THREE.SphereGeometry(p.radius, 48, 48);
+    const pGeo = new THREE.SphereGeometry(p.radius, 64, 64);
     const pMat = new THREE.MeshStandardMaterial({
       map: tex,
-      normalMap: nTex,
-      normalScale: nTex ? new THREE.Vector2(0.9, 0.9) : undefined,
-      roughnessMap: rTex,
-      roughness: rTex ? 1.0 : 0.8,
-      emissiveMap: emTex,
-      emissive: emTex ? new THREE.Color(0xffffff) : new THREE.Color(0x000000),
-      emissiveIntensity: emTex ? 0.95 : 0.0,
-      metalness: 0.04
+      roughness: p.id === 'tierra' ? 0.8 : 0.92,
+      metalness: 0.05
     });
     const pMesh = new THREE.Mesh(pGeo, pMat);
     pMesh.position.set(p.dist, 0, 0);
@@ -701,11 +582,11 @@ function createSolarSystem(scene, focusables) {
 
     // Capa Independiente de Nubes 3D para la Tierra
     if (p.id === 'tierra') {
-      const cloudGeo = new THREE.SphereGeometry(p.radius * 1.015, 48, 48);
+      const cloudGeo = new THREE.SphereGeometry(p.radius * 1.015, 64, 64);
       const cloudMat = new THREE.MeshStandardMaterial({
-        map: earthCloudsTexture(),
+        map: cloudsTexture(),
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.85,
         roughness: 0.9,
         depthWrite: false
       });
@@ -716,72 +597,27 @@ function createSolarSystem(scene, focusables) {
       pMesh.userData.cloudMesh = cloudMesh;
     }
 
-    // Atmósfera Realista de Rayleigh/Fresnel para Tierra & Venus
-    if (p.id === 'tierra' || p.id === 'venus') {
-      const atmColor = p.id === 'tierra' ? 0x3b82f6 : 0xfde047;
-      const atmMat = new THREE.ShaderMaterial({
-        uniforms: {
-          c: { value: 0.28 },
-          p: { value: 4.2 },
-          glowColor: { value: new THREE.Color(atmColor) },
-          viewVector: { value: new THREE.Vector3() }
-        },
-        vertexShader: `
-          uniform vec3 viewVector;
-          uniform float c;
-          uniform float p;
-          varying float intensity;
-          void main() {
-            vec3 vNormal = normalize(normalMatrix * normal);
-            vec3 vNormel = normalize(normalMatrix * viewVector);
-            intensity = pow(c - dot(vNormal, vNormel), p);
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform vec3 glowColor;
-          varying float intensity;
-          void main() {
-            vec3 glow = glowColor * intensity;
-            gl_FragColor = vec4(glow, intensity * 0.85);
-          }
-        `,
-        side: THREE.BackSide,
-        blending: THREE.AdditiveBlending,
-        transparent: true,
-        depthWrite: false
-      });
-      const atmMesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius * 1.18, 48, 48), atmMat);
-      pMesh.add(atmMesh);
-      pMesh.userData.atmMat = atmMat;
-    }
+    // Atmósfera Realista con atmosphereMesh para todos los planetas con atmósfera
+    if (p.id === 'tierra') pMesh.add(atmosphereMesh(p.radius, 0x3b82f6, 0.38));
+    else if (p.id === 'venus') pMesh.add(atmosphereMesh(p.radius, 0xfde047, 0.45));
+    else if (p.id === 'marte') pMesh.add(atmosphereMesh(p.radius, 0xef4444, 0.25));
+    else if (p.id === 'jupiter') pMesh.add(atmosphereMesh(p.radius, 0xf59e0b, 0.28));
+    else if (p.id === 'saturno') pMesh.add(atmosphereMesh(p.radius, 0xfde047, 0.25));
+    else if (p.id === 'urano') pMesh.add(atmosphereMesh(p.radius, 0x22d3ee, 0.32));
+    else if (p.id === 'neptuno') pMesh.add(atmosphereMesh(p.radius, 0x2563eb, 0.32));
 
     // Anillos HD con División de Cassini (Saturno & Urano)
     if (p.id === 'saturno' || p.id === 'urano') {
       const inner = p.radius * 1.35;
       const outer = p.radius * (p.id === 'saturno' ? 2.5 : 1.95);
       const ringGeo = new THREE.RingGeometry(inner, outer, 80);
-      const pos = ringGeo.attributes.position;
-      const v3 = new THREE.Vector3();
-      const colors = [];
-      for (let k = 0; k < pos.count; k++) {
-        v3.fromBufferAttribute(pos, k);
-        const dist = v3.length();
-        const norm = (dist - inner) / (outer - inner);
-        let alpha = Math.sin(norm * Math.PI) * (p.id === 'saturno' ? 0.9 : 0.45);
-        // Simular división de Cassini en Saturno
-        if (p.id === 'saturno' && norm > 0.65 && norm < 0.72) {
-          alpha *= 0.12;
-        }
-        colors.push(1, 1, 1, alpha);
-      }
-      ringGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
       const ringMat = new THREE.MeshStandardMaterial({
-        color: p.id === 'saturno' ? 0xd4a373 : 0x94a3b8,
+        map: ringTexture(p.color, inner / outer),
         side: THREE.DoubleSide,
         transparent: true,
         roughness: 0.8,
-        vertexColors: true
+        metalness: 0.05,
+        opacity: 0.95
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = Math.PI / 2 + 0.35;
@@ -888,22 +724,27 @@ function createDeepSpace(scene, focusables) {
     focusables[d.id] = { mesh: pulsarMesh, data: d, mat: pMat };
   }
 
-  // 2. Agujero Negro Relativista tipo Kerr ("Gargantua") con Anillo Fotónico & Doppler Beaming
+  // 2. Agujero Negro Schwarzschild/Kerr — Disco de Acreción con Perfil Térmico
+  //    Shakura-Sunyaev, Beaming Doppler, Anillo Fotónico, Lente Gravitacional
+  //    e Imagen Lensada Secundaria (inspirado en geodésicas de Schwarzschild)
   {
     const d = DEEPSPACE.find(x => x.id === 'agujero');
-    const horizonGeo = new THREE.SphereGeometry(2.6, 64, 64);
+    const rs = 2.4;
+
+    // --- Horizonte de Eventos (esfera negra pura) ---
+    const horizonGeo = new THREE.SphereGeometry(rs, 64, 64);
     const horizonMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const eventHorizon = new THREE.Mesh(horizonGeo, horizonMat);
     eventHorizon.position.set(...d.pos);
     deepGroup.add(eventHorizon);
 
-    // Anillo Fotónico / Esfera de Fotones (ISCO Photon Ring)
-    const photonGeo = new THREE.TorusGeometry(2.72, 0.08, 32, 128);
+    // --- Halo Púrpura Exterior (Sincrotrón) ---
+    eventHorizon.add(makeGlowMesh(rs * 1.42, 0xa78bfa, 0.18));
+
+    // --- Anillo Fotónico Principal (Photon Ring at ~1.5 rs) ---
+    const photonGeo = new THREE.TorusGeometry(rs * 1.5, 0.022, 32, 256);
     const photonMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uColor: { value: new THREE.Color(0xe0f7ff) }
-      },
+      uniforms: { uTime: { value: 0 } },
       vertexShader: `
         varying vec3 vPos;
         void main() {
@@ -913,154 +754,228 @@ function createDeepSpace(scene, focusables) {
       `,
       fragmentShader: `
         uniform float uTime;
-        uniform vec3 uColor;
         varying vec3 vPos;
         void main() {
-          float pulse = 0.85 + 0.15 * sin(uTime * 4.0);
-          gl_FragColor = vec4(uColor * pulse * 2.8, 0.95);
+          float pulse = 0.82 + 0.18 * sin(uTime * 4.5 + vPos.x * 10.0);
+          vec3 col = vec3(1.0, 0.97, 0.88) * pulse * 3.2;
+          gl_FragColor = vec4(col, 0.95);
         }
       `,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
       transparent: true,
+      blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     const photonRing = new THREE.Mesh(photonGeo, photonMat);
+    photonRing.rotation.x = Math.PI / 2 - 0.35;
     eventHorizon.add(photonRing);
 
-    // Anillos de Einstein (Lentes Gravitacionales Superior e Inferior)
-    const lensGeo = new THREE.TorusGeometry(3.6, 0.48, 48, 160, Math.PI);
-    const lensMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uColorHot: { value: new THREE.Color(0xffffff) },
-        uColorCold: { value: new THREE.Color(0xff3300) }
-      },
-      vertexShader: `
-        varying vec3 vPos;
-        varying vec2 vUv;
-        void main() {
-          vPos = position;
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColorHot;
-        uniform vec3 uColorCold;
-        varying vec3 vPos;
-        varying vec2 vUv;
-        void main() {
-          float beam = smoothstep(-3.6, 3.6, vPos.x);
-          vec3 col = mix(uColorCold, uColorHot, pow(beam, 1.4));
-          float edge = sin(vUv.y * 3.14159);
-          gl_FragColor = vec4(col * (1.8 + beam * 1.6) * edge, 0.95);
-        }
-      `,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      transparent: true,
-      depthWrite: false
-    });
-    const upperLens = new THREE.Mesh(lensGeo, lensMat);
-    upperLens.rotation.x = Math.PI / 2;
-    eventHorizon.add(upperLens);
+    // Segundo anillo fotónico (secondary, más delgado y tenue)
+    const photon2Geo = new THREE.TorusGeometry(rs * 1.35, 0.01, 16, 256);
+    const photon2 = new THREE.Mesh(photon2Geo, photonMat.clone());
+    photon2.rotation.x = Math.PI / 2 - 0.35;
+    eventHorizon.add(photon2);
 
-    const lowerLens = new THREE.Mesh(lensGeo, lensMat);
-    lowerLens.rotation.x = -Math.PI / 2;
-    lowerLens.rotation.z = Math.PI;
-    eventHorizon.add(lowerLens);
-
-    // Disco de Acreción Relativista de Kerr con Doppler Beaming y Turbulencia MRI
-    const diskGeo = new THREE.RingGeometry(2.9, 12.0, 180, 16);
-    const pos = diskGeo.attributes.position;
-    const colors = [];
-    const v3 = new THREE.Vector3();
-    for (let i = 0; i < pos.count; i++) {
-      v3.fromBufferAttribute(pos, i);
-      const dist = v3.length();
-      const norm = (dist - 2.9) / (12.0 - 2.9);
-      const alpha = Math.sin(Math.pow(1 - norm, 0.7) * Math.PI) * 0.95;
-      colors.push(1, 1, 1, alpha);
-    }
-    diskGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
-
+    // --- Disco de Acreción Relativista con Perfil Térmico Shakura-Sunyaev,
+    //     Beaming Doppler y Turbulencia Espiral (ShaderMaterial) ---
+    const diskInnerR = rs * 1.5;
+    const diskOuterR = rs * 5.0;
+    const diskGeo = new THREE.RingGeometry(diskInnerR, diskOuterR, 256, 8);
     const diskMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uColorHot: { value: new THREE.Color(0xffffff) },
-        uColorMid: { value: new THREE.Color(0xffaa00) },
-        uColorFar: { value: new THREE.Color(0x881100) }
-      },
+      uniforms: { uTime: { value: 0 } },
       vertexShader: `
-        attribute vec4 color;
-        varying vec4 vColor;
         varying vec3 vPos;
-        varying vec2 vUv;
         void main() {
-          vColor = color;
           vPos = position;
-          vUv = uv;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         uniform float uTime;
-        uniform vec3 uColorHot;
-        uniform vec3 uColorMid;
-        uniform vec3 uColorFar;
-        varying vec4 vColor;
         varying vec3 vPos;
-        varying vec2 vUv;
-
-        float noise(vec2 p) {
-          return sin(p.x * 12.0 + uTime * 4.0) * cos(p.y * 12.0 - uTime * 3.0) * 0.5 + 0.5;
+        float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+        float noise(vec2 p){
+          vec2 i=floor(p);vec2 f=fract(p);
+          f=f*f*(3.0-2.0*f);
+          return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),
+                     mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
         }
-
-        void main() {
-          float dist = length(vPos.xy);
-          float radNorm = clamp((dist - 2.9) / (12.0 - 2.9), 0.0, 1.0);
-          float doppler = smoothstep(-12.0, 12.0, vPos.x);
-
-          // Factor Doppler relativista asimétrico de Kerr
-          float beaming = pow(doppler, 1.7) * 2.6 + 0.4;
-
-          vec3 baseCol = mix(uColorFar, uColorMid, pow(1.0 - radNorm, 0.8));
-          baseCol = mix(baseCol, uColorHot, pow(beaming, 1.5) * (1.0 - radNorm * 0.4));
-
-          float angle = atan(vPos.y, vPos.x);
-          float spiral = sin(radNorm * 38.0 - uTime * 5.0 + angle * 3.0) * 0.5 + 0.5;
-          float n = noise(vPos.xy * 0.7);
-          float detail = mix(0.65, 1.35, spiral * 0.6 + n * 0.4);
-
-          float alpha = vColor.a * detail * clamp(0.35 + doppler * 0.85, 0.0, 1.0);
-          gl_FragColor = vec4(baseCol * detail * beaming * 1.4, alpha);
+        float fbm(vec2 p){
+          float v=0.0,a=0.5;
+          for(int i=0;i<5;i++){v+=a*noise(p);p*=2.1;a*=0.5;}
+          return v;
+        }
+        void main(){
+          float r=length(vPos.xz);
+          float theta=atan(vPos.z,vPos.x);
+          float innerR=3.6;
+          float outerR=12.0;
+          float t=clamp((r-innerR)/(outerR-innerR),0.0,1.0);
+          // Perfil térmico Shakura-Sunyaev: T ~ (1-sqrt(r_isco/r))^(1/4)
+          float temp=pow(max(0.0,1.0-sqrt(innerR/max(r,0.001))),0.25);
+          // Paleta de color por temperatura de cuerpo negro
+          vec3 hotCol =vec3(0.75,0.85,1.0);   // Azul-blanco (interior, >10000K)
+          vec3 warmCol=vec3(1.0,0.92,0.65);    // Amarillo-blanco
+          vec3 coolCol=vec3(1.0,0.45,0.08);    // Naranja
+          vec3 coldCol=vec3(0.6,0.12,0.02);    // Rojo oscuro (exterior)
+          vec3 diskColor;
+          if(t<0.12) diskColor=mix(hotCol,warmCol,t/0.12);
+          else if(t<0.4) diskColor=mix(warmCol,coolCol,(t-0.12)/0.28);
+          else diskColor=mix(coolCol,coldCol,(t-0.4)/0.6);
+          // Movimiento orbital + Beaming Doppler Relativista
+          float orbTheta=theta+uTime*0.6;
+          float doppler=1.0+0.55*cos(orbTheta);
+          float dShift=0.15*cos(orbTheta);
+          diskColor.b+=dShift*(1.0-t);
+          diskColor.r-=dShift*0.3;
+          diskColor*=doppler;
+          // Turbulencia espiral (subestructura del disco)
+          float spiral=theta*3.0-r*2.0+uTime*0.5;
+          float turb=fbm(vec2(spiral,r*12.0));
+          float turb2=fbm(vec2(theta*6.0+uTime*0.2,r*18.0+uTime*0.1));
+          diskColor*=0.65+turb*0.5+turb2*0.2;
+          // Perfil de brillo con caída radial
+          float brightness=(1.0-t*0.65)*doppler;
+          brightness*=smoothstep(outerR,outerR-outerR*0.2,r);
+          brightness*=smoothstep(innerR-innerR*0.1,innerR+innerR*0.3,r);
+          gl_FragColor=vec4(diskColor*brightness*2.5,clamp(brightness*0.92,0.0,1.0));
         }
       `,
       side: THREE.DoubleSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const disk = new THREE.Mesh(diskGeo, diskMat);
+    disk.rotation.x = Math.PI / 2 - 0.35;
+    eventHorizon.add(disk);
+
+    // --- Imagen Lensada del Disco (Secondary Gravitationally Lensed Image) ---
+    // Luz del lado lejano del disco curvada por la gravedad del agujero negro
+    const lensedInner = rs * 1.15;
+    const lensedOuter = rs * 2.8;
+    const lensedGeo = new THREE.RingGeometry(lensedInner, lensedOuter, 256, 4);
+    const lensedMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying vec3 vPos;
+        void main() {
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec3 vPos;
+        float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+        float noise(vec2 p){
+          vec2 i=floor(p);vec2 f=fract(p);
+          f=f*f*(3.0-2.0*f);
+          return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),
+                     mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
+        }
+        void main(){
+          float r=length(vPos.xz);
+          float theta=atan(vPos.z,vPos.x)+uTime*0.6;
+          float lIn=2.76;
+          float lRange=3.96;
+          float t=clamp((r-lIn)/lRange,0.0,1.0);
+          vec3 col=mix(vec3(1.0,0.95,0.82),vec3(1.0,0.4,0.1),t);
+          float doppler=1.0+0.4*cos(theta);
+          float turb=0.7+0.3*noise(vec2(theta*5.0,r*15.0));
+          float brightness=(1.0-t*0.5)*doppler*turb*0.6;
+          gl_FragColor=vec4(col*brightness*2.0,clamp(brightness*0.7,0.0,1.0));
+        }
+      `,
+      side: THREE.DoubleSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const lensedDisk = new THREE.Mesh(lensedGeo, lensedMat);
+    lensedDisk.rotation.x = -(Math.PI / 2 - 0.35);
+    lensedDisk.rotation.z = Math.PI;
+    eventHorizon.add(lensedDisk);
+
+    // --- Anillo de Einstein / Halo de Lente Gravitacional ---
+    const einsteinGeo = new THREE.SphereGeometry(rs * 1.12, 64, 64);
+    const einsteinMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPos;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying vec3 vNormal;
+        varying vec3 vPos;
+        void main() {
+          float rim = 1.0 - abs(vNormal.z);
+          // Anillo fotónico fino y brillante en el borde de la silueta
+          float ring = pow(rim, 6.0) * 4.0;
+          // Resplandor cálido amplio
+          float glow = pow(rim, 2.5) * 0.8;
+          // Intensificación ecuatorial (contribución del plano del disco)
+          float equatorial = (1.0 - abs(vNormal.y)) * pow(rim, 3.0) * 2.0;
+          float intensity = (ring + glow + equatorial) * (0.9 + 0.1 * sin(uTime * 3.0 + vPos.x * 4.0));
+          vec3 col = mix(vec3(1.0, 0.55, 0.15), vec3(1.0, 0.97, 0.9), clamp(intensity * 0.3, 0.0, 1.0));
+          gl_FragColor = vec4(col * intensity, clamp(intensity, 0.0, 0.96));
+        }
+      `,
+      side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
       transparent: true,
       depthWrite: false
     });
+    const einsteinHalo = new THREE.Mesh(einsteinGeo, einsteinMat);
+    eventHorizon.add(einsteinHalo);
 
-    const disk = new THREE.Mesh(diskGeo, diskMat);
-    disk.rotation.x = Math.PI / 2 + 0.28;
-    disk.rotation.y = 0.15;
-    eventHorizon.add(disk);
-
-    // Chorros Polares Relativistas de Sincrotrón
-    const jetGeo = new THREE.CylinderGeometry(0.12, 2.6, 60, 32, 1, true);
-    jetGeo.translate(0, 30, 0);
-    const jetMat = new THREE.MeshBasicMaterial({
-      color: 0xcceeff, transparent: true, opacity: 0.45,
-      blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false
+    // --- Chorros Relativistas Mejorados con Gradiente y Pulsación ---
+    const jetLen = 35;
+    const jetGeoUp = new THREE.CylinderGeometry(0.06, 2.0, jetLen, 32, 1, true);
+    jetGeoUp.translate(0, jetLen / 2, 0);
+    const jetMat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      vertexShader: `
+        varying float vAlpha;
+        varying vec3 vPos;
+        void main() {
+          vPos = position;
+          vAlpha = clamp(1.0 - abs(position.y) / 17.5, 0.0, 1.0);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        varying float vAlpha;
+        varying vec3 vPos;
+        void main() {
+          float pulse = 0.7 + 0.3 * sin(vPos.y * 2.0 - uTime * 5.0);
+          vec3 col = mix(vec3(0.6, 0.8, 1.0), vec3(0.3, 0.5, 1.0), vAlpha) * pulse;
+          gl_FragColor = vec4(col, vAlpha * 0.35 * pulse);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
     });
-    const jetTop = new THREE.Mesh(jetGeo, jetMat);
-    const jetBot = new THREE.Mesh(jetGeo, jetMat);
+    const jetTop = new THREE.Mesh(jetGeoUp, jetMat);
+    const jetBot = new THREE.Mesh(jetGeoUp, jetMat);
     jetBot.rotation.z = Math.PI;
     eventHorizon.add(jetTop);
     eventHorizon.add(jetBot);
 
-    focusables[d.id] = { mesh: eventHorizon, data: d, diskMat, lensMat, photonMat };
+    focusables[d.id] = {
+      mesh: eventHorizon, data: d,
+      disk, lensedDisk, photonRing,
+      einsteinMat, diskMat, lensedMat, photonMat, jetMat,
+      mat: einsteinMat
+    };
   }
 
   // 3. Gigante Roja
