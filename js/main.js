@@ -789,6 +789,37 @@ if (btnDriftEl) btnDriftEl.onclick = toggleDriftMode;
 document.getElementById('btnKiosk').onclick = toggleKioskMode;
 document.getElementById('btnTours').onclick = openToursModal;
 document.getElementById('btnQuiz').onclick = openQuizModal;
+
+function openGrrtSimulation() {
+  const grrtOverlay = document.getElementById('grrtOverlay');
+  const grrtIframe = document.getElementById('grrtIframe');
+  if (grrtIframe && grrtOverlay) {
+    grrtIframe.src = './simulador-grrt/index.html';
+    grrtOverlay.classList.add('show');
+    showToast('⚛️ Motor Raytracing Binet (GRRT) Iniciado', 3000);
+  }
+}
+
+function closeGrrtSimulation() {
+  const grrtOverlay = document.getElementById('grrtOverlay');
+  const grrtIframe = document.getElementById('grrtIframe');
+  if (grrtOverlay) {
+    grrtOverlay.classList.remove('show');
+  }
+  if (grrtIframe) {
+    grrtIframe.src = '';
+  }
+}
+
+const btnGrrtEl = document.getElementById('btnGrrt');
+if (btnGrrtEl) btnGrrtEl.onclick = openGrrtSimulation;
+
+const btnOpenGrrtPanelEl = document.getElementById('btnOpenGrrtPanel');
+if (btnOpenGrrtPanelEl) btnOpenGrrtPanelEl.onclick = openGrrtSimulation;
+
+const btnCloseGrrtEl = document.getElementById('btnCloseGrrt');
+if (btnCloseGrrtEl) btnCloseGrrtEl.onclick = closeGrrtSimulation;
+
 document.getElementById('closeInfoBtn').onclick = closeInfoPanel;
 
 document.getElementById('tourPrevBtn').onclick = tourPrev;

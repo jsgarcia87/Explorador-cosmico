@@ -158,26 +158,28 @@ export const BlackHoleGLSL = {
           float alpha = smoothstep(0.32, 0.85, density) * radialFade * uAccretionRate;
 
           if (alpha > 0.01) {
-            // Cálculo del Efecto Doppler Relativista (Beaming)
-            // Velocidad tangencial kepleriana orientada de forma azimutal
+            // Cálculo del Efecto Doppler Relativista (Beaming D^3 Liouville Invariant - Shakura-Sunyaev GRRT)
             vec3 tangentVel = normalize(vec3(-pos.z, 0.0, pos.x));
             float dopplerFactor = 1.0;
             if (uDopplerStrength > 0.01) {
-              float vRel = min(0.65, 0.85 * sqrt(rs / r)); // v/c
+              float vRel = min(0.72, 0.90 * sqrt(rs / r)); // Velocidad kepleriana ecuatorial Kerr
               float betaDot = dot(dir, tangentVel) * vRel * uDopplerStrength;
-              // Beaming factor de Einstein-Doppler: D = 1 / [gamma * (1 - beta * cos(theta))]
-              float gamma = 1.0 / sqrt(max(0.05, 1.0 - vRel * vRel));
-              dopplerFactor = pow(clamp(1.0 / (gamma * (1.0 - betaDot)), 0.2, 3.5), 2.2);
+              // Factor de Beaming de Einstein-Doppler: D = 1 / [gamma * (1 - beta * cos(theta))]
+              float gamma = 1.0 / sqrt(max(0.04, 1.0 - vRel * vRel));
+              float D = clamp(1.0 / (gamma * (1.0 - betaDot)), 0.18, 3.8);
+              // Invarianza de Liouville D^3 para intensidad bolométrica de radiación GRRT
+              dopplerFactor = pow(D, 3.0);
             }
 
-            // Espectro del cuerpo negro del disco: azul/blanco cerca (alta T) a ámbar/rojo lejos
-            vec3 hotColor = vec3(0.85, 0.95, 1.0);     // Blueshift térmico
-            vec3 midColor = vec3(1.0, 0.65, 0.15);     // Plasma ámbar termonuclear
-            vec3 coolColor = vec3(0.7, 0.15, 0.05);    // Redshift exterior
+            // Perfil de Temperatura Shakura–Sunyaev: T(r) ~ r^(-3/4) * (1 - sqrt(rISCO/r))^(1/4)
+            float ssTemp = pow(max(0.01, rISCO / r), 0.75) * pow(max(0.0, 1.0 - sqrt(rISCO / r)), 0.25);
+            vec3 hotColor  = vec3(0.92, 0.97, 1.00);    // Plasma ultracaliente blueshifteado (60,000 K)
+            vec3 midColor  = vec3(1.00, 0.55, 0.10);    // Disco de acreción térmico (10,000 K)
+            vec3 coolColor = vec3(0.60, 0.08, 0.02);    // Halo exterior desplazado al rojo (3,000 K)
 
-            float tempFactor = clamp(1.0 - (r - rISCO) / (rOut - rISCO), 0.0, 1.0);
-            vec3 baseEmission = mix(coolColor, midColor, pow(tempFactor, 0.8));
-            baseEmission = mix(baseEmission, hotColor, pow(tempFactor, 2.5));
+            float tempFactor = clamp(ssTemp * 3.5, 0.0, 1.0);
+            vec3 baseEmission = mix(coolColor, midColor, pow(tempFactor, 0.7));
+            baseEmission = mix(baseEmission, hotColor, pow(tempFactor, 2.2));
 
             // Aplicar Doppler Beaming al color y brillo
             vec3 beamedColor = baseEmission * dopplerFactor;

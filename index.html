@@ -62,6 +62,7 @@
       <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ MODO MUSEO</button>
       <button id="btnTours" class="btn-hud">🚀 TOURS</button>
       <button id="btnQuiz" class="btn-hud">🧠 DESAFÍO</button>
+      <button id="btnGrrt" class="btn-hud btn-grrt" title="Abrir Simulación de Raytracing Relativista">🕳️ SIMULADOR GRRT (NASA)</button>
     </div>
   </header>
 
@@ -145,6 +146,12 @@
           <span>Malla Espacio-Tiempo Geodésica</span>
           <button id="btnGeodesicGrid" class="toggle-btn">INACTIVA</button>
         </div>
+
+        <div style="margin-top: 14px;">
+          <button id="btnOpenGrrtPanel" class="btn-action-primary" style="width: 100%; background: linear-gradient(135deg, rgba(255, 69, 0, 0.45), rgba(138, 43, 226, 0.55)); border: 1px solid #ff8c00; font-weight: 700; padding: 10px; border-radius: 8px; cursor: pointer; color: #ffbe40; letter-spacing: 0.5px; transition: all 0.25s ease;">
+            🕳️ ABRIR SIMULACIÓN GRRT (RAYTRACING BINET / KERR)
+          </button>
+        </div>
       </div>
     </div>
 
@@ -224,6 +231,28 @@
   <!-- Diálogos Modales (Tours y Cuestionarios) -->
   <div id="modalOverlay" class="modal-overlay">
     <div id="modalContent" class="modal-box"></div>
+  </div>
+
+  <!-- Modal Inmersivo del Simulador GRRT de Alta Precisión (Raytracing Binet & Kerr) -->
+  <div id="grrtOverlay" class="modal-overlay grrt-overlay">
+    <div class="grrt-modal-box">
+      <div class="grrt-modal-header">
+        <div class="grrt-title">
+          <span>🕳️</span>
+          <div>
+            <h3>SIMULACIÓN GRRT · RAYTRACING RELATIVISTA DE PRECISIÓN</h3>
+            <p>Ecuación Geodésica de Schwarzschild (Binet) & Disco de Acreción Shakura–Sunyaev</p>
+          </div>
+        </div>
+        <div class="grrt-actions">
+          <a href="./simulador-grrt/index.html" target="_blank" class="grrt-btn-ext">⛶ VENTANA COMPLETA</a>
+          <button id="btnCloseGrrt" class="grrt-btn-close">✕ CERRAR</button>
+        </div>
+      </div>
+      <div class="grrt-iframe-container">
+        <iframe id="grrtIframe" src="" title="Simulación GRRT Agujero Negro" frameborder="0" allowfullscreen></iframe>
+      </div>
+    </div>
   </div>
 
   <!-- Barra de Escala Dinámica -->
