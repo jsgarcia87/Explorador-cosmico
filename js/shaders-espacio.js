@@ -4,6 +4,9 @@
    Sol de Plasma GLSL, Gargantua Relativista y Fondo Estelar Multi-Espectral
    ========================================================================= */
 
+import * as THREE from 'three';
+import { PLANETS, DEEPSPACE, CONSTELLATIONS } from './datos-cosmicos.js';
+
 /* ---------- Texturas Auxiliares HD de Brillo y Punto Gaussiano ---------- */
 function glowTexture(hex) {
   const size = 512;
@@ -366,7 +369,7 @@ function makeGlowMesh(radius, hexColor, opacity = 0.4) {
 }
 
 /* ---------- 8. Fondo Estelar Multi-Espectral y Vía Láctea ---------- */
-function createMilkyWayBackground(scene) {
+export function createMilkyWayBackground(scene) {
   const isMobile = window.innerWidth < 768;
   const sCount = isMobile ? 12000 : 35000;
   const sGeo = new THREE.BufferGeometry();
@@ -477,7 +480,7 @@ function createMilkyWayBackground(scene) {
 }
 
 /* ---------- 8.5 Sistema de Constelaciones Reales con Líneas y Estrellas en la Bóveda ---------- */
-function createConstellationsSystem(scene, focusables) {
+export function createConstellationsSystem(scene, focusables) {
   const constellationsGroup = new THREE.Group();
   scene.add(constellationsGroup);
 
@@ -561,7 +564,7 @@ function createConstellationsSystem(scene, focusables) {
 }
 
 /* ---------- Creación del Sistema Solar HD con Shaders PBR ---------- */
-function createSolarSystem(scene, focusables) {
+export function createSolarSystem(scene, focusables) {
   const planetsGroup = new THREE.Group();
   const orbitsGroup = new THREE.Group();
   scene.add(planetsGroup);
@@ -827,7 +830,7 @@ function createSolarSystem(scene, focusables) {
 }
 
 /* ---------- Creación del Universo Profundo HD ---------- */
-function createDeepSpace(scene, focusables) {
+export function createDeepSpace(scene, focusables) {
   const deepGroup = new THREE.Group();
   scene.add(deepGroup);
 

@@ -3,7 +3,7 @@
    Incluye: PLANETS, DEEPSPACE, QUIZ, TOURS didácticos, Niveles (Primaria/Secundaria/Avanzado)
    ========================================================================= */
 
-const PLANETS = [
+export const PLANETS = [
   {
     id: 'sol', name: 'El Sol', type: 'Estrella enana amarilla (G2V)',
     radius: 4.8, dist: 0, speed: 0, color: 0xffaa00,
@@ -159,7 +159,7 @@ const PLANETS = [
   }
 ];
 
-const DEEPSPACE = [
+export const DEEPSPACE = [
   {
     id: 'agujero',
     name: 'Agujero Negro Relativista ("Gargantua")',
@@ -169,6 +169,14 @@ const DEEPSPACE = [
     spectralClass: 'Accretion X-Ray / UV Continuum',
     keplerianVelocity: '0.45c - 0.72c (ISCO)',
     density: 'Singularidad + Disco (10^-8 g/cm³)',
+    relativityParams: {
+      mass: 1.0,
+      accretionRate: 1.2,
+      inclination: 0.15,
+      dopplerStrength: 1.35,
+      lensingEnabled: 1.0,
+      showGeodesicGrid: 0.0
+    },
     desc: 'Un agujero negro relativista modelado con precisión astrofísica. Su inmenso campo gravitatorio curva el espacio-tiempo, doblando la trayectoria de la luz en un Anillo de Einstein y acelerando su disco de acreción hasta temperaturas de rayos X con efecto Doppler relativista (beaming).',
     descLevels: {
       primaria: '¡Es el objeto con más fuerza de atracción del universo! Su gravedad es tan poderosa que ni siquiera la luz puede escapar. A su alrededor hay un disco de gas caliente brillando.',
@@ -346,7 +354,7 @@ const DEEPSPACE = [
   }
 ];
 
-const CONSTELLATIONS = [
+export const CONSTELLATIONS = [
   {
     id: 'ursamajor', name: 'Osa Mayor (Ursa Major)', type: 'Constelación & Guía de Navegación',
     pos: [-220, 240, -320], color: 0x818cf8,
@@ -648,7 +656,7 @@ const CONSTELLATIONS = [
   }
 ];
 
-const TOURS = {
+export const TOURS = {
   estrellas: {
     title: 'El Ciclo de Vida de las Estrellas',
     desc: 'Un viaje a través de las etapas evolutivas estelares: desde el nacimiento en discos protoplanetarios y el esplendor en secuencia principal hasta sus destinos relativistas.',
@@ -715,7 +723,7 @@ const TOURS = {
   }
 };
 
-const QUIZ = [
+export const QUIZ_QUESTIONS = [
   {
     q: '¿Qué planeta tiene un día que dura más que su propio año?',
     opts: ['Venus', 'Mercurio', 'Marte', 'Júpiter'],
@@ -801,4 +809,7 @@ const QUIZ = [
     exp: 'El Lóbulo de Roche define la región gravitacional propia de cada estrella en un sistema binario. Si una estrella se expande más allá de ese límite, transfiere materia a su compañera a través del punto de Lagrange L1.'
   }
 ];
+
+export const QUIZ = QUIZ_QUESTIONS;
+export const EDU_LEVELS = ['primaria', 'secundaria', 'avanzado'];
 

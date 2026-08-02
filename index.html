@@ -3,9 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Explorador Cósmico — HD & Modo Didáctico de Museo</title>
-  <!-- Estilos Visuales Modulares -->
-  <link rel="stylesheet" href="css/estilos.css?v=3">
+  <title>Explorador Cósmico — Simulador Astrofísico Grado NASA/ESA</title>
+  <!-- Tipografía Moderna de Google Fonts para Telemetría y Científica -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Estilos Visuales Sci-Fi Premium -->
+  <link rel="stylesheet" href="css/estilos.css?v=4">
   <!-- Bibliotecas externas de Three.js y SimplexNoise -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -25,33 +29,37 @@
   <div id="loading">
     <div class="loader-spinner"></div>
     <h1>EXPLORADOR CÓSMICO</h1>
-    <p>Cargando Shaders Volumétricos, Astros HD y Módulos Didácticos...</p>
+    <p>Inicializando Motor Astrofísico Relativista & Shaders Volumétricos...</p>
+    <div class="loading-badge">GRADO NASA / ESA · MÉTRICA KERR v2.4</div>
   </div>
 
   <!-- Cabecera y Controles HUD Superiores -->
   <header>
     <div class="title-area">
-      <div class="logo-icon">🪐</div>
+      <div class="logo-icon">🌌</div>
       <div>
         <h1>EXPLORADOR CÓSMICO</h1>
-        <div class="subtitle">Simulador Astrofísico para Museos & Colegios</div>
+        <div class="subtitle">Simulador Astrofísico · Relatividad General & PBR</div>
+      </div>
+      <div class="dsn-badge">
+        <span class="pulse-dot"></span> DSN TELEMETRY: ONLINE
       </div>
       <div id="kioskBadge" class="kiosk-badge">🏛️ Modo Museo: ACTIVO</div>
     </div>
 
     <!-- Pestañas de Navegación de Modo -->
     <div class="mode-switch">
-      <button id="btnSolar" class="mode-btn active">☀ Sistema Solar</button>
-      <button id="btnDeep" class="mode-btn">🌌 Universo Profundo</button>
-      <button id="btnConstelaciones" class="mode-btn">✨ Constelaciones</button>
+      <button id="btnSolar" class="mode-btn active">☀ SISTEMA SOLAR</button>
+      <button id="btnDeep" class="mode-btn">🌌 UNIVERSO PROFUNDO</button>
+      <button id="btnConstelaciones" class="mode-btn">✨ CONSTELACIONES</button>
     </div>
 
     <!-- Botones de Acción Didácticos -->
     <div class="header-actions">
-      <button id="btnDriftTop" class="btn-hud">🛸 Deriva Telescópica</button>
-      <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ Modo Museo</button>
-      <button id="btnTours" class="btn-hud">🚀 Tours Didácticos</button>
-      <button id="btnQuiz" class="btn-hud">🧠 Desafío Astrofísico</button>
+      <button id="btnDriftTop" class="btn-hud">🛸 DERIVA CAM</button>
+      <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ MODO MUSEO</button>
+      <button id="btnTours" class="btn-hud">🚀 TOURS</button>
+      <button id="btnQuiz" class="btn-hud">🧠 DESAFÍO</button>
     </div>
   </header>
 
@@ -62,13 +70,13 @@
     <div id="badgeQuiz" class="badge">🏆 Sabio Astrofísico</div>
   </div>
 
-  <!-- Panel Informativo Lateral con Glassmorphism -->
+  <!-- Panel Informativo Lateral con Glassmorphism Sci-Fi -->
   <aside id="infoPanel" class="info-panel">
     <div class="drawer-handle"></div>
     <div class="info-header">
       <div>
-        <div id="infoType" class="info-type">Planeta rocoso</div>
-        <h2 id="infoTitle" class="info-title">Marte</h2>
+        <div id="infoType" class="info-type">Singularidad Gravitacional</div>
+        <h2 id="infoTitle" class="info-title">Gargantua</h2>
       </div>
       <button id="closeInfoBtn" class="close-btn">✖</button>
     </div>
@@ -82,17 +90,63 @@
 
     <!-- 2. Comparador Visual de Escalas vs. Tierra / Sol -->
     <div id="scaleComparator" class="scale-comparator">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="scale-header-row">
         <span class="scale-comparator-title">⚖️ Comparador de Escala</span>
-        <span id="scaleRefBadge" class="scale-badge">Ref: Tierra</span>
+        <span id="scaleRefBadge" class="scale-badge">Ref: Sol</span>
       </div>
       <div class="scale-metrics">
-        <span id="scaleSizeText">1.0x tamaño de referencia</span>
-        <span id="scaleMassText">1.0x masa de referencia</span>
+        <span id="scaleSizeText">1.0x diámetro solar</span>
+        <span id="scaleMassText">4.3 M masas solares</span>
       </div>
     </div>
 
-    <!-- Panel de Telemetría Astrofísica NASA en Tiempo Real -->
+    <!-- 3. NUEVO: Panel de Control de Relatividad General para Agujero Negro (Gargantua) -->
+    <div id="relativityControls" class="relativity-controls" style="display:none;">
+      <div class="relativity-header">
+        <span class="relativity-title">⚛️ PARÁMETROS RELATIVISTAS DE GARGANTUA</span>
+        <span class="relativity-tag">MÉTRICA KERR</span>
+      </div>
+      <div class="relativity-grid">
+        <div class="param-row">
+          <div class="param-label-row">
+            <span>Masa Gravitacional (M_☉)</span>
+            <span id="valMass" class="param-val">1.00 M_☉</span>
+          </div>
+          <input type="range" id="sliderMass" min="0.5" max="3.0" step="0.05" value="1.0">
+        </div>
+
+        <div class="param-row">
+          <div class="param-label-row">
+            <span>Tasa de Acreción (ρ)</span>
+            <span id="valAccretion" class="param-val">1.20</span>
+          </div>
+          <input type="range" id="sliderAccretion" min="0.2" max="2.5" step="0.05" value="1.2">
+        </div>
+
+        <div class="param-row">
+          <div class="param-label-row">
+            <span>Inclinación Disco (θ)</span>
+            <span id="valInclination" class="param-val">0.15 rad</span>
+          </div>
+          <input type="range" id="sliderInclination" min="-1.57" max="1.57" step="0.05" value="0.15">
+        </div>
+
+        <div class="param-row">
+          <div class="param-label-row">
+            <span>Doppler Beaming (v/c)</span>
+            <span id="valDoppler" class="param-val">1.35x</span>
+          </div>
+          <input type="range" id="sliderDoppler" min="0.0" max="2.0" step="0.05" value="1.35">
+        </div>
+
+        <div class="param-toggle-row">
+          <span>Malla Espacio-Tiempo Geodésica</span>
+          <button id="btnGeodesicGrid" class="toggle-btn">INACTIVA</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Panel de Telemetría Astrofísica NASA en Tiempo Real -->
     <div id="nasaTelemetryHud" class="nasa-telemetry-hud" style="display:none;">
       <div class="telemetry-header">
         <span>🛰️ TELEMETRÍA ASTROFÍSICA NASA</span>
@@ -126,13 +180,13 @@
       </div>
     </div>
 
-    <!-- Descripción Científica Adaptable al Nivel -->
-    <p id="infoDesc" style="font-size:14.5px; line-height:1.6; color:#e2e8f0; margin-bottom:16px;"></p>
+    <!-- 5. Descripción Científica Adaptable al Nivel -->
+    <p id="infoDesc" class="info-desc"></p>
 
-    <!-- Lista de Hechos Clave -->
+    <!-- 6. Lista de Hechos Clave -->
     <ul id="infoFacts" class="info-facts"></ul>
 
-    <!-- Dato Curioso / Fun Fact -->
+    <!-- 7. Dato Curioso / Fun Fact -->
     <div id="infoFun" class="info-fun"></div>
   </aside>
 
@@ -145,12 +199,12 @@
     <div class="tour-controls">
       <button id="tourPrevBtn" class="btn-hud">← Anterior</button>
       <button id="tourNextBtn" class="btn-hud">Siguiente →</button>
-      <button id="tourExitBtn" class="btn-hud" style="background:rgba(239,68,68,0.25); border-color:#f87171;">Salir ✖</button>
+      <button id="tourExitBtn" class="btn-hud btn-exit">Salir ✖</button>
     </div>
   </div>
 
   <!-- Barra Inferior HUD: Botones de Velocidad & Planetas/Astros -->
-  <div class="bottom-bar" style="flex-direction:column; align-items:center; gap:10px;">
+  <div class="bottom-bar">
     <div class="speed-controls">
       <button id="btnSpeed0" class="speedbtn">⏸ Pausa</button>
       <button id="btnSpeed1" class="speedbtn active">▶ 1x</button>
@@ -160,7 +214,7 @@
     <div id="planetChips" class="planet-chips"></div>
   </div>
 
-  <!-- Botones Flotantes de Cámara y Audio para Tablet -->
+  <!-- Botones Flotantes de Cámara para Tablet/Escritorio -->
   <div class="floating-controls">
     <button id="btnResetCam" class="floating-btn" title="Centrar Vista">🎯</button>
   </div>
@@ -176,12 +230,10 @@
     <span id="scaleBarLabel" class="scale-bar-label">1 UA</span>
   </div>
 
-  <!-- Notificaciones en Pantalla -->
+  <!-- Notificaciones en Pantalla (Toast) -->
   <div id="toast"></div>
 
-  <!-- Módulos JavaScript Desacoplados -->
-  <script src="js/datos-cosmicos.js"></script>
-  <script src="js/shaders-espacio.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Módulos JavaScript (ES Module con Vite) -->
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>

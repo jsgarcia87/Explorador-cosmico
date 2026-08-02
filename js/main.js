@@ -1,7 +1,17 @@
 /* =========================================================================
-   MAIN.JS — Explorador Cósmico (Controlador Principal, HUD, Tablet & Kiosco)
-   Incluye: Ergonomía Tablet, Inercia Táctil, Shaders PBR y Modo Museo
+   MAIN.JS — Explorador Cósmico (Controlador Principal ES Module, HUD & Kiosco)
+   Incluye: Ergonomía Tablet, Inercia Táctil, Shaders Relativistas, Bloom HDR
    ========================================================================= */
+
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { SimplexNoise } from 'simplex-noise';
+import { PLANETS, DEEPSPACE, CONSTELLATIONS, TOURS, QUIZ_QUESTIONS, EDU_LEVELS } from './datos-cosmicos.js';
+import { createMilkyWayBackground, createConstellationsSystem, createSolarSystem } from './shaders-espacio.js';
+import { buildDeepSpaceScene } from './universe/DeepSpaceObjects.js';
 
 const simplex = new SimplexNoise(101);
 
@@ -13,8 +23,8 @@ const _h = window.innerHeight || canvas.clientHeight || 600;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, _w < 768 ? 2 : 3));
 renderer.setSize(_w, _h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
-renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMappingExposure = 1.25;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -121,61 +131,59 @@ controller.init();
 /* ---------- Construcción de la Escena ---------- */
 const focusables = {};
 const { sunMesh, planetsGroup, orbitsGroup } = createSolarSystem(scene, focusables);
-const deepGroup = createDeepSpace(scene, focusables);
+const deepGroup = buildDeepSpaceScene(scene, focusables);
 deepGroup.visible = false;
 const constellationsGroup = createConstellationsSystem(scene, focusables);
 constellationsGroup.visible = false;
 
 /* ---------- Post-Procesado: Lente Gravitacional + Bloom (UnrealBloomPass) ---------- */
-let composer = null;
+let composer = new EffectComposer(renderer);
 let lensingPass = null;
-if (typeof THREE.EffectComposer !== 'undefined') {
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(new THREE.RenderPass(scene, camera));
 
-  const LensingShader = {
-    uniforms: {
-      tDiffuse: { value: null },
-      uBHScreen: { value: new THREE.Vector2(0.5, 0.5) },
-      uStrength: { value: 0.0 },
-      uAspect: { value: window.innerWidth / window.innerHeight }
-    },
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      uniform sampler2D tDiffuse;
-      uniform vec2 uBHScreen;
-      uniform float uStrength;
-      uniform float uAspect;
-      varying vec2 vUv;
-      void main() {
-        vec2 d = vUv - uBHScreen;
-        d.x *= uAspect;
-        float dist = length(d);
-        float falloff = 1.0 / (dist * dist * 55.0 + 0.4);
-        vec2 dir = dist > 0.0001 ? d / dist : vec2(0.0);
-        vec2 offset = dir * falloff * uStrength * 0.05;
-        vec2 uv2 = clamp(vUv - offset, 0.001, 0.999);
-        gl_FragColor = texture2D(tDiffuse, uv2);
-      }
-    `
-  };
-  lensingPass = new THREE.ShaderPass(LensingShader);
-  composer.addPass(lensingPass);
-  composer.lensingPass = lensingPass;
+composer.addPass(new RenderPass(scene, camera));
 
-  const bloomPass = new THREE.UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.55, 0.45, 0.88
-  );
-  composer.addPass(bloomPass);
-  composer.bloomPass = bloomPass;
-}
+const LensingShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uBHScreen: { value: new THREE.Vector2(0.5, 0.5) },
+    uStrength: { value: 0.0 },
+    uAspect: { value: window.innerWidth / window.innerHeight }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform vec2 uBHScreen;
+    uniform float uStrength;
+    uniform float uAspect;
+    varying vec2 vUv;
+    void main() {
+      vec2 d = vUv - uBHScreen;
+      d.x *= uAspect;
+      float dist = length(d);
+      float falloff = 1.0 / (dist * dist * 55.0 + 0.4);
+      vec2 dir = dist > 0.0001 ? d / dist : vec2(0.0);
+      vec2 offset = dir * falloff * uStrength * 0.05;
+      vec2 uv2 = clamp(vUv - offset, 0.001, 0.999);
+      gl_FragColor = texture2D(tDiffuse, uv2);
+    }
+  `
+};
+lensingPass = new ShaderPass(LensingShader);
+composer.addPass(lensingPass);
+composer.lensingPass = lensingPass;
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.65, 0.4, 0.85
+);
+composer.addPass(bloomPass);
+composer.bloomPass = bloomPass;
 
 /* ---------- Rendimiento Adaptativo (FPS Detection) ---------- */
 let perfFrames = 0, perfLast = performance.now(), perfQuality = 'high';
@@ -455,6 +463,16 @@ function updateInfoPanel(data) {
     telemHud.style.display = 'none';
   }
 
+  const relControls = document.getElementById('relativityControls');
+  if (relControls) {
+    if (data.id === 'agujero') {
+      relControls.style.display = 'block';
+      setupRelativityControls(data);
+    } else {
+      relControls.style.display = 'none';
+    }
+  }
+
   const factsUl = document.getElementById('infoFacts');
   factsUl.innerHTML = '';
   (data.facts || []).forEach(f => {
@@ -468,6 +486,78 @@ function updateInfoPanel(data) {
 
 function closeInfoPanel() {
   document.getElementById('infoPanel').classList.remove('show');
+}
+
+function setupRelativityControls(data) {
+  const bhObj = focusables['agujero'];
+  if (!bhObj || !bhObj.shaderMat) return;
+
+  const sliderMass = document.getElementById('sliderMass');
+  const valMass = document.getElementById('valMass');
+  const sliderAccretion = document.getElementById('sliderAccretion');
+  const valAccretion = document.getElementById('valAccretion');
+  const sliderInclination = document.getElementById('sliderInclination');
+  const valInclination = document.getElementById('valInclination');
+  const sliderDoppler = document.getElementById('sliderDoppler');
+  const valDoppler = document.getElementById('valDoppler');
+  const btnGeodesicGrid = document.getElementById('btnGeodesicGrid');
+
+  if (sliderMass && valMass) {
+    sliderMass.value = bhObj.shaderMat.uniforms.uMass ? bhObj.shaderMat.uniforms.uMass.value : 1.0;
+    valMass.textContent = `${parseFloat(sliderMass.value).toFixed(2)} M_☉`;
+    sliderMass.oninput = (e) => {
+      const v = parseFloat(e.target.value);
+      valMass.textContent = `${v.toFixed(2)} M_☉`;
+      if (bhObj.shaderMat.uniforms.uMass) bhObj.shaderMat.uniforms.uMass.value = v;
+    };
+  }
+
+  if (sliderAccretion && valAccretion) {
+    sliderAccretion.value = bhObj.shaderMat.uniforms.uAccretionRate ? bhObj.shaderMat.uniforms.uAccretionRate.value : 1.2;
+    valAccretion.textContent = parseFloat(sliderAccretion.value).toFixed(2);
+    sliderAccretion.oninput = (e) => {
+      const v = parseFloat(e.target.value);
+      valAccretion.textContent = v.toFixed(2);
+      if (bhObj.shaderMat.uniforms.uAccretionRate) bhObj.shaderMat.uniforms.uAccretionRate.value = v;
+    };
+  }
+
+  if (sliderInclination && valInclination) {
+    sliderInclination.value = bhObj.shaderMat.uniforms.uInclination ? bhObj.shaderMat.uniforms.uInclination.value : 0.15;
+    valInclination.textContent = `${parseFloat(sliderInclination.value).toFixed(2)} rad`;
+    sliderInclination.oninput = (e) => {
+      const v = parseFloat(e.target.value);
+      valInclination.textContent = `${v.toFixed(2)} rad`;
+      if (bhObj.shaderMat.uniforms.uInclination) bhObj.shaderMat.uniforms.uInclination.value = v;
+    };
+  }
+
+  if (sliderDoppler && valDoppler) {
+    sliderDoppler.value = bhObj.shaderMat.uniforms.uDopplerStrength ? bhObj.shaderMat.uniforms.uDopplerStrength.value : 1.35;
+    valDoppler.textContent = `${parseFloat(sliderDoppler.value).toFixed(2)}x`;
+    sliderDoppler.oninput = (e) => {
+      const v = parseFloat(e.target.value);
+      valDoppler.textContent = `${v.toFixed(2)}x`;
+      if (bhObj.shaderMat.uniforms.uDopplerStrength) bhObj.shaderMat.uniforms.uDopplerStrength.value = v;
+    };
+  }
+
+  if (btnGeodesicGrid) {
+    let showGrid = bhObj.shaderMat.uniforms.uShowGeodesicGrid ? (bhObj.shaderMat.uniforms.uShowGeodesicGrid.value > 0.5) : false;
+    btnGeodesicGrid.textContent = showGrid ? 'ACTIVA (ON)' : 'INACTIVA';
+    if (showGrid) btnGeodesicGrid.classList.add('active');
+    else btnGeodesicGrid.classList.remove('active');
+
+    btnGeodesicGrid.onclick = () => {
+      showGrid = !showGrid;
+      if (bhObj.shaderMat.uniforms.uShowGeodesicGrid) {
+        bhObj.shaderMat.uniforms.uShowGeodesicGrid.value = showGrid ? 1.0 : 0.0;
+      }
+      btnGeodesicGrid.textContent = showGrid ? 'ACTIVA (ON)' : 'INACTIVA';
+      if (showGrid) btnGeodesicGrid.classList.add('active');
+      else btnGeodesicGrid.classList.remove('active');
+    };
+  }
 }
 
 /* ---------- 5b. Gesto Swipe-Down para Cerrar Drawer ---------- */
@@ -581,6 +671,7 @@ function exitTour() {
 }
 
 /* ---------- 7. Cuestionario Cósmico (Quiz) ---------- */
+const QUIZ = QUIZ_QUESTIONS;
 function openQuizModal() {
   const q = QUIZ[Math.floor(Math.random() * QUIZ.length)];
   const overlay = document.getElementById('modalOverlay');
@@ -619,6 +710,8 @@ function checkQuizAnswer(selected, correct, explanation) {
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
+window.checkQuizAnswer = checkQuizAnswer;
+window.closeModal = closeModal;
 
 /* ---------- 8. Insignias de Logros ---------- */
 function checkBadges() {
@@ -758,42 +851,29 @@ function animate() {
     }
   });
 
-  // Animación de astros del Universo Profundo
+  // Animación de astros del Universo Profundo PBR & Shaders Relativistas
   const pulsarItem = focusables['pulsar'];
-  if (pulsarItem && pulsarItem.mat && pulsarItem.mat.uniforms?.uTime) {
-    pulsarItem.mat.uniforms.uTime.value = t;
-    pulsarItem.mesh.rotation.y += dt * 3.5 * simSpeed;
+  if (pulsarItem) {
+    if (pulsarItem.surfaceMat?.uniforms?.uTime) pulsarItem.surfaceMat.uniforms.uTime.value = t;
+    if (pulsarItem.coneMat?.uniforms?.uTime) pulsarItem.coneMat.uniforms.uTime.value = t;
+    if (pulsarItem.mesh) pulsarItem.mesh.rotation.y += dt * 3.5 * simSpeed;
   }
 
   const agujeroItem = focusables['agujero'];
   if (agujeroItem) {
-    [agujeroItem.einsteinMat, agujeroItem.diskMat, agujeroItem.lensedMat,
-     agujeroItem.photonMat, agujeroItem.jetMat].forEach(m => {
-      if (m?.uniforms?.uTime) m.uniforms.uTime.value = t;
-    });
-    if (agujeroItem.disk) {
-      agujeroItem.disk.rotation.z -= dt * 0.25 * simSpeed;
-      if (agujeroItem.diskMat?.uniforms?.uCamAngle) {
-        const localCam = agujeroItem.disk.worldToLocal(camera.position.clone());
-        agujeroItem.diskMat.uniforms.uCamAngle.value = Math.atan2(localCam.z, localCam.x);
-      }
+    if (agujeroItem.shaderMat?.uniforms) {
+      agujeroItem.shaderMat.uniforms.uTime.value = t;
+      agujeroItem.shaderMat.uniforms.uCameraPos.value.copy(camera.position);
+      agujeroItem.shaderMat.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     }
-    if (agujeroItem.lensedDisk) {
-      agujeroItem.lensedDisk.rotation.z += dt * 0.25 * simSpeed;
-      if (agujeroItem.lensedMat?.uniforms?.uCamAngle) {
-        const localCam2 = agujeroItem.lensedDisk.worldToLocal(camera.position.clone());
-        agujeroItem.lensedMat.uniforms.uCamAngle.value = Math.atan2(localCam2.z, localCam2.x);
-      }
-    }
-    if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.08 * simSpeed;
     if (agujeroItem.s2Star) {
-      // Órbita Kepleriana elíptica de la estrella hiperveloz S2 alrededor de Gargantua (e=0.88)
       const s2Angle = t * 0.65 * simSpeed;
       const rS2 = 4.8 / (1 + 0.58 * Math.cos(s2Angle));
       agujeroItem.s2Star.position.x = rS2 * Math.cos(s2Angle);
       agujeroItem.s2Star.position.z = rS2 * Math.sin(s2Angle) * 0.6;
       agujeroItem.s2Star.position.y = Math.sin(s2Angle * 2.0) * 0.45;
     }
+    if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.08 * simSpeed;
   }
 
   if (composer && composer.lensingPass) {
@@ -825,8 +905,10 @@ function animate() {
   }
 
   const nebItem = focusables['nebulosa'];
-  if (nebItem && nebItem.mesh) {
-    nebItem.mesh.rotation.y += dt * 0.015 * simSpeed;
+  if (nebItem) {
+    if (nebItem.mat?.uniforms?.uTime) nebItem.mat.uniforms.uTime.value = t;
+    if (nebItem.mat?.uniforms?.uCameraPos) nebItem.mat.uniforms.uCameraPos.value.copy(camera.position);
+    if (nebItem.mesh) nebItem.mesh.rotation.y += dt * 0.015 * simSpeed;
   }
 
   const galItem = focusables['galaxia'];
