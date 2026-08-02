@@ -944,7 +944,7 @@ function createDeepSpace(scene, focusables) {
     const diskOuterR = rs * 5.0;
     const diskGeo = new THREE.RingGeometry(diskInnerR, diskOuterR, 256, 8);
     const diskMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 } },
+      uniforms: { uTime: { value: 0 }, uCamAngle: { value: 0 } },
       vertexShader: `
         varying vec3 vPos;
         void main() {
@@ -954,6 +954,7 @@ function createDeepSpace(scene, focusables) {
       `,
       fragmentShader: `
         uniform float uTime;
+        uniform float uCamAngle;
         varying vec3 vPos;
         float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
         float noise(vec2 p){
@@ -973,30 +974,25 @@ function createDeepSpace(scene, focusables) {
           float innerR=3.6;
           float outerR=12.0;
           float t=clamp((r-innerR)/(outerR-innerR),0.0,1.0);
-          // Perfil térmico Shakura-Sunyaev: T ~ (1-sqrt(r_isco/r))^(1/4)
           float temp=pow(max(0.0,1.0-sqrt(innerR/max(r,0.001))),0.25);
-          // Paleta de color por temperatura de cuerpo negro
-          vec3 hotCol =vec3(0.75,0.85,1.0);   // Azul-blanco (interior, >10000K)
-          vec3 warmCol=vec3(1.0,0.92,0.65);    // Amarillo-blanco
-          vec3 coolCol=vec3(1.0,0.45,0.08);    // Naranja
-          vec3 coldCol=vec3(0.6,0.12,0.02);    // Rojo oscuro (exterior)
+          vec3 hotCol =vec3(0.75,0.85,1.0);
+          vec3 warmCol=vec3(1.0,0.92,0.65);
+          vec3 coolCol=vec3(1.0,0.45,0.08);
+          vec3 coldCol=vec3(0.6,0.12,0.02);
           vec3 diskColor;
           if(t<0.12) diskColor=mix(hotCol,warmCol,t/0.12);
           else if(t<0.4) diskColor=mix(warmCol,coolCol,(t-0.12)/0.28);
           else diskColor=mix(coolCol,coldCol,(t-0.4)/0.6);
-          // Movimiento orbital + Beaming Doppler Relativista
-          float orbTheta=theta+uTime*0.6;
-          float doppler=1.0+0.55*cos(orbTheta);
-          float dShift=0.15*cos(orbTheta);
+          float camTheta=theta-uCamAngle;
+          float doppler=1.0+0.55*cos(camTheta);
+          float dShift=0.15*cos(camTheta);
           diskColor.b+=dShift*(1.0-t);
           diskColor.r-=dShift*0.3;
           diskColor*=doppler;
-          // Turbulencia espiral (subestructura del disco)
           float spiral=theta*3.0-r*2.0+uTime*0.5;
           float turb=fbm(vec2(spiral,r*12.0));
           float turb2=fbm(vec2(theta*6.0+uTime*0.2,r*18.0+uTime*0.1));
           diskColor*=0.65+turb*0.5+turb2*0.2;
-          // Perfil de brillo con caída radial
           float brightness=(1.0-t*0.65)*doppler;
           brightness*=smoothstep(outerR,outerR-outerR*0.2,r);
           brightness*=smoothstep(innerR-innerR*0.1,innerR+innerR*0.3,r);
@@ -1018,7 +1014,7 @@ function createDeepSpace(scene, focusables) {
     const lensedOuter = rs * 2.8;
     const lensedGeo = new THREE.RingGeometry(lensedInner, lensedOuter, 256, 4);
     const lensedMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 } },
+      uniforms: { uTime: { value: 0 }, uCamAngle: { value: 0 } },
       vertexShader: `
         varying vec3 vPos;
         void main() {
@@ -1028,6 +1024,7 @@ function createDeepSpace(scene, focusables) {
       `,
       fragmentShader: `
         uniform float uTime;
+        uniform float uCamAngle;
         varying vec3 vPos;
         float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
         float noise(vec2 p){
@@ -1038,13 +1035,14 @@ function createDeepSpace(scene, focusables) {
         }
         void main(){
           float r=length(vPos.xz);
-          float theta=atan(vPos.z,vPos.x)+uTime*0.6;
+          float theta=atan(vPos.z,vPos.x);
+          float camTheta=theta-uCamAngle;
           float lIn=2.76;
           float lRange=3.96;
           float t=clamp((r-lIn)/lRange,0.0,1.0);
           vec3 col=mix(vec3(1.0,0.95,0.82),vec3(1.0,0.4,0.1),t);
-          float doppler=1.0+0.4*cos(theta);
-          float turb=0.7+0.3*noise(vec2(theta*5.0,r*15.0));
+          float doppler=1.0+0.4*cos(camTheta);
+          float turb=0.7+0.3*noise(vec2(theta*5.0+uTime*0.3,r*15.0));
           float brightness=(1.0-t*0.5)*doppler*turb*0.6;
           gl_FragColor=vec4(col*brightness*2.0,clamp(brightness*0.7,0.0,1.0));
         }

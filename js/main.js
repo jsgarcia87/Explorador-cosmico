@@ -8,8 +8,10 @@ const simplex = new SimplexNoise(101);
 /* ---------- Renderer / Scene / Camera ---------- */
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, window.innerWidth < 768 ? 2 : 3));
-renderer.setSize(window.innerWidth, window.innerHeight);
+const _w = window.innerWidth || canvas.clientWidth || 800;
+const _h = window.innerHeight || canvas.clientHeight || 600;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, _w < 768 ? 2 : 3));
+renderer.setSize(_w, _h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.2;
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -17,7 +19,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
+const camera = new THREE.PerspectiveCamera(60, _w / _h, 0.1, 3000);
 
 /* ---------- Luz Solar, HemisphereLight (Fake GI) y Ambiental ---------- */
 const sunLight = new THREE.PointLight(0xfff2cc, 3.6, 600, 1.35);
@@ -124,11 +126,49 @@ deepGroup.visible = false;
 const constellationsGroup = createConstellationsSystem(scene, focusables);
 constellationsGroup.visible = false;
 
-/* ---------- Post-Procesado Bloom (UnrealBloomPass) ---------- */
+/* ---------- Post-Procesado: Lente Gravitacional + Bloom (UnrealBloomPass) ---------- */
 let composer = null;
+let lensingPass = null;
 if (typeof THREE.EffectComposer !== 'undefined') {
   composer = new THREE.EffectComposer(renderer);
   composer.addPass(new THREE.RenderPass(scene, camera));
+
+  const LensingShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      uBHScreen: { value: new THREE.Vector2(0.5, 0.5) },
+      uStrength: { value: 0.0 },
+      uAspect: { value: window.innerWidth / window.innerHeight }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uBHScreen;
+      uniform float uStrength;
+      uniform float uAspect;
+      varying vec2 vUv;
+      void main() {
+        vec2 d = vUv - uBHScreen;
+        d.x *= uAspect;
+        float dist = length(d);
+        float falloff = 1.0 / (dist * dist * 55.0 + 0.4);
+        vec2 dir = dist > 0.0001 ? d / dist : vec2(0.0);
+        vec2 offset = dir * falloff * uStrength * 0.05;
+        vec2 uv2 = clamp(vUv - offset, 0.001, 0.999);
+        gl_FragColor = texture2D(tDiffuse, uv2);
+      }
+    `
+  };
+  lensingPass = new THREE.ShaderPass(LensingShader);
+  composer.addPass(lensingPass);
+  composer.lensingPass = lensingPass;
+
   const bloomPass = new THREE.UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
     0.55, 0.45, 0.88
@@ -158,6 +198,7 @@ function checkPerformance() {
       if (composer && composer.bloomPass) {
         composer.bloomPass.strength = 0.4;
       }
+      if (composer.lensingPass) composer.lensingPass.enabled = false;
     }
   }
 }
@@ -688,7 +729,7 @@ document.getElementById('btnSpeed5').onclick = () => updateSpeedButtons(5);
 /* ---------- 12. Bucle de Animación PBR HD (60 FPS) ---------- */
 const clock = new THREE.Clock();
 function animate() {
-  requestAnimationFrame(animate);
+  window._cosmicRafId = requestAnimationFrame(animate);
   const dt = clock.getDelta();
   const t = clock.getElapsedTime();
   checkPerformance();
@@ -730,8 +771,20 @@ function animate() {
      agujeroItem.photonMat, agujeroItem.jetMat].forEach(m => {
       if (m?.uniforms?.uTime) m.uniforms.uTime.value = t;
     });
-    if (agujeroItem.disk) agujeroItem.disk.rotation.z -= dt * 0.25 * simSpeed;
-    if (agujeroItem.lensedDisk) agujeroItem.lensedDisk.rotation.z += dt * 0.25 * simSpeed;
+    if (agujeroItem.disk) {
+      agujeroItem.disk.rotation.z -= dt * 0.25 * simSpeed;
+      if (agujeroItem.diskMat?.uniforms?.uCamAngle) {
+        const localCam = agujeroItem.disk.worldToLocal(camera.position.clone());
+        agujeroItem.diskMat.uniforms.uCamAngle.value = Math.atan2(localCam.z, localCam.x);
+      }
+    }
+    if (agujeroItem.lensedDisk) {
+      agujeroItem.lensedDisk.rotation.z += dt * 0.25 * simSpeed;
+      if (agujeroItem.lensedMat?.uniforms?.uCamAngle) {
+        const localCam2 = agujeroItem.lensedDisk.worldToLocal(camera.position.clone());
+        agujeroItem.lensedMat.uniforms.uCamAngle.value = Math.atan2(localCam2.z, localCam2.x);
+      }
+    }
     if (agujeroItem.mesh) agujeroItem.mesh.rotation.y += dt * 0.08 * simSpeed;
     if (agujeroItem.s2Star) {
       // Órbita Kepleriana elíptica de la estrella hiperveloz S2 alrededor de Gargantua (e=0.88)
@@ -741,6 +794,22 @@ function animate() {
       agujeroItem.s2Star.position.z = rS2 * Math.sin(s2Angle) * 0.6;
       agujeroItem.s2Star.position.y = Math.sin(s2Angle * 2.0) * 0.45;
     }
+  }
+
+  if (composer && composer.lensingPass) {
+    const lp = composer.lensingPass;
+    let targetStrength = 0;
+    if (agujeroItem && agujeroItem.mesh && deepGroup.visible) {
+      const bhWorldPos = agujeroItem.mesh.getWorldPosition(new THREE.Vector3());
+      const ndc = bhWorldPos.clone().project(camera);
+      if (!isNaN(ndc.x) && ndc.z < 1) {
+        lp.uniforms.uBHScreen.value.set((ndc.x + 1) / 2, (ndc.y + 1) / 2);
+        const distToCam = camera.position.distanceTo(bhWorldPos);
+        const onScreen = Math.abs(ndc.x) < 1.3 && Math.abs(ndc.y) < 1.3;
+        targetStrength = onScreen ? THREE.MathUtils.clamp(1.0 - distToCam / 260, 0.15, 1) : 0;
+      }
+    }
+    lp.uniforms.uStrength.value += (targetStrength - lp.uniforms.uStrength.value) * 0.08;
   }
 
   const giganteItem = focusables['gigante'];
@@ -832,14 +901,19 @@ function animate() {
 
 /* ---------- 13. Carga y Redimensionado de Ventana ---------- */
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const w = window.innerWidth || canvas.clientWidth || 1;
+  const h = window.innerHeight || canvas.clientHeight || 1;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, window.innerWidth < 768 ? 2 : 3));
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, w < 768 ? 2 : 3));
+  renderer.setSize(w, h);
   if (composer) {
-    composer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(w, h);
     if (composer.bloomPass) {
-      composer.bloomPass.resolution.set(window.innerWidth, window.innerHeight);
+      composer.bloomPass.resolution.set(w, h);
+    }
+    if (composer.lensingPass) {
+      composer.lensingPass.uniforms.uAspect.value = w / h;
     }
   }
 });
@@ -854,4 +928,6 @@ window.addEventListener('load', () => {
   }, 1100);
 });
 
+if (window._cosmicRafId) cancelAnimationFrame(window._cosmicRafId);
+window._cosmicAnimate = animate;
 animate();
