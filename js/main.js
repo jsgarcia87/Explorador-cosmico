@@ -1000,15 +1000,21 @@ window.addEventListener('resize', () => {
   }
 });
 
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    const l = document.getElementById('loading');
-    if (l) {
-      l.style.opacity = '0';
-      setTimeout(() => l.remove(), 750);
-    }
-  }, 1100);
-});
+function hideLoadingScreen() {
+  const l = document.getElementById('loading');
+  if (l && !l.dataset.removed) {
+    l.dataset.removed = 'true';
+    l.style.opacity = '0';
+    setTimeout(() => l.remove(), 750);
+  }
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(hideLoadingScreen, 600);
+} else {
+  window.addEventListener('load', () => setTimeout(hideLoadingScreen, 600));
+  document.addEventListener('DOMContentLoaded', () => setTimeout(hideLoadingScreen, 600));
+}
 
 if (window._cosmicRafId) cancelAnimationFrame(window._cosmicRafId);
 window._cosmicAnimate = animate;
