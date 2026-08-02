@@ -480,6 +480,30 @@ export function createMilkyWayBackground(scene) {
 }
 
 /* ---------- 8.5 Sistema de Constelaciones Reales con Líneas y Estrellas en la Bóveda ---------- */
+function createConstellationLabelSprite(name, colorHex) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.font = 'bold 36px Outfit, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#000000';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(name, 256, 64);
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0.9,
+    depthWrite: false
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(75, 19, 1);
+  return sprite;
+}
+
 export function createConstellationsSystem(scene, focusables) {
   const constellationsGroup = new THREE.Group();
   scene.add(constellationsGroup);
@@ -489,6 +513,10 @@ export function createConstellationsSystem(scene, focusables) {
       const cGroup = new THREE.Group();
       constellationsGroup.add(cGroup);
 
+      const starMeshes = [];
+      const haloMeshes = [];
+      const lineMaterials = [];
+
       // Estrellas de la constelación con brillo y magnitud
       if (c.stars && c.stars.length) {
         c.stars.forEach((st, idx) => {
@@ -497,7 +525,9 @@ export function createConstellationsSystem(scene, focusables) {
           const starMat = new THREE.MeshBasicMaterial({ color: c.color || 0xffffff });
           const starMesh = new THREE.Mesh(starGeo, starMat);
           starMesh.position.set(...st.p);
+          starMesh.userData.baseScale = 1.0;
           cGroup.add(starMesh);
+          starMeshes.push(starMesh);
 
           // Corona luminosa resplandeciente para estrellas brillantes
           if (st.mag <= 2.2) {
@@ -509,16 +539,17 @@ export function createConstellationsSystem(scene, focusables) {
             });
             const haloMesh = new THREE.Mesh(haloGeo, haloMat);
             haloMesh.position.copy(starMesh.position);
+            haloMesh.userData.baseScale = 1.0;
             haloMesh.onBeforeRender = (renderer, scene, camera) => {
               haloMesh.quaternion.copy(camera.quaternion);
             };
             cGroup.add(haloMesh);
+            haloMeshes.push(haloMesh);
           }
         });
       }
 
-      // Líneas de unión astrométricas (figuras de la constelación)
-      const lineMaterials = [];
+      // Líneas de unión astrométricas (figuras de la constelación) - casi invisibles por defecto
       if (c.lines && c.lines.length && c.stars) {
         c.lines.forEach(pair => {
           const p0 = c.stars[pair[0]]?.p;
@@ -529,8 +560,8 @@ export function createConstellationsSystem(scene, focusables) {
             const lMat = new THREE.LineBasicMaterial({
               color: c.color || 0x818cf8,
               transparent: true,
-              opacity: 0.65,
-              linewidth: 1.5,
+              opacity: 0.05,
+              linewidth: 1.0,
               blending: THREE.AdditiveBlending
             });
             const lMesh = new THREE.Line(lGeo, lMat);
@@ -539,6 +570,12 @@ export function createConstellationsSystem(scene, focusables) {
           }
         });
       }
+
+      // Etiqueta flotante del nombre de la constelación
+      const labelSprite = createConstellationLabelSprite(c.name, c.color || 0xffffff);
+      labelSprite.position.set(c.pos[0], c.pos[1] + 28, c.pos[2]);
+      labelSprite.visible = false;
+      cGroup.add(labelSprite);
 
       // Marcador objetivo para foco de cámara y clic
       const markerGeo = new THREE.SphereGeometry(2.5, 16, 16);
@@ -555,12 +592,153 @@ export function createConstellationsSystem(scene, focusables) {
         data: c,
         group: cGroup,
         lineMaterials: lineMaterials,
+        starMeshes: starMeshes,
+        haloMeshes: haloMeshes,
+        labelSprite: labelSprite,
         type: 'constelacion'
       };
     });
   }
 
   return constellationsGroup;
+}
+
+export function highlightConstellationSelection(focusables, selectedId) {
+  if (typeof CONSTELLATIONS === 'undefined') return;
+  CONSTELLATIONS.forEach(c => {
+    const isSel = (c.id === selectedId);
+    const itemC = focusables[c.id];
+    if (!itemC) return;
+
+    // 1. Líneas de la constelación: brillantes en la seleccionada, casi invisibles (0.05) en el resto
+    if (itemC.lineMaterials) {
+      itemC.lineMaterials.forEach(mat => {
+        mat.opacity = isSel ? 1.0 : 0.05;
+        mat.color.setHex(isSel ? 0xfacc15 : (c.color || 0x818cf8));
+        mat.linewidth = isSel ? 3.0 : 1.0;
+      });
+    }
+
+    // 2. Estrellas y Coronas Halos: resplandor en la constelación seleccionada
+    if (itemC.starMeshes) {
+      itemC.starMeshes.forEach(sm => {
+        const baseSize = sm.userData.baseScale || 1.0;
+        const scaleMult = isSel ? 1.6 : 1.0;
+        sm.scale.set(baseSize * scaleMult, baseSize * scaleMult, baseSize * scaleMult);
+      });
+    }
+
+    if (itemC.haloMeshes) {
+      itemC.haloMeshes.forEach(hm => {
+        const baseSize = hm.userData.baseScale || 1.0;
+        const scaleMult = isSel ? 2.4 : 1.0;
+        hm.scale.set(baseSize * scaleMult, baseSize * scaleMult, baseSize * scaleMult);
+        hm.material.opacity = isSel ? 0.98 : 0.25;
+      });
+    }
+
+    // 3. Etiqueta con título de la constelación en la bóveda
+    if (itemC.labelSprite) {
+      itemC.labelSprite.visible = isSel;
+      itemC.labelSprite.material.opacity = isSel ? 1.0 : 0.0;
+    }
+  });
+}
+
+/* ---------- 8.6 Horizonte Terrestre y Cuadrícula Celeste (Vista desde la Tierra) ---------- */
+export function createEarthHorizonSystem(scene) {
+  const horizonGroup = new THREE.Group();
+  horizonGroup.name = 'earth_horizon_system';
+  scene.add(horizonGroup);
+
+  // 1. Suelo Oscuro Terrestre
+  const groundGeo = new THREE.CircleGeometry(1200, 64);
+  groundGeo.rotateX(-Math.PI / 2);
+  const groundMat = new THREE.MeshBasicMaterial({
+    color: 0x03070f,
+    side: THREE.DoubleSide
+  });
+  const groundMesh = new THREE.Mesh(groundGeo, groundMat);
+  groundMesh.position.set(0, -25, 0);
+  horizonGroup.add(groundMesh);
+
+  // 2. Resplandor Atmosférico del Horizonte (Airglow / Crepúsculo)
+  const airglowGeo = new THREE.CylinderGeometry(750, 750, 80, 64, 1, true);
+  const airglowMat = new THREE.ShaderMaterial({
+    transparent: true,
+    side: THREE.BackSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {},
+    vertexShader: `
+      varying vec3 vPos;
+      void main() {
+        vPos = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vPos;
+      void main() {
+        float h = clamp((vPos.y + 40.0) / 80.0, 0.0, 1.0);
+        float alpha = pow(1.0 - h, 2.5) * 0.70;
+        vec3 horizonColor = mix(vec3(0.04, 0.32, 0.65), vec3(0.01, 0.07, 0.18), h);
+        gl_FragColor = vec4(horizonColor, alpha);
+      }
+    `
+  });
+  const airglowMesh = new THREE.Mesh(airglowGeo, airglowMat);
+  airglowMesh.position.set(0, -10, 0);
+  horizonGroup.add(airglowMesh);
+
+  // 3. Puntos Cardinales Luminosos (N, S, E, O)
+  const cardinals = [
+    { text: 'N · NORTE (Hacia Polaris)', pos: [0, -12, -700], color: '#00f0ff' },
+    { text: 'S · SUR (Cruz del Sur)', pos: [0, -12, 700], color: '#ff9e00' },
+    { text: 'E · ESTE (Levante)', pos: [700, -12, 0], color: '#ffd700' },
+    { text: 'O · OESTE (Poniente)', pos: [-700, -12, 0], color: '#ff4757' }
+  ];
+
+  cardinals.forEach(card => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.font = 'bold 36px Outfit, JetBrains Mono, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = card.color;
+    ctx.shadowColor = '#000000';
+    ctx.shadowBlur = 12;
+    ctx.fillText(card.text, 256, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.set(...card.pos);
+    sprite.scale.set(120, 30, 1);
+    horizonGroup.add(sprite);
+  });
+
+  // 4. Malla Astronómica Ecuatorial de la Esfera Celeste
+  const gridGeo = new THREE.SphereGeometry(690, 24, 12);
+  const gridMat = new THREE.MeshBasicMaterial({
+    color: 0x1e3a5f,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.12,
+    side: THREE.BackSide
+  });
+  const gridMesh = new THREE.Mesh(gridGeo, gridMat);
+  horizonGroup.add(gridMesh);
+
+  horizonGroup.visible = false;
+  return horizonGroup;
 }
 
 /* ---------- Creación del Sistema Solar HD con Shaders PBR ---------- */

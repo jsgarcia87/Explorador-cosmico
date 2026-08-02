@@ -10,7 +10,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { SimplexNoise } from 'simplex-noise';
 import { PLANETS, DEEPSPACE, CONSTELLATIONS, TOURS, QUIZ_QUESTIONS, EDU_LEVELS } from './datos-cosmicos.js';
-import { createMilkyWayBackground, createConstellationsSystem, createSolarSystem } from './shaders-espacio.js';
+import { createMilkyWayBackground, createConstellationsSystem, createSolarSystem, createEarthHorizonSystem, highlightConstellationSelection } from './shaders-espacio.js';
 import { buildDeepSpaceScene } from './universe/DeepSpaceObjects.js';
 
 const simplex = new SimplexNoise(101);
@@ -23,25 +23,24 @@ const _h = window.innerHeight || canvas.clientHeight || 600;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 2, _w < 768 ? 2 : 3));
 renderer.setSize(_w, _h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.25;
+renderer.toneMappingExposure = 1.15;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(60, _w / _h, 0.1, 3000);
+scene.background = new THREE.Color(0x020408);
+scene.fog = new THREE.FogExp2(0x020408, 0.00015);
+const camera = new THREE.PerspectiveCamera(50, _w / _h, 0.5, 45000);
 
 /* ---------- Luz Solar, HemisphereLight (Fake GI) y Ambiental ---------- */
-const sunLight = new THREE.PointLight(0xfff2cc, 3.6, 600, 1.35);
+const sunLight = new THREE.PointLight(0xfffaed, 3.2, 4500, 0.85);
+sunLight.position.set(0, 0, 0);
 sunLight.castShadow = true;
 sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
-sunLight.shadow.camera.near = 0.5;
-sunLight.shadow.camera.far = 500;
+sunLight.shadow.bias = -0.0001;
 scene.add(sunLight);
-
-const hemiLight = new THREE.HemisphereLight(0x1a2040, 0x080410, 0.35);
-scene.add(hemiLight);
 
 const ambientLight = new THREE.AmbientLight(0x2a3060, 0.35);
 scene.add(ambientLight);
@@ -57,6 +56,12 @@ const controller = {
   minRadius: 6, maxRadius: 350,
   dragging: false, lastX: 0, lastY: 0,
   cameraDriftMode: false, driftPhase: 0, driftSpeed: 0.00035,
+  earthSkyView: false,
+  lookFromEarthAt(vec3Pos) {
+    const dir = vec3Pos.clone().sub(new THREE.Vector3(0, -10, 0)).normalize();
+    this.targetPhi = Math.acos(THREE.MathUtils.clamp(dir.y, -1, 1));
+    this.targetTheta = Math.atan2(dir.x, dir.z);
+  },
   init() {
     this.update();
     window.addEventListener('pointerdown', e => {
@@ -119,6 +124,16 @@ const controller = {
       this.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.targetPhi + n2 * this.driftSpeed * 0.6));
     }
 
+    if (this.earthSkyView) {
+      const lookDist = 500;
+      const lx = 0 + lookDist * Math.sin(this.phi) * Math.sin(this.theta);
+      const ly = -10 + lookDist * Math.cos(this.phi);
+      const lz = 0 + lookDist * Math.sin(this.phi) * Math.cos(this.theta);
+      camera.position.set(0, -10, 0);
+      camera.lookAt(lx, ly, lz);
+      return;
+    }
+
     const x = this.target.x + this.radius * Math.sin(this.phi) * Math.sin(this.theta);
     const y = this.target.y + this.radius * Math.cos(this.phi);
     const z = this.target.z + this.radius * Math.sin(this.phi) * Math.cos(this.theta);
@@ -135,6 +150,8 @@ const deepGroup = buildDeepSpaceScene(scene, focusables);
 deepGroup.visible = false;
 const constellationsGroup = createConstellationsSystem(scene, focusables);
 constellationsGroup.visible = false;
+const earthHorizonGroup = createEarthHorizonSystem(scene);
+earthHorizonGroup.visible = false;
 
 /* ---------- Post-Procesado: Lente Gravitacional + Bloom (UnrealBloomPass) ---------- */
 let composer = new EffectComposer(renderer);
@@ -315,6 +332,10 @@ function setMode(newMode) {
     orbitsGroup.visible = true;
     deepGroup.visible = false;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    if (typeof earthHorizonGroup !== 'undefined') earthHorizonGroup.visible = false;
+    controller.earthSkyView = false;
+    const btnEV = document.getElementById('btnEarthViewToggle');
+    if (btnEV) btnEV.style.display = 'none';
     sunLight.castShadow = true;
     controller.target.set(0, 0, 0);
     controller.targetRadius = 145;
@@ -324,6 +345,10 @@ function setMode(newMode) {
     orbitsGroup.visible = false;
     deepGroup.visible = true;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = false;
+    if (typeof earthHorizonGroup !== 'undefined') earthHorizonGroup.visible = false;
+    controller.earthSkyView = false;
+    const btnEV = document.getElementById('btnEarthViewToggle');
+    if (btnEV) btnEV.style.display = 'none';
     sunLight.castShadow = false;
     controller.target.set(0, -2, -26);
     controller.targetRadius = 160;
@@ -333,6 +358,16 @@ function setMode(newMode) {
     orbitsGroup.visible = false;
     deepGroup.visible = false;
     if (typeof constellationsGroup !== 'undefined') constellationsGroup.visible = true;
+    if (typeof earthHorizonGroup !== 'undefined') earthHorizonGroup.visible = true;
+    controller.earthSkyView = true;
+    const btnEV = document.getElementById('btnEarthViewToggle');
+    if (btnEV) {
+      btnEV.style.display = 'inline-block';
+      btnEV.innerHTML = '🌍 VISTA DESDE TIERRA (ACTIVO)';
+      btnEV.style.background = 'rgba(0, 240, 255, 0.15)';
+    }
+    highlightConstellationSelection(focusables, null);
+    controller.lookFromEarthAt(new THREE.Vector3(0, 60, -280));
     sunLight.castShadow = false;
     controller.target.set(0, 0, 0);
     controller.targetRadius = 290;
@@ -399,20 +434,11 @@ function focusObject(id) {
   if (mode === 'solar') {
     controller.targetRadius = item.data.id === 'sol' ? 18 : item.data.radius * 6.5;
   } else if (mode === 'constelaciones') {
-    controller.targetRadius = 310;
-    // Resaltar la constelación seleccionada y atenuar el resto en la bóveda
-    if (typeof CONSTELLATIONS !== 'undefined') {
-      CONSTELLATIONS.forEach(c => {
-        const isSel = c.id === id;
-        const itemC = focusables[c.id];
-        if (itemC && itemC.lineMaterials) {
-          itemC.lineMaterials.forEach(mat => {
-            mat.opacity = isSel ? 1.0 : 0.28;
-            mat.color.setHex(isSel ? 0xfacc15 : (c.color || 0x818cf8));
-            mat.linewidth = isSel ? 2.5 : 1.0;
-          });
-        }
-      });
+    highlightConstellationSelection(focusables, id);
+    if (controller.earthSkyView) {
+      controller.lookFromEarthAt(targetPos);
+    } else {
+      controller.targetRadius = 310;
     }
   } else {
     controller.targetRadius = item.data.id === 'agujero' ? 24 : item.data.id === 'nebulosa' ? 42 : 28;
@@ -784,6 +810,29 @@ document.getElementById('btnSolar').onclick = () => setMode('solar');
 document.getElementById('btnDeep').onclick = () => setMode('deep');
 const btnConstEl = document.getElementById('btnConstelaciones');
 if (btnConstEl) btnConstEl.onclick = () => setMode('constelaciones');
+const btnEarthView = document.getElementById('btnEarthViewToggle');
+if (btnEarthView) {
+  btnEarthView.onclick = () => {
+    controller.earthSkyView = !controller.earthSkyView;
+    if (controller.earthSkyView) {
+      if (typeof earthHorizonGroup !== 'undefined') earthHorizonGroup.visible = true;
+      btnEarthView.innerHTML = '🌍 VISTA DESDE TIERRA (ACTIVO)';
+      btnEarthView.style.background = 'rgba(0, 240, 255, 0.15)';
+      if (currentFocusData && focusables[currentFocusData.id] && focusables[currentFocusData.id].type === 'constelacion') {
+        controller.lookFromEarthAt(new THREE.Vector3(...currentFocusData.pos));
+      } else {
+        controller.lookFromEarthAt(new THREE.Vector3(0, 60, -280));
+      }
+      showToast('🌍 Vista Observatorio: Cielo Estrellado desde la Tierra', 2500);
+    } else {
+      if (typeof earthHorizonGroup !== 'undefined') earthHorizonGroup.visible = false;
+      btnEarthView.innerHTML = '🛰️ VISTA BÓVEDA ORBITAL';
+      btnEarthView.style.background = 'rgba(255, 255, 255, 0.08)';
+      controller.targetRadius = 310;
+      showToast('🛰️ Vista Orbital 3D de la Bóveda Celeste', 2500);
+    }
+  };
+}
 const btnDriftEl = document.getElementById('btnDriftTop');
 if (btnDriftEl) btnDriftEl.onclick = toggleDriftMode;
 document.getElementById('btnKiosk').onclick = toggleKioskMode;
