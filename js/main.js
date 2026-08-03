@@ -12,6 +12,7 @@ import { SimplexNoise } from 'simplex-noise';
 import { PLANETS, DEEPSPACE, CONSTELLATIONS, TOURS, QUIZ_QUESTIONS, EDU_LEVELS } from './datos-cosmicos.js';
 import { createMilkyWayBackground, createConstellationsSystem, createSolarSystem, createEarthHorizonSystem, highlightConstellationSelection } from './shaders-espacio.js';
 import { buildDeepSpaceScene } from './universe/DeepSpaceObjects.js';
+import { spaceAudio } from './audio/SpaceAudio.js';
 
 const simplex = new SimplexNoise(101);
 
@@ -57,6 +58,7 @@ const controller = {
   dragging: false, lastX: 0, lastY: 0,
   cameraDriftMode: false, driftPhase: 0, driftSpeed: 0.00035,
   earthSkyView: false,
+  orbitTrackingId: null,
   lookFromEarthAt(vec3Pos) {
     const dir = vec3Pos.clone().sub(new THREE.Vector3(0, -10, 0)).normalize();
     this.targetPhi = Math.acos(THREE.MathUtils.clamp(dir.y, -1, 1));
@@ -122,6 +124,13 @@ const controller = {
       const n2 = simplex.noise2D(0.0, this.driftPhase * 0.3);
       this.targetTheta += n1 * this.driftSpeed * 1.2;
       this.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this.targetPhi + n2 * this.driftSpeed * 0.6));
+    }
+
+    if (this.orbitTrackingId && focusables[this.orbitTrackingId]) {
+      const obj = focusables[this.orbitTrackingId];
+      const worldPos = new THREE.Vector3();
+      obj.mesh.getWorldPosition(worldPos);
+      this.target.lerp(worldPos, 0.12);
     }
 
     if (this.earthSkyView) {
@@ -322,6 +331,13 @@ resetKioskTimer();
 /* ---------- 2. Gestión de Modos ('solar' | 'deep' | 'constelaciones') ---------- */
 function setMode(newMode) {
   mode = newMode;
+  spaceAudio.setMode(mode, null);
+  controller.orbitTrackingId = null;
+  const btnRide = document.getElementById('btnRideOrbit');
+  if (btnRide) {
+    btnRide.classList.remove('active-ride');
+    btnRide.innerHTML = '🚀 SEGUIR ÓRBITA EN VIVO';
+  }
   document.getElementById('btnSolar').classList.toggle('active', mode === 'solar');
   document.getElementById('btnDeep').classList.toggle('active', mode === 'deep');
   const btnConst = document.getElementById('btnConstelaciones');
@@ -447,6 +463,16 @@ function focusObject(id) {
   updateInfoPanel(currentFocusData);
   document.getElementById('infoPanel').classList.add('show');
 
+  spaceAudio.setMode(mode, id);
+  spaceAudio.playClickFeedback(520, 0.05);
+  controller.orbitTrackingId = null;
+  const btnRide = document.getElementById('btnRideOrbit');
+  if (btnRide) {
+    btnRide.classList.remove('active-ride');
+    btnRide.innerHTML = '🚀 SEGUIR ÓRBITA EN VIVO';
+    btnRide.style.display = (mode === 'solar' && id !== 'sol') ? 'flex' : 'none';
+  }
+
   visitedSet.add(id);
   checkBadges();
 }
@@ -512,6 +538,12 @@ function updateInfoPanel(data) {
 
 function closeInfoPanel() {
   document.getElementById('infoPanel').classList.remove('show');
+  controller.orbitTrackingId = null;
+  const btnRide = document.getElementById('btnRideOrbit');
+  if (btnRide) {
+    btnRide.classList.remove('active-ride');
+    btnRide.innerHTML = '🚀 SEGUIR ÓRBITA EN VIVO';
+  }
 }
 
 function setupRelativityControls(data) {
@@ -838,6 +870,101 @@ if (btnDriftEl) btnDriftEl.onclick = toggleDriftMode;
 document.getElementById('btnKiosk').onclick = toggleKioskMode;
 document.getElementById('btnTours').onclick = openToursModal;
 document.getElementById('btnQuiz').onclick = openQuizModal;
+
+/* ---------- 8.2 & 8.3 Controles de Sonido, Seguimiento Orbital y Atajos Astronómicos ---------- */
+const btnAudio = document.getElementById('btnAudioToggle');
+if (btnAudio) {
+  btnAudio.onclick = () => {
+    const isEnabled = spaceAudio.toggle();
+    btnAudio.innerHTML = isEnabled ? '🔊 SONIDO ON' : '🔇 SONIDO OFF';
+    btnAudio.style.background = isEnabled ? 'rgba(0, 240, 255, 0.25)' : '';
+    btnAudio.style.borderColor = isEnabled ? '#00f0ff' : '';
+    showToast(isEnabled ? '🔊 Audio Cósmico Procedural Activado' : '🔇 Audio Cósmico Silenciado', 2500);
+  };
+}
+
+const btnHotkeys = document.getElementById('btnHotkeysHelp');
+const hotkeysOverlay = document.getElementById('hotkeysOverlay');
+const closeHotkeysBtn = document.getElementById('closeHotkeysBtn');
+if (btnHotkeys && hotkeysOverlay) {
+  btnHotkeys.onclick = () => {
+    hotkeysOverlay.classList.add('show');
+    spaceAudio.playClickFeedback(780, 0.05);
+  };
+}
+if (closeHotkeysBtn && hotkeysOverlay) {
+  closeHotkeysBtn.onclick = () => hotkeysOverlay.classList.remove('show');
+}
+if (hotkeysOverlay) {
+  hotkeysOverlay.addEventListener('click', e => {
+    if (e.target === hotkeysOverlay) hotkeysOverlay.classList.remove('show');
+  });
+}
+
+const btnRideOrbitEl = document.getElementById('btnRideOrbit');
+if (btnRideOrbitEl) {
+  btnRideOrbitEl.onclick = () => {
+    if (!currentFocusData || !focusables[currentFocusData.id]) return;
+    if (controller.orbitTrackingId === currentFocusData.id) {
+      controller.orbitTrackingId = null;
+      btnRideOrbitEl.classList.remove('active-ride');
+      btnRideOrbitEl.innerHTML = '🚀 SEGUIR ÓRBITA EN VIVO';
+      showToast('🛸 Cámara de Seguimiento Orbital Desactivada', 2000);
+    } else {
+      controller.orbitTrackingId = currentFocusData.id;
+      btnRideOrbitEl.classList.add('active-ride');
+      btnRideOrbitEl.innerHTML = '🎯 SIGUIENDO ÓRBITA EN VIVO';
+      showToast(`🚀 Viajando en órbita con ${currentFocusData.name}`, 3000);
+      spaceAudio.playClickFeedback(880, 0.08);
+    }
+  };
+}
+
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const k = e.key.toLowerCase();
+  if (k === '1') {
+    setMode('solar');
+    focusObject('sol');
+    showToast('☀ Modo Sistema Solar activado', 2000);
+  } else if (k === '2') {
+    setMode('deep');
+    focusObject('agujero');
+    showToast('🌌 Modo Universo Profundo & Agujero Negro', 2000);
+  } else if (k === '3') {
+    setMode('constelaciones');
+    focusObject('osa_mayor');
+    showToast('✨ Modo Bóveda Celeste & Constelaciones', 2000);
+  } else if (k === 'e') {
+    const btnEV = document.getElementById('btnEarthViewToggle');
+    if (btnEV && mode === 'constelaciones') btnEV.click();
+  } else if (k === 'g') {
+    if (typeof toggleGrid === 'function') {
+      toggleGrid();
+      showToast('🕸️ Alternada Malla Geodésica Espacio-Tiempo', 2000);
+    }
+  } else if (k === 'm') {
+    if (btnAudio) btnAudio.click();
+  } else if (k === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    const btnSpeed0 = document.getElementById('btnSpeed0');
+    const btnSpeed1 = document.getElementById('btnSpeed1');
+    if (speedMultiplier === 0) {
+      if (btnSpeed1) btnSpeed1.click();
+    } else {
+      if (btnSpeed0) btnSpeed0.click();
+    }
+  } else if (k === 'escape') {
+    closeInfoPanel();
+    closeGrrtSimulation();
+    if (hotkeysOverlay) hotkeysOverlay.classList.remove('show');
+    controller.orbitTrackingId = null;
+    if (btnRideOrbitEl) {
+      btnRideOrbitEl.classList.remove('active-ride');
+      btnRideOrbitEl.innerHTML = '🚀 SEGUIR ÓRBITA EN VIVO';
+    }
+  }
+});
 
 function openGrrtSimulation() {
   const grrtOverlay = document.getElementById('grrtOverlay');

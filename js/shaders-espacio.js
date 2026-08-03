@@ -6,6 +6,8 @@
 
 import * as THREE from 'three';
 import { PLANETS, DEEPSPACE, CONSTELLATIONS } from './datos-cosmicos.js';
+import { createPlanetRingMesh } from './shaders/PlanetRingShader.js';
+import { createAtmosphereMesh } from './shaders/AtmosphereShader.js';
 
 /* ---------- Texturas Auxiliares HD de Brillo y Punto Gaussiano ---------- */
 function glowTexture(hex) {
@@ -920,30 +922,20 @@ export function createSolarSystem(scene, focusables) {
       pMesh.userData.cloudMesh = cloudMesh;
     }
 
-    // Atmósfera Realista con atmosphereMesh para todos los planetas con atmósfera
-    if (p.id === 'tierra') pMesh.add(atmosphereMesh(p.radius, 0x3b82f6, 0.38));
-    else if (p.id === 'venus') pMesh.add(atmosphereMesh(p.radius, 0xfde047, 0.45));
-    else if (p.id === 'marte') pMesh.add(atmosphereMesh(p.radius, 0xef4444, 0.25));
-    else if (p.id === 'jupiter') pMesh.add(atmosphereMesh(p.radius, 0xf59e0b, 0.28));
-    else if (p.id === 'saturno') pMesh.add(atmosphereMesh(p.radius, 0xfde047, 0.25));
-    else if (p.id === 'urano') pMesh.add(atmosphereMesh(p.radius, 0x22d3ee, 0.32));
-    else if (p.id === 'neptuno') pMesh.add(atmosphereMesh(p.radius, 0x2563eb, 0.32));
+    // Atmósfera Realista PBR con dispersión Rayleigh/Mie y Limbo
+    if (p.id === 'tierra') pMesh.add(createAtmosphereMesh(p.radius, 0x38bdf8, 1.25, 3.0));
+    else if (p.id === 'venus') pMesh.add(createAtmosphereMesh(p.radius, 0xfde047, 1.45, 2.8));
+    else if (p.id === 'marte') pMesh.add(createAtmosphereMesh(p.radius, 0xf87171, 1.10, 3.2));
+    else if (p.id === 'jupiter') pMesh.add(createAtmosphereMesh(p.radius, 0xfbbf24, 1.15, 3.4));
+    else if (p.id === 'saturno') pMesh.add(createAtmosphereMesh(p.radius, 0xfde047, 1.10, 3.5));
+    else if (p.id === 'urano') pMesh.add(createAtmosphereMesh(p.radius, 0x22d3ee, 1.20, 3.2));
+    else if (p.id === 'neptuno') pMesh.add(createAtmosphereMesh(p.radius, 0x3b82f6, 1.20, 3.2));
 
-    // Anillos HD con División de Cassini (Saturno & Urano)
+    // Anillos PBR con Auto-Sombra y División de Cassini (Saturno & Urano)
     if (p.id === 'saturno' || p.id === 'urano') {
       const inner = p.radius * 1.35;
       const outer = p.radius * (p.id === 'saturno' ? 2.5 : 1.95);
-      const ringGeo = new THREE.RingGeometry(inner, outer, 80);
-      const ringMat = new THREE.MeshStandardMaterial({
-        map: ringTexture(p.color, inner / outer),
-        side: THREE.DoubleSide,
-        transparent: true,
-        roughness: 0.8,
-        metalness: 0.05,
-        opacity: 0.95
-      });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = Math.PI / 2 + 0.35;
+      const ringMesh = createPlanetRingMesh(inner, outer, p.color, p.id === 'urano');
       ringMesh.receiveShadow = true;
       ringMesh.castShadow = true;
       pMesh.add(ringMesh);

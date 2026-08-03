@@ -58,6 +58,8 @@
 
     <!-- Botones de Acción Didácticos -->
     <div class="header-actions">
+      <button id="btnAudioToggle" class="btn-hud" title="Activar / Silenciar Sonido Cósmico (M)">🔇 SONIDO OFF</button>
+      <button id="btnHotkeysHelp" class="btn-hud" title="Atajos de Teclado Astronómicos (?)">⌨️ ATAJOS</button>
       <button id="btnEarthViewToggle" class="btn-hud" style="display: none; border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.15);" title="Alternar entre Vista Planetario (Tierra) y Vista Orbital">🌍 VISTA DESDE LA TIERRA</button>
       <button id="btnDriftTop" class="btn-hud">🛸 DERIVA CAM</button>
       <button id="btnKiosk" class="btn-hud active-kiosk">🏛️ MODO MUSEO</button>
@@ -103,6 +105,9 @@
         <span id="scaleMassText">4.3 M masas solares</span>
       </div>
     </div>
+
+    <!-- Botón de Seguimiento Orbital Astronómico -->
+    <button id="btnRideOrbit" class="btn-ride-orbit">🚀 SEGUIR ÓRBITA EN VIVO</button>
 
     <!-- 3. NUEVO: Panel de Control de Relatividad General para Agujero Negro (Gargantua) -->
     <div id="relativityControls" class="relativity-controls" style="display:none;">
@@ -260,6 +265,29 @@
   <div id="scaleBar" class="scale-bar">
     <div class="scale-bar-line"></div>
     <span id="scaleBarLabel" class="scale-bar-label">1 UA</span>
+  </div>
+
+  <!-- Modal de Ayuda de Atajos de Teclado Astronómicos -->
+  <div id="hotkeysOverlay" class="modal-overlay">
+    <div class="modal-card" style="max-width: 540px;">
+      <div class="modal-header">
+        <h2>⌨️ Atajos de Teclado Astronómicos</h2>
+        <button id="closeHotkeysBtn" class="close-btn">✖</button>
+      </div>
+      <div class="modal-body" style="line-height: 1.8;">
+        <p>Utiliza el teclado para controlar la simulación como en una misión de la NASA/ESA:</p>
+        <ul style="list-style: none; padding-left: 0; margin-top: 15px;">
+          <li><kbd class="shortcut-key">1</kbd> · Sistema Solar (Modo Principal)</li>
+          <li><kbd class="shortcut-key">2</kbd> · Universo Profundo & Agujero Negro</li>
+          <li><kbd class="shortcut-key">3</kbd> · Constelaciones & Bóveda Celeste</li>
+          <li><kbd class="shortcut-key">E</kbd> · Vista Observatorio Terrestre (Planetario)</li>
+          <li><kbd class="shortcut-key">G</kbd> · Alternar Malla Geodésica Espacio-Tiempo</li>
+          <li><kbd class="shortcut-key">M</kbd> · Silenciar / Activar Audio Cósmico</li>
+          <li><kbd class="shortcut-key">Space</kbd> · Pausar / Reanudar Movimiento Orbital</li>
+          <li><kbd class="shortcut-key">Esc</kbd> · Cerrar Paneles o Detener Seguimiento</li>
+        </ul>
+      </div>
+    </div>
   </div>
 
   <!-- Notificaciones en Pantalla (Toast) -->
