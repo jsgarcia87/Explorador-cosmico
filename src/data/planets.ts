@@ -1,3 +1,5 @@
+import { KeplerianElements } from '../engine/KeplerianOrbitEngine';
+
 export interface PlanetData {
   id: string;
   name: string;
@@ -17,6 +19,7 @@ export interface PlanetData {
   tempCelsius: number;
   atmosphere: string[];
   moonsCount: number;
+  orbitalElements?: KeplerianElements; // Elementos orbitales J2000 NASA JPL
   hasRing?: boolean;
   hasClouds?: boolean;
   hasAtmosphere?: boolean;
@@ -119,6 +122,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: 167,
     atmosphere: ['Oxígeno', 'Sodio', 'Hidrógeno', 'Helio', 'Potasio (exosfera tenue)'],
     moonsCount: 0,
+    orbitalElements: {
+      aAU: 0.387098,
+      e: 0.205630,
+      iDeg: 7.005,
+      omegaDeg: 48.331,
+      wDeg: 29.124,
+      m0Deg: 174.796,
+      periodDays: 87.969
+    },
     craters: true,
     edu: {
       infantil: {
@@ -169,6 +181,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: 464,
     atmosphere: ['Dióxido de carbono (96.5%)', 'Nitrógeno (3.5%)', 'Nubes de ácido sulfúrico'],
     moonsCount: 0,
+    orbitalElements: {
+      aAU: 0.723332,
+      e: 0.006772,
+      iDeg: 3.394,
+      omegaDeg: 76.680,
+      wDeg: 54.884,
+      m0Deg: 50.115,
+      periodDays: 224.701
+    },
     bands: true,
     bandSoft: true,
     hasAtmosphere: true,
@@ -223,6 +244,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: 15,
     atmosphere: ['Nitrógeno (78.08%)', 'Oxígeno (20.95%)', 'Argón (0.93%)', 'Vapor de agua (variable)'],
     moonsCount: 1,
+    orbitalElements: {
+      aAU: 1.000001,
+      e: 0.016708,
+      iDeg: 0.000,
+      omegaDeg: -11.260,
+      wDeg: 114.207,
+      m0Deg: 358.617,
+      periodDays: 365.256
+    },
     hasClouds: true,
     hasAtmosphere: true,
     atmosphereColor: 0x5cc5ff,
@@ -278,6 +308,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: -63,
     atmosphere: ['Dióxido de carbono (95.3%)', 'Nitrógeno (2.7%)', 'Argón (1.6%)'],
     moonsCount: 2, // Fobos y Deimos
+    orbitalElements: {
+      aAU: 1.523679,
+      e: 0.093400,
+      iDeg: 1.850,
+      omegaDeg: 49.558,
+      wDeg: 286.502,
+      m0Deg: 19.373,
+      periodDays: 686.980
+    },
     craters: true,
     poles: true,
     poleSize: 0.16,
@@ -333,6 +372,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: -110,
     atmosphere: ['Hidrógeno (89.8%)', 'Helio (10.2%)', 'Metano', 'Amoníaco'],
     moonsCount: 95,
+    orbitalElements: {
+      aAU: 5.204486,
+      e: 0.048498,
+      iDeg: 1.303,
+      omegaDeg: 100.464,
+      wDeg: 273.867,
+      m0Deg: 20.020,
+      periodDays: 4332.589
+    },
     bands: true,
     spot: { color: 0xb5451f, x: 0.64, y: 0.58, rx: 28, ry: 16 },
     hasAtmosphere: true,
@@ -387,6 +435,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: -140,
     atmosphere: ['Hidrógeno (96.3%)', 'Helio (3.25%)', 'Metano', 'Amoníaco'],
     moonsCount: 146,
+    orbitalElements: {
+      aAU: 9.582627,
+      e: 0.055546,
+      iDeg: 2.485,
+      omegaDeg: 113.665,
+      wDeg: 339.392,
+      m0Deg: 317.020,
+      periodDays: 10759.22
+    },
     bands: true,
     bandSoft: true,
     hasRing: true,
@@ -442,6 +499,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: -195,
     atmosphere: ['Hidrógeno (82.5%)', 'Helio (15.2%)', 'Metano (2.3%)'],
     moonsCount: 28,
+    orbitalElements: {
+      aAU: 19.20120,
+      e: 0.046381,
+      iDeg: 0.773,
+      omegaDeg: 74.006,
+      wDeg: 96.998,
+      m0Deg: 142.238,
+      periodDays: 30685.4
+    },
     bands: true,
     bandSoft: true,
     hasAtmosphere: true,
@@ -496,6 +562,15 @@ export const PLANETS: PlanetData[] = [
     tempCelsius: -200,
     atmosphere: ['Hidrógeno (80%)', 'Helio (19%)', 'Metano (1.5%)'],
     moonsCount: 16,
+    orbitalElements: {
+      aAU: 30.04762,
+      e: 0.009456,
+      iDeg: 1.770,
+      omegaDeg: 131.784,
+      wDeg: 273.187,
+      m0Deg: 256.228,
+      periodDays: 60189.0
+    },
     bands: true,
     hasAtmosphere: true,
     atmosphereColor: 0x6d8fff,
@@ -552,6 +627,15 @@ export const DWARF_PLANETS: PlanetData[] = [
     tempCelsius: -229,
     atmosphere: ['Nitrógeno tenue', 'Metano', 'Monóxido de carbono'],
     moonsCount: 5,
+    orbitalElements: {
+      aAU: 39.48211,
+      e: 0.248827,
+      iDeg: 17.140,
+      omegaDeg: 110.303,
+      wDeg: 113.763,
+      m0Deg: 14.882,
+      periodDays: 90560.0
+    },
     craters: true,
     edu: {
       infantil: {

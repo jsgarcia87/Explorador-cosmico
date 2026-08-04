@@ -234,8 +234,28 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
               </div>
               <div className="p-2 rounded bg-black/40 border border-white/5">
                 <span className="text-slate-500 block text-[10px]">DISTANCIA SOL</span>
-                <strong className="text-slate-200">{selected.data.realDistanceAU} AU</strong>
+                <strong className="text-slate-200">{selected.data.realDistanceAU} AU ({Math.round(selected.data.realDistanceAU * 149.6)}M km)</strong>
               </div>
+              {selected.data.orbitalElements && (
+                <>
+                  <div className="p-2 rounded bg-black/40 border border-cyan-500/20">
+                    <span className="text-cyan-400/80 block text-[10px]">EXCENTRICIDAD (e)</span>
+                    <strong className="text-cyan-300">{selected.data.orbitalElements.e.toFixed(4)}</strong>
+                  </div>
+                  <div className="p-2 rounded bg-black/40 border border-cyan-500/20">
+                    <span className="text-cyan-400/80 block text-[10px]">INCLINACIÓN (i)</span>
+                    <strong className="text-cyan-300">{selected.data.orbitalElements.iDeg.toFixed(2)}°</strong>
+                  </div>
+                  <div className="p-2 rounded bg-black/40 border border-cyan-500/20">
+                    <span className="text-cyan-400/80 block text-[10px]">PERÍODO SIDERAL</span>
+                    <strong className="text-cyan-300">
+                      {selected.data.orbitalElements.periodDays >= 365
+                        ? `${(selected.data.orbitalElements.periodDays / 365.256).toFixed(2)} años`
+                        : `${selected.data.orbitalElements.periodDays.toFixed(1)} días`}
+                    </strong>
+                  </div>
+                </>
+              )}
             </div>
 
             {selected.data.atmosphere && selected.data.atmosphere.length > 0 && (

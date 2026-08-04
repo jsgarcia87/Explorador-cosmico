@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PLANETS, DWARF_PLANETS, PlanetData } from '../data/planets';
+import { KeplerianOrbitEngine, KeplerianElements } from './KeplerianOrbitEngine';
 
 export class SolarSystemScene {
   private scene: THREE.Scene;
@@ -73,8 +74,17 @@ export class SolarSystemScene {
     mesh.castShadow = !isSun;
     mesh.receiveShadow = !isSun;
 
-    // Posición orbital inicial
-    mesh.position.set(data.distance, 0, 0);
+    // Posición orbital kepleriana inicial e inclinación axial
+    if (data.orbitalElements) {
+      const initRes = KeplerianOrbitEngine.getPositionAtDate(new Date(), data.orbitalElements);
+      mesh.position.copy(initRes.position);
+      mesh.userData.astrometry = initRes;
+    } else {
+      mesh.position.set(data.distance, 0, 0);
+    }
+
+    // Aplicar inclinación axial real del eje de rotación (rad)
+    mesh.rotation.z = data.tilt;
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
@@ -123,9 +133,30 @@ export class SolarSystemScene {
     if (isSun) {
       this.sunMesh = mesh;
     } else {
-      // Línea orbital
-      this.createOrbitLine(data.distance);
+      // Línea orbital kepleriana 3D
+      if (data.orbitalElements) {
+        this.createKeplerianOrbitLine(data.orbitalElements, data.color);
+      } else {
+        this.createOrbitLine(data.distance);
+      }
     }
+  }
+
+  private createKeplerianOrbitLine(elements: KeplerianElements, color: number): void {
+    const points = KeplerianOrbitEngine.generateOrbitCurve3D(elements, 256);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+    const planetColor = new THREE.Color(color);
+    const orbitColor = new THREE.Color(0x1c2d3e).lerp(planetColor, 0.5);
+
+    const material = new THREE.LineBasicMaterial({
+      color: orbitColor,
+      transparent: true,
+      opacity: 0.6
+    });
+    const orbitLine = new THREE.Line(geometry, material);
+    this.rootGroup.add(orbitLine);
+    this.orbitLines.push(orbitLine);
   }
 
   private createOrbitLine(radius: number): void {
@@ -182,26 +213,33 @@ export class SolarSystemScene {
     this.rootGroup.add(this.asteroidBelt);
   }
 
-  public update(delta: number, timeSpeed: number): void {
+  public update(delta: number, timeSpeed: number, currentDate?: Date): void {
     const effectiveSpeed = delta * timeSpeed * 0.1;
 
-    // 1. Actualizar traslación kepleriana y rotación axial de los planetas
+    // 1. Actualizar traslación kepleriana real y rotación axial de los planetas
     this.planetMeshes.forEach((mesh, id) => {
       const data = mesh.userData.data as PlanetData;
       if (!data) return;
 
-      // Rotación axial
-      mesh.rotation.y += delta * 0.5;
+      // Rotación axial sidérea (sentido normal o retrógrado como Venus/Urano)
+      const rotationDir = data.rotationPeriodHours < 0 ? -1 : 1;
+      mesh.rotation.y += delta * 0.5 * rotationDir;
 
-      // Traslación orbital
-      if (id !== 'sol' && data.orbitalSpeed > 0) {
-        const currentAngle = Math.atan2(mesh.position.z, mesh.position.x);
-        const nextAngle = currentAngle + data.orbitalSpeed * effectiveSpeed * 0.05;
-        mesh.position.set(
-          Math.cos(nextAngle) * data.distance,
-          0,
-          Math.sin(nextAngle) * data.distance
-        );
+      // Traslación orbital kepleriana (J2000)
+      if (id !== 'sol') {
+        if (data.orbitalElements && currentDate) {
+          const res = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements);
+          mesh.position.copy(res.position);
+          mesh.userData.astrometry = res;
+        } else if (data.orbitalSpeed > 0) {
+          const currentAngle = Math.atan2(mesh.position.z, mesh.position.x);
+          const nextAngle = currentAngle + data.orbitalSpeed * effectiveSpeed * 0.05;
+          mesh.position.set(
+            Math.cos(nextAngle) * data.distance,
+            0,
+            Math.sin(nextAngle) * data.distance
+          );
+        }
       }
     });
 

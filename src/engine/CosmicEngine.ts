@@ -315,7 +315,7 @@ export class CosmicEngine {
 
     // 4. Actualizar escena activa
     if (this.currentMode === 'solar') {
-      this.solarScene.update(delta, this.timeSpeed);
+      this.solarScene.update(delta, this.timeSpeed, this.currentDate);
     } else if (this.currentMode === 'earth') {
       this.earthScene.update(delta, this.timeSpeed);
     } else if (this.currentMode === 'deep') {
