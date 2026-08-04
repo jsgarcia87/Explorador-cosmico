@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Explorador Cósmico</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg-deep:#05060f;
+    --bg-deep2:#0c0f1e;
+    --accent-cyan:#5ce1d6;
+    --accent-violet:#8b7bff;
+    --accent-amber:#e0b054;
+    --ink:#eef1fb;
+    --ink-dim:#8b93b8;
+    --panel:rgba(10,12,24,.82);
+    --panel-border:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:var(--bg-deep);
+    font-family:'Inter',sans-serif; color:var(--ink); touch-action:none;}
+  #c{position:fixed;inset:0;display:block;width:100%;height:100%;cursor:grab;}
+  #c:active{cursor:grabbing;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- Loading ---------- */
+  #loading{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 40%, #0c1024 0%, #020309 70%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .6s ease;}
+  #loading .orbiter{width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.14);position:relative;}
+  #loading .orbiter::before{content:'';position:absolute;top:-3px;left:50%;width:6px;height:6px;margin-left:-3px;
+    border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 10px var(--accent-cyan);
+    animation:spin 1.1s linear infinite; transform-origin:3px 25px;}
+  @keyframes spin{from{transform:rotate(0deg) translateY(0);}to{transform:rotate(360deg) translateY(0);}}
+  #loading h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;margin:0;letter-spacing:2.5px;
+    text-transform:uppercase;color:var(--ink);}
+  #loading p{color:var(--ink-dim);font-size:12.5px;margin:0;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;}
+  .loadbar{width:180px;height:2px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;}
+  .loadbar>div{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-violet));
+    animation:load 1.4s ease-in-out forwards;}
+  @keyframes load{to{width:100%;}}
+
+  /* ---------- Top bar ---------- */
+  #topbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;gap:8px;pointer-events:none;}
+  #title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;letter-spacing:1.4px;text-transform:uppercase;
+    display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--panel-border);padding:8px 13px;
+    border-radius:8px;pointer-events:auto;backdrop-filter:blur(8px);}
+  #title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-cyan);box-shadow:0 0 8px var(--accent-cyan);}
+  #modeSwitch{display:flex;gap:6px;pointer-events:auto;}
+  .modebtn{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
+    border:1px solid var(--panel-border);background:var(--panel);color:var(--ink-dim);padding:9px 12px;border-radius:8px;
+    backdrop-filter:blur(8px);cursor:pointer;transition:.2s;}
+  .modebtn.active{color:var(--bg-deep);background:var(--accent-cyan);border-color:var(--accent-cyan);}
+
+  /* ---------- Badge tracker ---------- */
+  #badgeBar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:7px;
+    padding:10px 12px;overflow-x:auto;background:linear-gradient(0deg, rgba(2,3,9,.92), rgba(2,3,9,0));
+    pointer-events:auto;}
+  #badgeBar::-webkit-scrollbar{display:none;}
+  .badgeChip{flex:0 0 auto;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);filter:grayscale(1) opacity(.4);
+    transition:.3s;}
+  .badgeChip.got{filter:none;opacity:1;background:rgba(92,225,214,.1);border-color:var(--accent-cyan);
+    box-shadow:0 0 10px rgba(92,225,214,.35);}
+  #progressText{font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11px;color:var(--ink-dim);white-space:nowrap;
+    padding-right:4px;letter-spacing:.3px;}
+
+  /* ---------- Hint ---------- */
+  #hint{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:15;background:var(--panel);
+    border:1px solid var(--panel-border);padding:7px 14px;border-radius:8px;font-size:12px;color:var(--ink-dim);
+    pointer-events:none;backdrop-filter:blur(8px);transition:opacity .5s;text-align:center;font-family:'Inter',sans-serif;}
+
+  /* ---------- Info panel ---------- */
+  #infoPanel{position:fixed;z-index:30;left:50%;bottom:64px;transform:translateX(-50%) translateY(20px);
+    width:min(400px, 92vw);max-height:52vh;overflow-y:auto;background:var(--panel);border:1px solid var(--panel-border);
+    border-radius:12px;padding:16px 18px 18px;backdrop-filter:blur(12px);box-shadow:0 10px 40px rgba(0,0,0,.55);
+    opacity:0;pointer-events:none;transition:.3s cubic-bezier(.2,.9,.3,1.05);}
+  #infoPanel.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0);}
+  #infoPanel .closeX{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--ink-dim);
+    font-size:20px;cursor:pointer;line-height:1;}
+  #infoPanel .icon{font-size:28px;opacity:.9;}
+  #infoPanel h2{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;margin:8px 0 2px;color:var(--ink);}
+  #infoPanel .type{font-size:10.5px;color:var(--accent-cyan);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;
+    display:block;font-family:'JetBrains Mono',monospace;}
+  #infoPanel ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink);}
+  #infoPanel .fun{margin-top:10px;padding:9px 11px;border-radius:8px;background:rgba(139,123,255,.1);
+    border-left:2px solid var(--accent-violet);font-size:13px;line-height:1.45;color:var(--ink);}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;top:105px;left:50%;transform:translateX(-50%) translateY(-6px);z-index:40;
+    background:var(--bg-deep2);color:var(--accent-cyan);font-family:'JetBrains Mono',monospace;border:1px solid var(--accent-cyan);
+    font-weight:500;font-size:12.5px;padding:9px 16px;border-radius:8px;opacity:0;transition:.35s cubic-bezier(.3,1.2,.4,1);
+    box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Quiz ---------- */
+  #quizBtn{position:fixed;z-index:20;right:12px;bottom:64px;background:var(--panel);border:1px solid var(--panel-border);
+    color:var(--ink);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11.5px;letter-spacing:.5px;
+    text-transform:uppercase;padding:11px 14px;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.35);cursor:pointer;
+    display:flex;align-items:center;gap:6px;backdrop-filter:blur(8px);}
+  #quizModal{position:fixed;inset:0;z-index:60;background:rgba(2,3,8,.85);backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s;}
+  #quizModal.show{opacity:1;pointer-events:auto;}
+  #quizCard{width:min(420px,90vw);max-height:80vh;overflow-y:auto;background:var(--bg-deep2);border:1px solid var(--panel-border);
+    border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  #quizCard h3{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:16px;letter-spacing:.5px;text-transform:uppercase;
+    margin:0 0 4px;color:var(--ink);}
+  #quizCard .qprogress{font-size:11.5px;color:var(--ink-dim);margin-bottom:14px;font-family:'JetBrains Mono',monospace;}
+  #quizCard .qtext{font-size:15px;font-weight:600;margin-bottom:12px;line-height:1.4;}
+  .qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--panel-border);
+    color:var(--ink);font-family:'Inter',sans-serif;font-size:14px;font-weight:500;padding:11px 13px;border-radius:8px;
+    margin-bottom:9px;cursor:pointer;transition:.2s;}
+  .qopt:active{transform:scale(.98);}
+  .qopt.correct{background:rgba(92,225,214,.15);border-color:var(--accent-cyan);}
+  .qopt.wrong{background:rgba(255,107,107,.12);border-color:#ff6b6b;}
+  #quizClose{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--ink-dim);font-size:20px;cursor:pointer;}
+  #quizCard{position:relative;}
+  #quizResult{text-align:center;padding:10px 0;}
+  #quizResult .big{font-size:38px;margin-bottom:6px;}
+  #quizResult h3{color:var(--accent-cyan);}
+  #quizAgain{margin-top:6px;background:var(--accent-cyan);color:var(--bg-deep);border:none;font-family:'Space Grotesk',sans-serif;
+    font-weight:600;letter-spacing:.4px;text-transform:uppercase;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:12.5px;}
+
+  #resetBtn{position:fixed;left:12px;bottom:64px;z-index:20;background:var(--panel);border:1px solid var(--panel-border);
+    color:var(--ink-dim);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11px;letter-spacing:.4px;
+    text-transform:uppercase;padding:11px 12px;border-radius:8px;cursor:pointer;backdrop-filter:blur(8px);}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="orbiter"></div>
+  <h1>Explorador Cósmico</h1>
+  <p>// inicializando simulación</p>
+  <div class="loadbar"><div></div></div>
+</div>
+
+<canvas id="c"></canvas>
+
+<div id="topbar">
+  <div id="title"><span class="dot"></span>Explorador Cósmico</div>
+  <div id="modeSwitch">
+    <button class="modebtn active" id="btnSolar">Sistema Solar</button>
+    <button class="modebtn" id="btnDeep">Universo Profundo</button>
+  </div>
+</div>
+
+<div id="hint">Arrastra para orientar la cámara · Toca un objeto para analizarlo</div>
+
+<button id="resetBtn">Centrar vista</button>
+<button id="quizBtn">Quiz</button>
+
+<div id="infoPanel">
+  <button class="closeX" id="closeInfo">✕</button>
+  <div class="icon" id="infoIcon">🪐</div>
+  <span class="type" id="infoType">Planeta</span>
+  <h2 id="infoTitle">Nombre</h2>
+  <ul id="infoFacts"></ul>
+  <div class="fun" id="infoFun"></div>
+</div>
+
+<div id="toast">⭐ ¡Insignia conseguida!</div>
+
+<div id="badgeBar">
+  <span id="progressText">0/0</span>
+</div>
+
+<div id="quizModal">
+  <div id="quizCard">
+    <button id="quizClose">✕</button>
+    <div id="quizBody"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =========================================================
+   EXPLORADOR CÓSMICO — juego educativo 3D del universo
+   ========================================================= */
+
+/* ---------- Datos educativos ---------- */
+const PLANETS = [
+  {id:'sol', name:'El Sol', icon:'☀️', type:'Nuestra estrella', color:0xffd166, radius:6, distance:0, speed:0, tilt:0,
+   facts:[
+     'El Sol es una estrella enorme hecha de gas súper caliente.',
+     'Es tan grande que caben más de un millón de planetas Tierra dentro de él.',
+     'Sin su luz y calor, no podría existir vida en la Tierra.'],
+   fun:'Dato curioso: la luz del Sol tarda 8 minutos en llegar hasta la Tierra.'},
+  {id:'mercurio', name:'Mercurio', icon:'🪨', type:'Planeta rocoso', color:0x9c9b96, radius:0.55, distance:12, speed:0.9, tilt:0.01,
+   craters:true,
+   facts:[
+     'Es el planeta más cercano al Sol y también el más pequeño.',
+     'De día hace muchísimo calor y de noche muchísimo frío.'],
+   fun:'Dato curioso: un año en Mercurio dura solo 88 días de la Tierra.'},
+  {id:'venus', name:'Venus', icon:'🌕', type:'Planeta rocoso', color:0xe8c98a, radius:0.95, distance:17, speed:0.7, tilt:0.01,
+   bands:true, bandSoft:true, atmosphere:0xf0d9a0, atmoOpacity:0.5,
+   facts:[
+     'Venus tiene nubes espesas que atrapan el calor como una manta.',
+     'Es el planeta más caliente de todos, ¡más que Mercurio!'],
+   fun:'Dato curioso: en Venus, un día dura más que un año.'},
+  {id:'tierra', name:'La Tierra', icon:'🌍', type:'Nuestro planeta', color:0x1c5fc9, radius:1.0, distance:22, speed:0.55, tilt:0.41,
+   hasMoon:true, hasClouds:true, poles:true, atmosphere:0x6fb8ff, atmoOpacity:0.45,
+   facts:[
+     'Es el único planeta donde sabemos que existe vida.',
+     'Está cubierta en su mayoría por agua: ¡por eso se ve azul!'],
+   fun:'Dato curioso: la Tierra gira tan rápido que en 24 horas da una vuelta completa sobre sí misma.'},
+  {id:'marte', name:'Marte', icon:'🔴', type:'Planeta rocoso', color:0xb1440e, radius:0.62, distance:27, speed:0.45, tilt:0.44,
+   craters:true, poles:true, poleSize:0.12,
+   facts:[
+     'Se le llama el planeta rojo por el color de su tierra oxidada.',
+     'Tiene el volcán más grande de todo el sistema solar.'],
+   fun:'Dato curioso: científicos han enviado robots exploradores a caminar por su superficie.'},
+  {id:'jupiter', name:'Júpiter', icon:'🟠', type:'Gigante gaseoso', color:0xcf9f6e, radius:4.3, distance:44, speed:0.24, tilt:0.05,
+   bands:true, spot:{color:0xb5451f, x:0.64, y:0.58, rx:26, ry:15},
+   facts:[
+     'Es el planeta más grande de todos, hecho principalmente de gas.',
+     'Tiene una tormenta gigante llamada la Gran Mancha Roja.'],
+   fun:'Dato curioso: Júpiter tiene más de 90 lunas conocidas.'},
+  {id:'saturno', name:'Saturno', icon:'🪐', type:'Gigante gaseoso', color:0xe3cf9c, radius:3.7, distance:60, speed:0.18, tilt:0.47,
+   bands:true, bandSoft:true, hasRing:true,
+   facts:[
+     'Es famoso por sus preciosos anillos hechos de hielo y roca.',
+     'Es tan poco denso que, si hubiera una bañera enorme, ¡flotaría en el agua!'],
+   fun:'Dato curioso: sus anillos tienen miles de kilómetros de ancho pero son muy finos.'},
+  {id:'urano', name:'Urano', icon:'🔵', type:'Gigante helado', color:0x9fe8e0, radius:2.0, distance:74, speed:0.13, tilt:1.4,
+   bands:true, bandSoft:true, atmosphere:0xbdf3ee, atmoOpacity:0.3,
+   facts:[
+     'Urano gira "acostado de lado" a diferencia de los demás planetas.',
+     'Es de color azul verdoso por un gas llamado metano.'],
+   fun:'Dato curioso: en Urano cada polo tiene una noche que dura ¡42 años!'},
+  {id:'neptuno', name:'Neptuno', icon:'🔷', type:'Gigante helado', color:0x3a5fcd, radius:1.95, distance:86, speed:0.1, tilt:0.49,
+   bands:true, atmosphere:0x6d8fff, atmoOpacity:0.35,
+   facts:[
+     'Es el planeta más alejado del Sol y también el más ventoso.',
+     'Sus vientos son los más fuertes de todo el sistema solar.'],
+   fun:'Dato curioso: Neptuno tarda 165 años terrestres en dar una vuelta al Sol.'},
+];
+
+const DEEPSPACE = [
+  {id:'gigante_roja', name:'Gigante Roja', icon:'🔴', type:'Tipo de estrella', pos:[-34,6,-10],
+   facts:[
+     'Es una estrella vieja que se ha hinchado y agrandado muchísimo.',
+     'Nuestro Sol se convertirá en una gigante roja dentro de miles de millones de años.'],
+   fun:'Dato curioso: algunas gigantes rojas son tan grandes que si sustituyeran al Sol, se tragarían a la Tierra.'},
+  {id:'enana_blanca', name:'Enana Blanca', icon:'⚪', type:'Tipo de estrella', pos:[-18,-8,-26],
+   facts:[
+     'Es lo que queda de una estrella pequeña cuando se le acaba el combustible.',
+     'Es diminuta pero increíblemente densa y caliente.'],
+   fun:'Dato curioso: una cucharadita de su materia pesaría como un elefante.'},
+  {id:'pulsar', name:'Púlsar', icon:'💫', type:'Estrella de neutrones', pos:[20,10,-30],
+   facts:[
+     'Es una estrella muerta que gira muy rápido y lanza haces de luz.',
+     'Estos haces giran como el foco de un faro en el mar.'],
+   fun:'Dato curioso: algunos púlsares giran más de 700 veces por segundo.'},
+  {id:'agujero_negro', name:'Agujero Negro', icon:'⚫', type:'Región del espacio', pos:[36,-4,-14],
+   facts:[
+     'Tiene tanta gravedad que ni siquiera la luz puede escapar de él.',
+     'Se forma cuando una estrella muy grande colapsa sobre sí misma.'],
+   fun:'Dato curioso: no lo podemos ver directamente, ¡pero sí el brillo del gas que gira a su alrededor!'},
+  {id:'nebulosa', name:'Nebulosa', icon:'☁️', type:'Nube estelar', pos:[-6,14,-42],
+   facts:[
+     'Es una nube gigante de gas y polvo en el espacio.',
+     'Dentro de las nebulosas nacen las estrellas nuevas.'],
+   fun:'Dato curioso: sus colores vienen de los distintos gases que la forman.'},
+  {id:'galaxia', name:'Galaxia Espiral', icon:'🌀', type:'Isla de estrellas', pos:[8,-12,-56],
+   facts:[
+     'Una galaxia es un enorme grupo de miles de millones de estrellas.',
+     'Nuestro hogar, la Vía Láctea, es una galaxia espiral como esta.'],
+   fun:'Dato curioso: hay más galaxias en el universo que granos de arena en todas las playas de la Tierra.'},
+];
+
+const QUIZ = [
+  {q:'¿Cuál es el planeta más grande del sistema solar?', opts:['Marte','Júpiter','Venus'], a:1},
+  {q:'¿Qué planeta tiene los anillos más famosos?', opts:['Saturno','Mercurio','Tierra'], a:0},
+  {q:'¿Por qué a Marte lo llaman "el planeta rojo"?', opts:['Por su cielo','Por su tierra oxidada','Por el Sol'], a:1},
+  {q:'¿Qué es un púlsar?', opts:['Un cometa','Una estrella que gira lanzando haces de luz','Un planeta helado'], a:1},
+  {q:'¿Qué ocurre dentro de una nebulosa?', opts:['Nacen estrellas nuevas','Se derriten los planetas','Nada, está vacía'], a:0},
+  {q:'¿Qué caracteriza a un agujero negro?', opts:['Es muy frío','Ni la luz puede escapar de su gravedad','Es un planeta gigante'], a:1},
+  {q:'¿Cuál es el planeta más cercano al Sol?', opts:['Venus','Mercurio','Tierra'], a:1},
+  {q:'¿Por qué la Tierra se ve azul desde el espacio?', opts:['Por el cielo','Por estar cubierta mayormente de agua','Por el hielo'], a:1},
+];
+
+/* ---------- Estado del juego ---------- */
+const visited = new Set();
+const ALL_IDS = [...PLANETS.map(p=>p.id), ...DEEPSPACE.map(d=>d.id)];
+let currentMode = 'solar';
+
+/* ---------- Renderer / Scene / Camera ---------- */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 2000);
+
+/* ---------- Custom orbit-drag camera controller ---------- */
+const controller = {
+  target: new THREE.Vector3(0,0,0),
+  radius: 140, theta: 0.9, phi: 1.15,
+  minRadius: 6, maxRadius: 280,
+  dragging:false, lastX:0, lastY:0,
+  autoRotate:true,
+  update(){
+    this.phi = Math.max(0.15, Math.min(Math.PI-0.15, this.phi));
+    const sinPhi = Math.sin(this.phi);
+    camera.position.set(
+      this.target.x + this.radius*sinPhi*Math.sin(this.theta),
+      this.target.y + this.radius*Math.cos(this.phi),
+      this.target.z + this.radius*sinPhi*Math.cos(this.theta)
+    );
+    camera.lookAt(this.target);
+  }
+};
+controller.update();
+
+function pointerDown(x,y){ controller.dragging=true; controller.lastX=x; controller.lastY=y; controller.autoRotate=false; }
+function pointerMove(x,y){
+  if(!controller.dragging) return;
+  const dx = x-controller.lastX, dy = y-controller.lastY;
+  controller.theta -= dx*0.0045;
+  controller.phi   -= dy*0.0045;
+  controller.lastX=x; controller.lastY=y;
+}
+function pointerUp(){ controller.dragging=false; }
+
+canvas.addEventListener('mousedown', e=>pointerDown(e.clientX,e.clientY));
+window.addEventListener('mousemove', e=>pointerMove(e.clientX,e.clientY));
+window.addEventListener('mouseup', pointerUp);
+canvas.addEventListener('touchstart', e=>{ if(e.touches.length===1) pointerDown(e.touches[0].clientX,e.touches[0].clientY); }, {passive:true});
+canvas.addEventListener('touchmove', e=>{ if(e.touches.length===1) pointerMove(e.touches[0].clientX,e.touches[0].clientY); }, {passive:true});
+canvas.addEventListener('touchend', pointerUp);
+
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  controller.radius = Math.max(controller.minRadius, Math.min(controller.maxRadius, controller.radius + e.deltaY*0.03));
+}, {passive:false});
+
+/* pinch zoom for touch */
+let pinchStart=null;
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length===2){
+    pinchStart = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+  }
+}, {passive:true});
+canvas.addEventListener('touchmove', e=>{
+  if(e.touches.length===2 && pinchStart){
+    const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+    const delta = pinchStart - d;
+    controller.radius = Math.max(controller.minRadius, Math.min(controller.maxRadius, controller.radius + delta*0.05));
+    pinchStart = d;
+  }
+}, {passive:true});
+
+/* ---------- Lighting ---------- */
+scene.add(new THREE.AmbientLight(0x2a3060, 0.55));
+const sunLight = new THREE.PointLight(0xfff2cc, 3.6, 600, 1.35);
+scene.add(sunLight);
+
+/* ---------- Starfield background ---------- */
+function buildStars(count, spread){
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count*3);
+  const col = new Float32Array(count*3);
+  const palette = [[1,1,1],[0.75,0.85,1],[1,0.9,0.8],[1,0.8,0.85]];
+  for(let i=0;i<count;i++){
+    const r = spread*(0.5+Math.random()*0.5);
+    const th = Math.random()*Math.PI*2, ph = Math.acos(2*Math.random()-1);
+    pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1] = r*Math.cos(ph);
+    pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
+    const c = palette[Math.floor(Math.random()*palette.length)];
+    col[i*3]=c[0]; col[i*3+1]=c[1]; col[i*3+2]=c[2];
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({size:1.1, vertexColors:true, transparent:true, opacity:.9, sizeAttenuation:true});
+  return new THREE.Points(geo, mat);
+}
+scene.add(buildStars(6000, 700));
+
+/* ---------- Soft glow sprite texture ---------- */
+function glowTexture(hex){
+  const c = document.createElement('canvas'); c.width=c.height=128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64,64,0,64,64,64);
+  const col = new THREE.Color(hex);
+  g.addColorStop(0, `rgba(${col.r*255},${col.g*255},${col.b*255},0.9)`);
+  g.addColorStop(0.4, `rgba(${col.r*255},${col.g*255},${col.b*255},0.35)`);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(c);
+}
+function softDot(){
+  const c = document.createElement('canvas'); c.width=c.height=64;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+}
+const DOT = softDot();
+
+/* ---------- Procedural planet textures ---------- */
+function planetTexture(baseHex, opts={}){
+  const {bands=false, bandSoft=false, blotches=true, craters=false, poles=false, poleSize=0.16, spot=null} = opts;
+  const w=512,h=256;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const base=new THREE.Color(baseHex);
+  ctx.fillStyle = base.getStyle();
+  ctx.fillRect(0,0,w,h);
+
+  if(bands){
+    const bandCount = bandSoft ? 14 : 20;
+    for(let i=0;i<bandCount;i++){
+      const y = (h/bandCount)*i;
+      const shade = base.clone().offsetHSL(0, (Math.random()-0.5)*0.03, (Math.random()-0.5)*(bandSoft?0.08:0.16));
+      ctx.fillStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${bandSoft?0.28+Math.random()*0.22:0.4+Math.random()*0.35})`;
+      const bh = h/bandCount + 3;
+      ctx.fillRect(0, y, w, bh);
+      // turbulence streaks along the band
+      if(!bandSoft){
+        for(let s=0;s<3;s++){
+          ctx.fillStyle = `rgba(255,255,255,${0.03+Math.random()*0.05})`;
+          ctx.beginPath();
+          ctx.ellipse(Math.random()*w, y+bh/2, 30+Math.random()*60, bh*0.4, 0, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+  if(blotches && !craters){
+    for(let i=0;i<50;i++){
+      const shade = base.clone().offsetHSL(0,(Math.random()-0.5)*0.1,(Math.random()-0.5)*0.18);
+      ctx.fillStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${0.12+Math.random()*0.22})`;
+      const rx = 10+Math.random()*40, ry = rx*(0.5+Math.random()*0.5);
+      ctx.beginPath();
+      ctx.ellipse(Math.random()*w, Math.random()*h, rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  if(craters){
+    // base terrain mottling
+    for(let i=0;i<70;i++){
+      const shade = base.clone().offsetHSL(0,0,(Math.random()-0.5)*0.1);
+      ctx.fillStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${0.1+Math.random()*0.15})`;
+      const rx = 8+Math.random()*30, ry = rx*(0.6+Math.random()*0.4);
+      ctx.beginPath();
+      ctx.ellipse(Math.random()*w, Math.random()*h, rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+      ctx.fill();
+    }
+    // crater rings: dark bowl + bright rim
+    for(let i=0;i<55;i++){
+      const cx=Math.random()*w, cy=Math.random()*h, r=3+Math.random()*16;
+      const dark = base.clone().offsetHSL(0,0,-0.22);
+      const light = base.clone().offsetHSL(0,0,0.2);
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(${dark.r*255},${dark.g*255},${dark.b*255},0.5)`; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx,cy,r*1.18,0,Math.PI*2);
+      ctx.strokeStyle = `rgba(${light.r*255},${light.g*255},${light.b*255},0.35)`;
+      ctx.lineWidth = Math.max(1,r*0.22); ctx.stroke();
+    }
+  }
+  if(spot){
+    const sc = new THREE.Color(spot.color);
+    const g = ctx.createRadialGradient(spot.x*w, spot.y*h, 2, spot.x*w, spot.y*h, spot.rx);
+    g.addColorStop(0, `rgba(${sc.r*255},${sc.g*255},${sc.b*255},0.85)`);
+    g.addColorStop(0.7, `rgba(${sc.r*255},${sc.g*255},${sc.b*255},0.45)`);
+    g.addColorStop(1, `rgba(${sc.r*255},${sc.g*255},${sc.b*255},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(spot.x*w, spot.y*h, spot.rx, spot.ry, -0.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+  if(poles){
+    const capH = h*poleSize;
+    const gTop = ctx.createLinearGradient(0,0,0,capH*1.6);
+    gTop.addColorStop(0,'rgba(255,255,255,0.95)'); gTop.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = gTop; ctx.fillRect(0,0,w,capH*1.6);
+    const gBot = ctx.createLinearGradient(0,h-capH*1.6,0,h);
+    gBot.addColorStop(0,'rgba(255,255,255,0)'); gBot.addColorStop(1,'rgba(255,255,255,0.95)');
+    ctx.fillStyle = gBot; ctx.fillRect(0,h-capH*1.6,w,capH*1.6);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+function sunTexture(){
+  const w=512,h=256;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const base = new THREE.Color(0xffcf5e);
+  ctx.fillStyle = base.getStyle(); ctx.fillRect(0,0,w,h);
+  // granulation cells
+  for(let i=0;i<260;i++){
+    const shade = base.clone().offsetHSL((Math.random()-0.5)*0.02,0,(Math.random()-0.5)*0.22);
+    ctx.fillStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${0.25+Math.random()*0.35})`;
+    const r = 4+Math.random()*10;
+    ctx.beginPath(); ctx.arc(Math.random()*w, Math.random()*h, r, 0, Math.PI*2); ctx.fill();
+  }
+  // bright flare streaks
+  for(let i=0;i<18;i++){
+    ctx.fillStyle = `rgba(255,255,255,${0.08+Math.random()*0.12})`;
+    const rx=20+Math.random()*60, ry=rx*0.3;
+    ctx.beginPath();
+    ctx.ellipse(Math.random()*w, Math.random()*h, rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // darker sunspots
+  for(let i=0;i<6;i++){
+    const dark = base.clone().offsetHSL(0,0.1,-0.32);
+    ctx.fillStyle = `rgba(${dark.r*255},${dark.g*255},${dark.b*255},0.55)`;
+    const r = 6+Math.random()*10;
+    ctx.beginPath(); ctx.arc(Math.random()*w, Math.random()*h, r, 0, Math.PI*2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate = true;
+  return tex;
+}
+function earthTexture(){
+  const w=512,h=256;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const oceanGrad = ctx.createLinearGradient(0,0,0,h);
+  oceanGrad.addColorStop(0,'#1a3d7a'); oceanGrad.addColorStop(0.5,'#1c5fc9'); oceanGrad.addColorStop(1,'#1a3d7a');
+  ctx.fillStyle = oceanGrad; ctx.fillRect(0,0,w,h);
+  // continents (layered: dark landmass + lighter vegetation + arid tones)
+  const landTones = ['rgba(58,110,60,0.92)','rgba(96,133,63,0.88)','rgba(150,124,80,0.85)','rgba(120,150,90,0.8)'];
+  for(let i=0;i<22;i++){
+    ctx.fillStyle = landTones[i%landTones.length];
+    const rx=16+Math.random()*46, ry=rx*(0.35+Math.random()*0.5);
+    ctx.beginPath();
+    ctx.ellipse(Math.random()*w, 30+Math.random()*(h-60), rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // mountain/desert detail
+  for(let i=0;i<14;i++){
+    ctx.fillStyle = 'rgba(150,110,70,0.4)';
+    const rx=6+Math.random()*16, ry=rx*0.5;
+    ctx.beginPath();
+    ctx.ellipse(Math.random()*w, 30+Math.random()*(h-60), rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // polar ice caps
+  const capH = h*0.14;
+  const gTop = ctx.createLinearGradient(0,0,0,capH*1.5);
+  gTop.addColorStop(0,'rgba(255,255,255,0.97)'); gTop.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = gTop; ctx.fillRect(0,0,w,capH*1.5);
+  const gBot = ctx.createLinearGradient(0,h-capH*1.5,0,h);
+  gBot.addColorStop(0,'rgba(255,255,255,0)'); gBot.addColorStop(1,'rgba(255,255,255,0.97)');
+  ctx.fillStyle = gBot; ctx.fillRect(0,h-capH*1.5,w,capH*1.5);
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return tex;
+}
+function cloudsTexture(){
+  const w=512,h=256;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d'); // transparent background by default
+  for(let i=0;i<60;i++){
+    ctx.fillStyle = `rgba(255,255,255,${0.25+Math.random()*0.4})`;
+    const rx=14+Math.random()*36, ry=rx*(0.3+Math.random()*0.4);
+    ctx.beginPath();
+    ctx.ellipse(Math.random()*w, Math.random()*h, rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return tex;
+}
+function ringTexture(hex, innerRatio=0.56){
+  const size=512;
+  const c=document.createElement('canvas'); c.width=size; c.height=size;
+  const ctx=c.getContext('2d');
+  const cx=size/2, cy=size/2, R=size/2;
+  const base = new THREE.Color(hex);
+  // Real Saturn ring structure, expressed as fractions of the outer radius:
+  // faint C ring -> dense B ring -> Cassini Division (gap) -> A ring -> Encke gap -> outer edge/F ring
+  const bands = [
+    {r0:innerRatio,        r1:innerRatio+0.045, alpha:0.28, light:-0.08},
+    {r0:innerRatio+0.045,  r1:innerRatio+0.18,  alpha:0.5,  light:-0.02},
+    {r0:innerRatio+0.18,   r1:0.855,            alpha:0.95, light:0.09},
+    {r0:0.855,             r1:0.872,            alpha:0.04, light:-0.35},
+    {r0:0.872,             r1:0.955,            alpha:0.78, light:0.02},
+    {r0:0.955,             r1:0.965,            alpha:0.12, light:-0.28},
+    {r0:0.965,             r1:1.0,              alpha:0.42, light:0.06},
+  ];
+  bands.forEach(b=>{
+    const rMid = (b.r0+b.r1)/2*R;
+    const lw = Math.max(1,(b.r1-b.r0)*R);
+    const shade = base.clone().offsetHSL(0,0,b.light);
+    ctx.beginPath(); ctx.arc(cx,cy,rMid,0,Math.PI*2);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${b.alpha})`;
+    ctx.stroke();
+  });
+  // fine concentric grain for an icy/dusty texture
+  for(let i=0;i<260;i++){
+    const rr = innerRatio + Math.random()*(1-innerRatio);
+    const shade = base.clone().offsetHSL(0,0,(Math.random()-0.5)*0.14);
+    ctx.beginPath(); ctx.arc(cx,cy,rr*R,0,Math.PI*2);
+    ctx.lineWidth = 0.5+Math.random()*1.3;
+    ctx.strokeStyle = `rgba(${shade.r*255},${shade.g*255},${shade.b*255},${0.06+Math.random()*0.12})`;
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return tex;
+}
+function diskGradientTexture(){
+  const w=512,h=512;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const cx=w/2, cy=h/2;
+  const g = ctx.createRadialGradient(cx,cy,w*0.14, cx,cy,w*0.5);
+  g.addColorStop(0,'rgba(235,245,255,0.95)');
+  g.addColorStop(0.28,'rgba(255,244,214,0.85)');
+  g.addColorStop(0.55,'rgba(255,178,110,0.6)');
+  g.addColorStop(0.8,'rgba(255,110,70,0.35)');
+  g.addColorStop(1,'rgba(140,40,30,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  // turbulent streaks for texture
+  for(let i=0;i<160;i++){
+    const a = Math.random()*Math.PI*2;
+    const r = w*0.16 + Math.random()*w*0.32;
+    const x = cx+Math.cos(a)*r, y = cy+Math.sin(a)*r;
+    ctx.fillStyle = `rgba(255,255,255,${0.05+Math.random()*0.1})`;
+    ctx.beginPath(); ctx.arc(x,y,1+Math.random()*2.5,0,Math.PI*2); ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c); tex.needsUpdate=true;
+  return tex;
+}
+function atmosphereMesh(radius, hexColor, opacity=0.4){
+  const geo = new THREE.SphereGeometry(radius*1.12, 32, 32);
+  const mat = new THREE.ShaderMaterial({
+    uniforms:{ glowColor:{value:new THREE.Color(hexColor)}, glowOpacity:{value:opacity} },
+    vertexShader:`
+      varying vec3 vNormal;
+      void main(){
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }`,
+    fragmentShader:`
+      uniform vec3 glowColor;
+      uniform float glowOpacity;
+      varying vec3 vNormal;
+      void main(){
+        float intensity = pow(0.62 - dot(vNormal, vec3(0.0,0.0,1.0)), 2.2);
+        gl_FragColor = vec4(glowColor, clamp(intensity,0.0,1.0) * glowOpacity);
+      }`,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    depthWrite: false
+  });
+  return new THREE.Mesh(geo, mat);
+}
+
+/* ---------- Build Solar System ---------- */
+const solarGroup = new THREE.Group();
+scene.add(solarGroup);
+
+const focusables = {}; // id -> {mesh, data, group}
+
+PLANETS.forEach(p=>{
+  const group = new THREE.Group();
+  let mat;
+  if(p.id==='sol'){
+    mat = new THREE.MeshBasicMaterial({color:p.color, map: sunTexture()});
+  } else if(p.id==='tierra'){
+    mat = new THREE.MeshStandardMaterial({map: earthTexture(), roughness:0.8, metalness:0.05});
+  } else {
+    mat = new THREE.MeshStandardMaterial({
+      map: planetTexture(p.color,{bands:!!p.bands, bandSoft:!!p.bandSoft, craters:!!p.craters,
+        poles:!!p.poles, poleSize:p.poleSize||0.16, spot:p.spot||null}),
+      roughness:0.92});
+  }
+  const geo = new THREE.SphereGeometry(p.radius, 40, 40);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.z = p.tilt;
+  mesh.position.x = p.distance;
+  mesh.userData.id = p.id;
+  group.add(mesh);
+
+  if(p.id==='sol'){
+    // layered corona for a soft bloom-like flare
+    [ [6,0.95], [9,0.55], [13,0.3], [18,0.15] ].forEach(([scale,op])=>{
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(0xffd166), transparent:true,
+        blending:THREE.AdditiveBlending, opacity:op}));
+      glow.scale.set(p.radius*scale,p.radius*scale,1);
+      mesh.add(glow);
+    });
+  }
+
+  if(p.atmosphere){
+    mesh.add(atmosphereMesh(p.radius, p.atmosphere, p.atmoOpacity||0.4));
+  }
+
+  if(p.hasClouds){
+    const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(p.radius*1.025, 40, 40),
+      new THREE.MeshStandardMaterial({map:cloudsTexture(), transparent:true, roughness:1, depthWrite:false}));
+    mesh.add(cloudMesh);
+    p._cloudMesh = cloudMesh;
+  }
+
+  if(p.hasRing){
+    const ringInner = p.radius*1.3, ringOuter = p.radius*2.6;
+    const ringGeo = new THREE.RingGeometry(ringInner, ringOuter, 128, 1);
+    const ringMat = new THREE.MeshStandardMaterial({map:ringTexture(p.color, ringInner/ringOuter),
+      side:THREE.DoubleSide, transparent:true, roughness:1, metalness:0, alphaTest:0.02});
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI/2 - 0.45;
+    mesh.add(ring);
+  }
+
+  if(p.hasMoon){
+    const moonGroup = new THREE.Group();
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(p.radius*0.27, 20,20),
+      new THREE.MeshStandardMaterial({map:planetTexture(0xbbb8b2,{craters:true, blotches:false}), roughness:1}));
+    moon.position.x = p.radius*2.8;
+    moonGroup.add(moon);
+    mesh.add(moonGroup);
+    p._moonGroup = moonGroup;
+  }
+
+  // orbit line
+  if(p.distance>0){
+    const curve = new THREE.EllipseCurve(0,0, p.distance,p.distance);
+    const pts = curve.getPoints(160).map(pt=>new THREE.Vector3(pt.x,0,pt.y));
+    const orbGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    const orbMat = new THREE.LineBasicMaterial({color:0x8fa3ff, transparent:true, opacity:0.16});
+    solarGroup.add(new THREE.LineLoop(orbGeo, orbMat));
+  }
+
+  solarGroup.add(group);
+  focusables[p.id] = {mesh, data:p, angle: Math.random()*Math.PI*2};
+});
+
+/* asteroid belt */
+(function asteroidBelt(){
+  const count = 1400;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count*3);
+  const col = new Float32Array(count*3);
+  const base = new THREE.Color(0xaa9c86);
+  for(let i=0;i<count;i++){
+    const r = 32 + Math.random()*5.5;
+    const a = Math.random()*Math.PI*2;
+    pos[i*3] = Math.cos(a)*r;
+    pos[i*3+1] = (Math.random()-0.5)*1.3;
+    pos[i*3+2] = Math.sin(a)*r;
+    const shade = base.clone().offsetHSL(0,0,(Math.random()-0.5)*0.25);
+    col[i*3]=shade.r; col[i*3+1]=shade.g; col[i*3+2]=shade.b;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({size:0.3, vertexColors:true, map:DOT, transparent:true, depthWrite:false});
+  const belt = new THREE.Points(geo, mat);
+  solarGroup.add(belt);
+})();
+
+/* ---------- Build Deep Space ---------- */
+const deepGroup = new THREE.Group();
+deepGroup.visible = false;
+scene.add(deepGroup);
+
+function makeGlowMesh(hex, radius, pos, layers=[[7,0.9],[11,0.5],[16,0.25]]){
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius,28,28), new THREE.MeshBasicMaterial({color:hex}));
+  mesh.position.set(...pos);
+  layers.forEach(([scale,op])=>{
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(hex), transparent:true,
+      blending:THREE.AdditiveBlending, opacity:op}));
+    glow.scale.set(radius*scale,radius*scale,1);
+    mesh.add(glow);
+  });
+  return mesh;
+}
+
+// Gigante roja
+{
+  const d = DEEPSPACE.find(x=>x.id==='gigante_roja');
+  const mesh = makeGlowMesh(0xe8552e, 5.2, d.pos, [[6,0.8],[9,0.4],[13,0.18]]);
+  mesh.userData.id = d.id;
+  deepGroup.add(mesh);
+  focusables[d.id] = {mesh, data:d};
+}
+// Enana blanca
+{
+  const d = DEEPSPACE.find(x=>x.id==='enana_blanca');
+  const mesh = makeGlowMesh(0xdcecff, 0.75, d.pos, [[12,0.95],[20,0.55],[30,0.25]]);
+  mesh.userData.id = d.id;
+  deepGroup.add(mesh);
+  focusables[d.id] = {mesh, data:d};
+}
+// Pulsar (con haces giratorios, estrella de neutrones muy compacta)
+{
+  const d = DEEPSPACE.find(x=>x.id==='pulsar');
+  const holder = new THREE.Group(); holder.position.set(...d.pos);
+  holder.rotation.z = 0.35; // magnetic axis tilted from spin axis, like a real pulsar
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.55,20,20), new THREE.MeshBasicMaterial({color:0xdff2ff}));
+  mesh.userData.id = d.id;
+  const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(0xbfe9ff), transparent:true,
+    blending:THREE.AdditiveBlending, opacity:0.8}));
+  coreGlow.scale.set(4,4,1);
+  mesh.add(coreGlow);
+  holder.add(mesh);
+  const beamMat = new THREE.MeshBasicMaterial({color:0xaeeaff, transparent:true, opacity:0.4, blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
+  const beamGeo = new THREE.ConeGeometry(1.1, 30, 20, 1, true);
+  const beam1 = new THREE.Mesh(beamGeo, beamMat); beam1.position.y=15; beam1.rotation.x=Math.PI;
+  const beam2 = new THREE.Mesh(beamGeo, beamMat); beam2.position.y=-15;
+  const beamGroup = new THREE.Group(); beamGroup.add(beam1,beam2);
+  holder.add(beamGroup);
+  const plight = new THREE.PointLight(0x8fe8ff, 2, 40); holder.add(plight);
+  deepGroup.add(holder);
+  focusables[d.id] = {mesh, data:d, beamGroup, plight};
+}
+// Agujero negro
+{
+  const d = DEEPSPACE.find(x=>x.id==='agujero_negro');
+  const holder = new THREE.Group(); holder.position.set(...d.pos);
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.4,32,32), new THREE.MeshBasicMaterial({color:0x000000}));
+  mesh.userData.id = d.id;
+  holder.add(mesh);
+  // photon ring: thin bright rim just outside the event horizon
+  const photonRing = new THREE.Mesh(new THREE.TorusGeometry(2.55, 0.05, 12, 64),
+    new THREE.MeshBasicMaterial({color:0xfff6e0, transparent:true, opacity:0.9, blending:THREE.AdditiveBlending}));
+  photonRing.rotation.x = Math.PI/2 - 0.35;
+  holder.add(photonRing);
+  // accretion disk with a hot-to-cool radial gradient (temperature-like)
+  const diskGeo = new THREE.RingGeometry(2.9, 9.5, 96);
+  const diskMat = new THREE.MeshBasicMaterial({map:diskGradientTexture(), side:THREE.DoubleSide, transparent:true, blending:THREE.AdditiveBlending});
+  const disk = new THREE.Mesh(diskGeo, diskMat);
+  disk.rotation.x = Math.PI/2 - 0.35;
+  holder.add(disk);
+  // second, dimmer disk offset in phase to fake Doppler-beaming asymmetry as it spins
+  const disk2 = new THREE.Mesh(diskGeo.clone(), diskMat.clone());
+  disk2.rotation.x = Math.PI/2 - 0.35; disk2.rotation.z = Math.PI*0.4;
+  disk2.material.opacity = 0.45;
+  holder.add(disk2);
+  // relativistic polar jets
+  const jetMat = new THREE.MeshBasicMaterial({color:0xcfe8ff, transparent:true, opacity:0.35, blending:THREE.AdditiveBlending, side:THREE.DoubleSide});
+  const jetGeo = new THREE.ConeGeometry(0.5, 22, 16, 1, true);
+  const jet1 = new THREE.Mesh(jetGeo, jetMat); jet1.position.y=11; jet1.rotation.x=Math.PI;
+  const jet2 = new THREE.Mesh(jetGeo, jetMat.clone()); jet2.position.y=-11;
+  const jetGroup = new THREE.Group();
+  jetGroup.add(jet1, jet2);
+  jetGroup.rotation.x = Math.PI/2 - 0.35 - Math.PI/2; // align roughly perpendicular to the disk
+  holder.add(jetGroup);
+  const rim = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(0x7a3cff), transparent:true, blending:THREE.AdditiveBlending, opacity:0.6}));
+  rim.scale.set(11,11,1);
+  holder.add(rim);
+  deepGroup.add(holder);
+  focusables[d.id] = {mesh, data:d, disk, disk2, photonRing};
+}
+// Nebulosa (partículas, paleta de astrofotografía real: H-alpha, OIII, polvo)
+{
+  const d = DEEPSPACE.find(x=>x.id==='nebulosa');
+  const count = 900;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count*3);
+  const col = new Float32Array(count*3);
+  const palette = [[0.78,0.24,0.34],[0.2,0.55,0.5],[0.62,0.44,0.85],[0.7,0.5,0.28]];
+  for(let i=0;i<count;i++){
+    pos[i*3]   = d.pos[0] + (Math.random()-0.5)*16;
+    pos[i*3+1] = d.pos[1] + (Math.random()-0.5)*10;
+    pos[i*3+2] = d.pos[2] + (Math.random()-0.5)*16;
+    const c = palette[Math.floor(Math.random()*palette.length)];
+    col[i*3]=c[0]; col[i*3+1]=c[1]; col[i*3+2]=c[2];
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({size:2.4, map:DOT, vertexColors:true, transparent:true, opacity:0.5,
+    blending:THREE.AdditiveBlending, depthWrite:false});
+  const cloud = new THREE.Points(geo, mat);
+  // embedded newborn stars: small, sharp, bright points scattered through the gas
+  const starCount = 40;
+  const sGeo = new THREE.BufferGeometry();
+  const sPos = new Float32Array(starCount*3);
+  for(let i=0;i<starCount;i++){
+    sPos[i*3]   = d.pos[0] + (Math.random()-0.5)*14;
+    sPos[i*3+1] = d.pos[1] + (Math.random()-0.5)*8;
+    sPos[i*3+2] = d.pos[2] + (Math.random()-0.5)*14;
+  }
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos,3));
+  const sMat = new THREE.PointsMaterial({size:0.7, color:0xfff6e6, map:DOT, transparent:true, opacity:0.95,
+    blending:THREE.AdditiveBlending, depthWrite:false});
+  const babyStars = new THREE.Points(sGeo, sMat);
+  // soft volumetric gas layers behind the sparkle particles (muted, astrophotography-like tones)
+  const gasColors = [0xc23a58, 0x3a9e94, 0x8a6bd6, 0xb5813f];
+  const gasGroup = new THREE.Group();
+  for(let i=0;i<12;i++){
+    const hex = gasColors[i%gasColors.length];
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(hex), transparent:true,
+      blending:THREE.AdditiveBlending, opacity:0.16+Math.random()*0.12}));
+    const s = 11+Math.random()*13;
+    spr.scale.set(s,s,1);
+    spr.position.set(d.pos[0]+(Math.random()-0.5)*14, d.pos[1]+(Math.random()-0.5)*8, d.pos[2]+(Math.random()-0.5)*14);
+    gasGroup.add(spr);
+  }
+  // invisible hit-sphere for raycast/click target
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(9,12,12), new THREE.MeshBasicMaterial({visible:false}));
+  hit.position.set(...d.pos);
+  hit.userData.id = d.id;
+  deepGroup.add(gasGroup, cloud, babyStars, hit);
+  focusables[d.id] = {mesh:hit, data:d};
+}
+// Galaxia espiral (partículas, con bulbo cálido, brazos azulados y carriles de polvo)
+{
+  const d = DEEPSPACE.find(x=>x.id==='galaxia');
+  const count = 2400;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count*3);
+  const col = new Float32Array(count*3);
+  const arms = 3;
+  for(let i=0;i<count;i++){
+    const arm = i % arms;
+    const t = Math.random();
+    const r = t*13;
+    const angle = t*6 + arm*(Math.PI*2/arms) + (Math.random()-0.5)*0.4;
+    const x = Math.cos(angle)*r + (Math.random()-0.5)*1.2;
+    const z = Math.sin(angle)*r + (Math.random()-0.5)*1.2;
+    const y = (Math.random()-0.5)*0.6*(1-t*0.6);
+    pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
+    // warm orange/yellow older stars near the bulge, blue-white younger stars in the outer arms
+    const mix = 1-t;
+    col[i*3]= 0.55+0.45*mix; col[i*3+1]=0.6+0.3*mix*0.8; col[i*3+2]=1.0-0.25*mix;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({size:1.3, map:DOT, vertexColors:true, transparent:true, opacity:0.9,
+    blending:THREE.AdditiveBlending, depthWrite:false});
+  const galaxy = new THREE.Points(geo, mat);
+  galaxy.position.set(...d.pos);
+  // dust lanes: darker reddish-brown particles tracing the inner arms, non-additive so they read as obscuration
+  const dustCount = 260;
+  const dGeo = new THREE.BufferGeometry();
+  const dPos = new Float32Array(dustCount*3);
+  for(let i=0;i<dustCount;i++){
+    const arm = i % arms;
+    const t = Math.random()*0.7;
+    const r = t*13;
+    const angle = t*6 + arm*(Math.PI*2/arms) + (Math.random()-0.5)*0.25 + 0.12;
+    dPos[i*3]  = Math.cos(angle)*r;
+    dPos[i*3+1]= (Math.random()-0.5)*0.3;
+    dPos[i*3+2]= Math.sin(angle)*r;
+  }
+  dGeo.setAttribute('position', new THREE.BufferAttribute(dPos,3));
+  const dMat = new THREE.PointsMaterial({size:1.6, color:0x3a2418, map:DOT, transparent:true, opacity:0.35, depthWrite:false});
+  const dust = new THREE.Points(dGeo, dMat);
+  dust.position.set(...d.pos);
+  const core = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture(0xfff2cc), transparent:true, blending:THREE.AdditiveBlending}));
+  core.scale.set(9,9,1); core.position.set(...d.pos);
+  const hit = new THREE.Mesh(new THREE.SphereGeometry(6,12,12), new THREE.MeshBasicMaterial({visible:false}));
+  hit.position.set(...d.pos);
+  hit.userData.id = d.id;
+  deepGroup.add(galaxy, dust, core, hit);
+  focusables[d.id] = {mesh:hit, data:d, galaxyPoints:galaxy, dustPoints:dust};
+}
+// extra distant starfield for deep space mode
+const deepStars = buildStars(3000, 90);
+deepGroup.add(deepStars);
+
+/* ---------- Raycaster / click handling ---------- */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let dragDistance = 0;
+
+function screenToNDC(x,y){
+  mouse.x = (x/window.innerWidth)*2-1;
+  mouse.y = -(y/window.innerHeight)*2+1;
+}
+canvas.addEventListener('mousedown', e=>{ dragDistance=0; });
+window.addEventListener('mousemove', e=>{ if(controller.dragging) dragDistance += Math.abs(e.movementX||0)+Math.abs(e.movementY||0); });
+canvas.addEventListener('click', e=>{
+  if(dragDistance>6) return;
+  screenToNDC(e.clientX,e.clientY);
+  handlePick();
+});
+let touchMoved=false;
+canvas.addEventListener('touchstart', e=>{ touchMoved=false; }, {passive:true});
+canvas.addEventListener('touchmove', ()=>{ touchMoved=true; }, {passive:true});
+canvas.addEventListener('touchend', e=>{
+  if(touchMoved) return;
+  const t = e.changedTouches[0];
+  screenToNDC(t.clientX,t.clientY);
+  handlePick();
+});
+
+function handlePick(){
+  raycaster.setFromCamera(mouse, camera);
+  const activeMeshes = Object.values(focusables).map(f=>f.mesh);
+  const hits = raycaster.intersectObjects(activeMeshes, false);
+  if(hits.length){
+    const id = hits[0].object.userData.id;
+    focusOn(id);
+  }
+}
+
+/* ---------- Focus / travel animation ---------- */
+let flying = false;
+function focusOn(id){
+  const f = focusables[id];
+  if(!f) return;
+  const worldPos = new THREE.Vector3();
+  f.mesh.getWorldPosition(worldPos);
+  const objRadius = f.mesh.geometry?.parameters?.radius || 4;
+  controller.target.copy(worldPos);
+  controller.radius = Math.max(objRadius*4.2, 8);
+  controller.autoRotate = false;
+  showInfo(f.data);
+  markVisited(id);
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  controller.target.set(0,0,0);
+  controller.radius = currentMode==='solar' ? 140 : 70;
+  controller.theta = 0.9; controller.phi = 1.15;
+});
+
+/* ---------- Info panel ---------- */
+const infoPanel = document.getElementById('infoPanel');
+function showInfo(d){
+  document.getElementById('infoIcon').textContent = d.icon;
+  document.getElementById('infoType').textContent = d.type;
+  document.getElementById('infoTitle').textContent = d.name;
+  const ul = document.getElementById('infoFacts');
+  ul.innerHTML = '';
+  d.facts.forEach(f=>{ const li=document.createElement('li'); li.textContent=f; ul.appendChild(li); });
+  document.getElementById('infoFun').textContent = d.fun;
+  infoPanel.classList.add('show');
+}
+document.getElementById('closeInfo').addEventListener('click', ()=> infoPanel.classList.remove('show'));
+
+/* ---------- Badges ---------- */
+const badgeBar = document.getElementById('badgeBar');
+const progressText = document.getElementById('progressText');
+const badgeEls = {};
+ALL_IDS.forEach(id=>{
+  const f = focusables[id];
+  const chip = document.createElement('div');
+  chip.className = 'badgeChip';
+  chip.textContent = f.data.icon;
+  chip.title = f.data.name;
+  chip.addEventListener('click', ()=> focusOn(id));
+  badgeBar.appendChild(chip);
+  badgeEls[id] = chip;
+});
+function updateProgress(){
+  progressText.textContent = `${visited.size}/${ALL_IDS.length} insignias`;
+}
+updateProgress();
+
+const toastEl = document.getElementById('toast');
+let toastTimer=null;
+function markVisited(id){
+  if(visited.has(id)) return;
+  visited.add(id);
+  badgeEls[id].classList.add('got');
+  updateProgress();
+  const f = focusables[id];
+  toastEl.textContent = `${f.data.icon} ¡Insignia conseguida: ${f.data.name}!`;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2200);
+}
+
+/* ---------- Mode switch ---------- */
+const btnSolar = document.getElementById('btnSolar');
+const btnDeep = document.getElementById('btnDeep');
+const hintEl = document.getElementById('hint');
+function setMode(mode){
+  currentMode = mode;
+  solarGroup.visible = (mode==='solar');
+  deepGroup.visible = (mode==='deep');
+  sunLight.visible = (mode==='solar');
+  btnSolar.classList.toggle('active', mode==='solar');
+  btnDeep.classList.toggle('active', mode==='deep');
+  controller.target.set(0,0,0);
+  controller.radius = mode==='solar' ? 140 : 70;
+  infoPanel.classList.remove('show');
+  hintEl.style.opacity = '1';
+  clearTimeout(hintEl._t);
+  hintEl._t = setTimeout(()=> hintEl.style.opacity='0', 3500);
+}
+btnSolar.addEventListener('click', ()=>setMode('solar'));
+btnDeep.addEventListener('click', ()=>setMode('deep'));
+setTimeout(()=>{ hintEl.style.opacity='0'; }, 4500);
+
+/* ---------- Quiz ---------- */
+const quizModal = document.getElementById('quizModal');
+const quizBody = document.getElementById('quizBody');
+document.getElementById('quizBtn').addEventListener('click', ()=>{ startQuiz(); quizModal.classList.add('show'); });
+document.getElementById('quizClose').addEventListener('click', ()=> quizModal.classList.remove('show'));
+
+let quizState = {i:0, score:0, order:[]};
+function startQuiz(){
+  quizState = {i:0, score:0, order:[...QUIZ.keys()].sort(()=>Math.random()-0.5).slice(0,5)};
+  renderQuizQuestion();
+}
+function renderQuizQuestion(){
+  if(quizState.i >= quizState.order.length){ renderQuizResult(); return; }
+  const q = QUIZ[quizState.order[quizState.i]];
+  quizBody.innerHTML = `
+    <h3>🧠 Quiz Cósmico</h3>
+    <div class="qprogress">Pregunta ${quizState.i+1} de ${quizState.order.length} · Puntos: ${quizState.score}</div>
+    <div class="qtext">${q.q}</div>
+    <div id="qopts"></div>`;
+  const optsWrap = quizBody.querySelector('#qopts');
+  q.opts.forEach((opt,idx)=>{
+    const b = document.createElement('button');
+    b.className='qopt'; b.textContent = opt;
+    b.addEventListener('click', ()=>{
+      [...optsWrap.children].forEach(c=>c.disabled=true);
+      if(idx===q.a){ b.classList.add('correct'); quizState.score++; }
+      else { b.classList.add('wrong'); optsWrap.children[q.a].classList.add('correct'); }
+      setTimeout(()=>{ quizState.i++; renderQuizQuestion(); }, 950);
+    });
+    optsWrap.appendChild(b);
+  });
+}
+function renderQuizResult(){
+  const total = quizState.order.length;
+  const s = quizState.score;
+  const msg = s===total ? '¡Eres un verdadero astronauta! 🌟' : s>=total/2 ? '¡Muy bien! Sigue explorando 🚀' : '¡Sigue explorando el universo para aprender más! 🔭';
+  quizBody.innerHTML = `
+    <div id="quizResult">
+      <div class="big">${s===total?'🏆':'🛰️'}</div>
+      <h3>Resultado: ${s} / ${total}</h3>
+      <p>${msg}</p>
+      <button id="quizAgain">Jugar de nuevo</button>
+    </div>`;
+  document.getElementById('quizAgain').addEventListener('click', startQuiz);
+}
+
+/* ---------- Resize ---------- */
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ---------- Animation loop ---------- */
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t = clock.elapsedTime;
+
+  // orbit planets
+  PLANETS.forEach(p=>{
+    if(p.distance<=0) return;
+    const f = focusables[p.id];
+    f.angle += dt*p.speed*0.12;
+    const group = f.mesh.parent;
+    group.rotation.y = f.angle;
+    f.mesh.rotation.y += dt*0.6;
+    if(p._moonGroup) p._moonGroup.rotation.y += dt*1.3;
+    if(p._cloudMesh) p._cloudMesh.rotation.y += dt*0.09;
+  });
+  // sun surface drift
+  const sunF = focusables['sol'];
+  if(sunF) sunF.mesh.rotation.y += dt*0.02;
+
+  // pulsar beams spin + blink light
+  const pf = focusables['pulsar'];
+  if(pf && pf.beamGroup){
+    pf.beamGroup.rotation.y += dt*3.2;
+    pf.plight.intensity = 1.4 + Math.sin(t*10)*1.1;
+  }
+  // black hole disk spin
+  const bf = focusables['agujero_negro'];
+  if(bf && bf.disk) bf.disk.rotation.z += dt*0.4;
+  if(bf && bf.disk2) bf.disk2.rotation.z -= dt*0.25;
+  if(bf && bf.photonRing) bf.photonRing.rotation.z += dt*0.15;
+  // galaxy slow spin
+  const gf = focusables['galaxia'];
+  if(gf && gf.galaxyPoints) gf.galaxyPoints.rotation.y += dt*0.03;
+  if(gf && gf.dustPoints) gf.dustPoints.rotation.y += dt*0.03;
+
+  if(controller.autoRotate && !controller.dragging){
+    controller.theta += dt*0.03;
+  }
+  controller.update();
+  renderer.render(scene, camera);
+}
+
+/* ---------- Boot ---------- */
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    const l = document.getElementById('loading');
+    l.style.opacity='0';
+    setTimeout(()=> l.remove(), 650);
+  }, 900);
+});
+animate();
+</script>
+</body>
+</html>
