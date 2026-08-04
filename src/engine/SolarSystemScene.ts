@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PLANETS, DWARF_PLANETS, PlanetData } from '../data/planets';
 import { KeplerianOrbitEngine, KeplerianElements } from './KeplerianOrbitEngine';
+import { AtmosphereScatteringShader } from './shaders/AtmosphereScatteringShader';
 
 export class SolarSystemScene {
   private scene: THREE.Scene;
@@ -101,14 +102,16 @@ export class SolarSystemScene {
       mesh.add(ringMesh);
     }
 
-    // Si tiene atmósfera de resplandor (Tierra, Venus)
+    // Si tiene atmósfera de resplandor (Tierra, Venus, Marte, Gigantes), usar dispersión Rayleigh/Mie
     if (data.hasAtmosphere && !isSun) {
-      const atmoGeo = new THREE.SphereGeometry(data.radius * 1.05, 32, 32);
-      const atmoMat = new THREE.MeshBasicMaterial({
-        color: data.atmosphereColor || 0x5cc5ff,
-        transparent: true,
-        opacity: data.atmoOpacity || 0.35,
-        side: THREE.BackSide
+      const palette = AtmosphereScatteringShader.getPlanetAtmospherePalette(data.id);
+      const atmoGeo = new THREE.SphereGeometry(data.radius * 1.07, 48, 48);
+      const atmoMat = AtmosphereScatteringShader.createMaterial({
+        rayleighColor: palette.rayleigh,
+        terminatorColor: palette.terminator,
+        density: palette.density,
+        maxOpacity: data.atmoOpacity || 0.75,
+        sunDirection: new THREE.Vector3(1, 0, 0)
       });
       const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
       mesh.add(atmoMesh);

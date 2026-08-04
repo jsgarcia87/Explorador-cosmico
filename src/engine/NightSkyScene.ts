@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CONSTELLATIONS_IAU, ConstellationData } from '../data/constellations';
+import { AstrophysicsUtils } from './AstrophysicsUtils';
 
 export type TelescopeSpectrum = 'visible' | 'infrared' | 'ultraviolet' | 'xray' | 'radio';
 
@@ -70,7 +71,8 @@ export class NightSkyScene {
       const pos = new THREE.Vector3(x, y, z);
       positions.push(pos);
 
-      const starGeo = new THREE.SphereGeometry(Math.max(1.0, 3.5 - star.mag * 0.7), 16, 16);
+      const { size } = AstrophysicsUtils.pogsonMagnitudeToSize(star.mag);
+      const starGeo = new THREE.SphereGeometry(size * 0.85, 16, 16);
       const starMat = new THREE.MeshBasicMaterial({ color: star.color });
       const starMesh = new THREE.Mesh(starGeo, starMat);
       starMesh.position.copy(pos);

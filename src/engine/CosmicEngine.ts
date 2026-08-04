@@ -4,6 +4,7 @@ import { SolarSystemScene } from './SolarSystemScene';
 import { EarthScene } from './EarthScene';
 import { DeepSpaceScene } from './DeepSpaceScene';
 import { NightSkyScene } from './NightSkyScene';
+import { AstrophysicsUtils } from './AstrophysicsUtils';
 
 export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory';
 
@@ -127,18 +128,11 @@ export class CosmicEngine {
   }
 
   private createBackgroundStarfield(): void {
-    const starCount = 12000;
+    const starCount = 14000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
     const sizes = new Float32Array(starCount);
-
-    const palette = [
-      new THREE.Color(0xffffff),
-      new THREE.Color(0xaaccff),
-      new THREE.Color(0xffddaa),
-      new THREE.Color(0xff9966)
-    ];
 
     for (let i = 0; i < starCount; i++) {
       const u = Math.random();
@@ -151,12 +145,17 @@ export class CosmicEngine {
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = r * Math.cos(phi);
 
-      const color = palette[Math.floor(Math.random() * palette.length)];
+      // 1. Clasificación Espectral Harvard OBAFGKM (Temperatura de cuerpo negro -> sRGB)
+      const tempKelvin = AstrophysicsUtils.sampleOBAFGKMTemperature();
+      const color = AstrophysicsUtils.kelvinToRGB(tempKelvin);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      sizes[i] = 1.0 + Math.random() * 2.5;
+      // 2. Ley Logarítmica de Pogson para magnitud aparente m_v [-1.0, 6.5]
+      const magV = -1.0 + Math.pow(Math.random(), 2.8) * 7.5;
+      const { size } = AstrophysicsUtils.pogsonMagnitudeToSize(magV);
+      sizes[i] = size;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -167,12 +166,12 @@ export class CosmicEngine {
       size: 1.8,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.88,
       sizeAttenuation: true
     });
 
     const starfield = new THREE.Points(geometry, material);
-    starfield.name = 'BACKGROUND_STARS';
+    starfield.name = 'BACKGROUND_STARS_OBAFGKM';
     this.scene.add(starfield);
   }
 
