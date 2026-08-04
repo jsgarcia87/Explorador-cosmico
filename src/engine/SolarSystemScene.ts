@@ -1,18 +1,16 @@
 import * as THREE from 'three';
-import { PLANETS, DWARF_PLANETS, PlanetData } from '../data/planets';
-import { KeplerianOrbitEngine, KeplerianElements } from './KeplerianOrbitEngine';
+import { PLANETS, PlanetData } from '../data/planets';
+import { KeplerianOrbitEngine } from './KeplerianOrbitEngine';
 import { AtmosphereScatteringShader } from './shaders/AtmosphereScatteringShader';
+import { ProceduralTextures, PlanetTextureOptions } from './textures/ProceduralTextures';
 
 export class SolarSystemScene {
   private scene: THREE.Scene;
-  private planetMeshes: Map<string, THREE.Mesh> = new Map();
-  private orbitLines: THREE.Line[] = [];
-  private asteroidBelt!: THREE.InstancedMesh;
-  private sunLight!: THREE.PointLight;
-  private sunMesh!: THREE.Mesh;
-
-  // Grupo raíz de la escena del Sistema Solar
   public rootGroup: THREE.Group = new THREE.Group();
+  private celestialMeshes: Map<string, THREE.Mesh> = new Map();
+  private orbitLines: THREE.LineLoop[] = [];
+  private sunLight!: THREE.PointLight;
+  private ambientLight!: THREE.AmbientLight;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -20,45 +18,79 @@ export class SolarSystemScene {
   }
 
   private init(): void {
-    // 1. Luz Solar Central HDR
-    this.sunLight = new THREE.PointLight(0xfff8ee, 3.5, 800, 1.2);
+    // 1. Iluminación
+    this.ambientLight = new THREE.AmbientLight(0x222238, 0.45);
+    this.rootGroup.add(this.ambientLight);
+
+    // Sol ilumina todo el sistema solar según 1/r^2
+    this.sunLight = new THREE.PointLight(0xfff5e6, 4.5, 4000, 1.25);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
-    this.sunLight.shadow.bias = -0.0001;
+    this.sunLight.shadow.bias = -0.0002;
     this.rootGroup.add(this.sunLight);
 
-    // Luz ambiental tenue para no dejar en negro absoluto el lado oscuro
-    const ambientLight = new THREE.AmbientLight(0x111622, 0.4);
-    this.rootGroup.add(ambientLight);
-
-    // 2. Crear los planetas y el Sol
-    const allBodies = [...PLANETS, ...DWARF_PLANETS];
-    allBodies.forEach((data) => {
-      this.createCelestialBody(data);
+    // 2. Construir Sol y Planetas
+    PLANETS.forEach((body: any) => {
+      this.createCelestialBody(body);
+      if (body.id !== 'sol') {
+        this.createOrbitLine(body);
+      }
     });
 
-    // 3. Crear cinturón de asteroides con InstancedMesh (1500 asteroides)
-    this.createAsteroidBelt();
-
     this.scene.add(this.rootGroup);
+    this.setVisible(false);
+  }
+
+  private getTextureOptionsForBody(id: string): PlanetTextureOptions {
+    switch (id) {
+      case 'jupiter':
+        return {
+          bands: true,
+          bandSoft: false,
+          blotches: true,
+          spot: { colorHex: '#d83a22', x: 0.65, y: 0.58, rx: 55, ry: 25 }
+        };
+      case 'saturno':
+        return { bands: true, bandSoft: true, blotches: true };
+      case 'urano':
+        return { bands: true, bandSoft: true, blotches: true };
+      case 'neptuno':
+        return {
+          bands: true,
+          bandSoft: true,
+          blotches: true,
+          spot: { colorHex: '#183868', x: 0.45, y: 0.48, rx: 35, ry: 18 }
+        };
+      case 'marte':
+        return { craters: true, blotches: true, poles: true, poleSize: 0.14 };
+      case 'mercurio':
+      case 'luna':
+        return { craters: true, blotches: true };
+      case 'venus':
+        return { bands: true, bandSoft: true, blotches: true };
+      case 'tierra':
+        return { blotches: true, poles: true, poleSize: 0.15 };
+      default:
+        return { blotches: true };
+    }
   }
 
   private createCelestialBody(data: PlanetData): void {
     const isSun = data.id === 'sol';
-
-    // Geometría esférica de alta resolución
     const geo = new THREE.SphereGeometry(data.radius, 64, 64);
 
     let mat: THREE.Material;
     if (isSun) {
       mat = new THREE.MeshBasicMaterial({
-        color: data.color,
+        color: data.color
       });
     } else {
+      const textureOptions = this.getTextureOptionsForBody(data.id);
+      const map = ProceduralTextures.generatePlanetTexture(data.color, textureOptions);
       mat = new THREE.MeshStandardMaterial({
-        color: data.color,
+        map: map,
         roughness: 0.75,
         metalness: 0.1,
         wireframe: false
@@ -87,6 +119,36 @@ export class SolarSystemScene {
     // Aplicar inclinación axial real del eje de rotación (rad)
     mesh.rotation.z = data.tilt;
 
+    // Corona Solar para el Sol (efecto halo difuso NASA)
+    if (isSun) {
+      const coronaTexture = ProceduralTextures.generateSunCorona();
+      const coronaMat = new THREE.SpriteMaterial({
+        map: coronaTexture,
+        color: 0xffe2a0,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+      });
+      const coronaSprite = new THREE.Sprite(coronaMat);
+      const coronaScale = data.radius * 3.8;
+      coronaSprite.scale.set(coronaScale, coronaScale, 1);
+      mesh.add(coronaSprite);
+    } else {
+      // Sprite de resplandor atmosférico exterior para planetas
+      const glowTexture = ProceduralTextures.generateGlowSprite(data.color);
+      const glowMat = new THREE.SpriteMaterial({
+        map: glowTexture,
+        color: data.color,
+        transparent: true,
+        opacity: 0.35,
+        blending: THREE.AdditiveBlending
+      });
+      const glowSprite = new THREE.Sprite(glowMat);
+      const glowScale = data.radius * 2.8;
+      glowSprite.scale.set(glowScale, glowScale, 1);
+      mesh.add(glowSprite);
+    }
+
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
       const ringGeo = new THREE.RingGeometry(data.radius * 1.35, data.radius * 2.3, 64);
@@ -94,15 +156,17 @@ export class SolarSystemScene {
         color: 0xd8c69b,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.75,
+        opacity: 0.85,
         roughness: 0.5
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = Math.PI / 2 + 0.35;
+      ringMesh.receiveShadow = true;
+      ringMesh.castShadow = true;
       mesh.add(ringMesh);
     }
 
-    // Si tiene atmósfera de resplandor (Tierra, Venus, Marte, Gigantes), usar dispersión Rayleigh/Mie
+    // Si tiene atmósfera de dispersión (Rayleigh/Mie)
     if (data.hasAtmosphere && !isSun) {
       const palette = AtmosphereScatteringShader.getPlanetAtmospherePalette(data.id);
       const atmoGeo = new THREE.SphereGeometry(data.radius * 1.07, 48, 48);
@@ -131,133 +195,65 @@ export class SolarSystemScene {
     }
 
     this.rootGroup.add(mesh);
-    this.planetMeshes.set(data.id, mesh);
+    this.celestialMeshes.set(data.id, mesh);
+  }
 
-    if (isSun) {
-      this.sunMesh = mesh;
-    } else {
-      // Línea orbital kepleriana 3D
-      if (data.orbitalElements) {
-        this.createKeplerianOrbitLine(data.orbitalElements, data.color);
-      } else {
-        this.createOrbitLine(data.distance);
+  private createOrbitLine(data: PlanetData): void {
+    if (!data.orbitalElements) {
+      // Circunferencia simple para cuerpos sin elementos orbitales
+      const points: THREE.Vector3[] = [];
+      const segments = 128;
+      for (let i = 0; i < segments; i++) {
+        const theta = (i / segments) * Math.PI * 2;
+        points.push(new THREE.Vector3(Math.cos(theta) * data.distance, 0, Math.sin(theta) * data.distance));
       }
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({
+        color: (data as any).orbitColor || 0x444466,
+        transparent: true,
+        opacity: 0.28
+      });
+      const line = new THREE.LineLoop(geo, mat);
+      line.rotation.x = Math.PI / 2;
+      this.rootGroup.add(line);
+      this.orbitLines.push(line);
+      return;
     }
-  }
 
-  private createKeplerianOrbitLine(elements: KeplerianElements, color: number): void {
-    const points = KeplerianOrbitEngine.generateOrbitCurve3D(elements, 256);
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-    const planetColor = new THREE.Color(color);
-    const orbitColor = new THREE.Color(0x1c2d3e).lerp(planetColor, 0.5);
-
-    const material = new THREE.LineBasicMaterial({
-      color: orbitColor,
+    // Órbita kepleriana elíptica real basada en astrometría
+    const orbitPoints = KeplerianOrbitEngine.generateOrbitCurve3D(data.orbitalElements, 180);
+    const geo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+    const mat = new THREE.LineBasicMaterial({
+      color: (data as any).orbitColor || 0x444466,
       transparent: true,
-      opacity: 0.6
+      opacity: 0.32
     });
-    const orbitLine = new THREE.Line(geometry, material);
-    this.rootGroup.add(orbitLine);
-    this.orbitLines.push(orbitLine);
+    const line = new THREE.LineLoop(geo, mat);
+    this.rootGroup.add(line);
+    this.orbitLines.push(line);
   }
 
-  private createOrbitLine(radius: number): void {
-    const points: THREE.Vector3[] = [];
-    const segments = 128;
-    for (let i = 0; i <= segments; i++) {
-      const theta = (i / segments) * Math.PI * 2;
-      points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
-    }
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const material = new THREE.LineBasicMaterial({
-      color: 0x223344,
-      transparent: true,
-      opacity: 0.4
-    });
-    const orbitLine = new THREE.Line(geometry, material);
-    this.rootGroup.add(orbitLine);
-    this.orbitLines.push(orbitLine);
-  }
+  public update(delta: number, timeSpeed: number, currentDate: Date): void {
+    if (!this.rootGroup.visible) return;
 
-  private createAsteroidBelt(): void {
-    const count = 1500;
-    const geometry = new THREE.DodecahedronGeometry(0.25, 1);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x7a7975,
-      roughness: 0.9,
-      metalness: 0.1
-    });
-
-    this.asteroidBelt = new THREE.InstancedMesh(geometry, material, count);
-    this.asteroidBelt.name = 'ASTEROID_BELT';
-    this.asteroidBelt.castShadow = true;
-    this.asteroidBelt.receiveShadow = true;
-
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3();
-    const rotation = new THREE.Euler();
-    const scale = new THREE.Vector3();
-
-    for (let i = 0; i < count; i++) {
-      const radius = 28 + Math.random() * 4.5; // Entre Marte (26) y Júpiter (46)
-      const theta = Math.random() * Math.PI * 2;
-      const y = (Math.random() - 0.5) * 1.5;
-
-      position.set(Math.cos(theta) * radius, y, Math.sin(theta) * radius);
-      rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-      const s = 0.4 + Math.random() * 0.8;
-      scale.set(s, s, s);
-
-      matrix.compose(position, new THREE.Quaternion().setFromEuler(rotation), scale);
-      this.asteroidBelt.setMatrixAt(i, matrix);
-    }
-
-    this.rootGroup.add(this.asteroidBelt);
-  }
-
-  public update(delta: number, timeSpeed: number, currentDate?: Date): void {
-    const effectiveSpeed = delta * timeSpeed * 0.1;
-
-    // 1. Actualizar traslación kepleriana real y rotación axial de los planetas
-    this.planetMeshes.forEach((mesh, id) => {
+    this.celestialMeshes.forEach((mesh, id) => {
       const data = mesh.userData.data as PlanetData;
-      if (!data) return;
 
-      // Rotación axial sidérea (sentido normal o retrógrado como Venus/Urano)
-      const rotationDir = data.rotationPeriodHours < 0 ? -1 : 1;
-      mesh.rotation.y += delta * 0.5 * rotationDir;
+      // Rotación propia alrededor del eje
+      const rotSpeed = 0.4 / ((data as any).rotationPeriodHours || (data as any).rotationPeriod || 1);
+      mesh.rotation.y += delta * rotSpeed * Math.min(timeSpeed, 50);
 
-      // Traslación orbital kepleriana (J2000)
-      if (id !== 'sol') {
-        if (data.orbitalElements && currentDate) {
-          const res = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements);
-          mesh.position.copy(res.position);
-          mesh.userData.astrometry = res;
-        } else if (data.orbitalSpeed > 0) {
-          const currentAngle = Math.atan2(mesh.position.z, mesh.position.x);
-          const nextAngle = currentAngle + data.orbitalSpeed * effectiveSpeed * 0.05;
-          mesh.position.set(
-            Math.cos(nextAngle) * data.distance,
-            0,
-            Math.sin(nextAngle) * data.distance
-          );
-        }
+      // Posicionamiento Orbital Kepleriano
+      if (id !== 'sol' && data.orbitalElements) {
+        const astrometry = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements);
+        mesh.position.copy(astrometry.position);
+        mesh.userData.astrometry = astrometry;
       }
     });
-
-    // 2. Rotar el cinturón de asteroides muy lentamente
-    if (this.asteroidBelt) {
-      this.asteroidBelt.rotation.y += effectiveSpeed * 0.002;
-    }
-  }
-
-  public getPlanetMesh(id: string): THREE.Mesh | undefined {
-    return this.planetMeshes.get(id);
   }
 
   public getAllInteractiveObjects(): THREE.Object3D[] {
-    return Array.from(this.planetMeshes.values());
+    return Array.from(this.celestialMeshes.values());
   }
 
   public setVisible(visible: boolean): void {

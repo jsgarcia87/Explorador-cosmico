@@ -72,8 +72,8 @@ export class NightSkyScene {
       positions.push(pos);
 
       const { size } = AstrophysicsUtils.pogsonMagnitudeToSize(star.mag);
-      const starGeo = new THREE.SphereGeometry(size * 0.85, 16, 16);
-      const starMat = new THREE.MeshBasicMaterial({ color: star.color });
+      const starGeo = new THREE.SphereGeometry(size * 0.9, 16, 16);
+      const starMat = new THREE.MeshBasicMaterial({ color: star.color, fog: false });
       const starMesh = new THREE.Mesh(starGeo, starMat);
       starMesh.position.copy(pos);
       starMesh.name = star.name;
@@ -98,7 +98,8 @@ export class NightSkyScene {
         const lineMat = new THREE.LineBasicMaterial({
           color: 0x4da6ff,
           transparent: true,
-          opacity: 0.55
+          opacity: 0.65,
+          fog: false
         });
         const line = new THREE.Line(lineGeo, lineMat);
         constGroup.add(line);

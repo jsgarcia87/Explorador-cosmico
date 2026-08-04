@@ -1,32 +1,31 @@
 import * as THREE from 'three';
-import { EffectComposer, RenderPass, BloomEffect, EffectPass, VignetteEffect } from 'postprocessing';
+import { EffectComposer } from 'postprocessing';
+import { RenderPass, BloomEffect, VignetteEffect, EffectPass } from 'postprocessing';
 import { SolarSystemScene } from './SolarSystemScene';
 import { EarthScene } from './EarthScene';
 import { DeepSpaceScene } from './DeepSpaceScene';
 import { NightSkyScene } from './NightSkyScene';
 import { AstrophysicsUtils } from './AstrophysicsUtils';
+import { ProceduralTextures } from './textures/ProceduralTextures';
 
 export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory';
 
-export interface EngineOptions {
-  canvas: HTMLCanvasElement;
-  initialMode?: SceneMode;
-  onObjectSelected?: (objData: { id: string; type: string; data: unknown } | null) => void;
+export interface CosmicEngineOptions {
   onFpsUpdate?: (fps: number) => void;
+  onObjectSelected?: (data: { id: string; type: string; data: any } | null) => void;
   onDateChange?: (date: Date) => void;
 }
 
 export class CosmicEngine {
   private canvas: HTMLCanvasElement;
   private renderer!: THREE.WebGLRenderer;
+  private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private composer!: EffectComposer;
-  private clock: THREE.Clock;
-  private options: EngineOptions;
+  private clock: THREE.Clock = new THREE.Clock();
 
-  // Escenas del proyecto
-  public scene!: THREE.Scene;
-  public currentMode: SceneMode = 'solar';
+  private currentMode: SceneMode = 'solar';
+  private options: CosmicEngineOptions;
 
   // Sub-escenas
   private solarScene!: SolarSystemScene;
@@ -34,13 +33,22 @@ export class CosmicEngine {
   private deepScene!: DeepSpaceScene;
   private nightScene!: NightSkyScene;
 
-  // Cámara cinemática
+  // Cámara cinemática y navegación orbital
   private targetPosition: THREE.Vector3 = new THREE.Vector3(0, 35, 75);
   private targetLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   private currentLookAt: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   private isOrbitingAroundTarget: boolean = true;
   private cameraAngle: number = 0;
   private activeTargetDistance: number = 75;
+
+  // Controladores de arrastre y vuelo libre
+  private isDragging: boolean = false;
+  private dragButton: number = 0;
+  private lastPointerX: number = 0;
+  private lastPointerY: number = 0;
+  private orbitTheta: number = 0.9;
+  private orbitPhi: number = 1.15;
+  private pinchStartDistance: number | null = null;
 
   // Control de tiempo astronómico
   public timeSpeed: number = 1; // 1x = tiempo real, 1000x = veloz
@@ -58,10 +66,9 @@ export class CosmicEngine {
   private lastFpsTime: number = 0;
   private animationFrameId: number | null = null;
 
-  constructor(options: EngineOptions) {
+  constructor(canvas: HTMLCanvasElement, options: CosmicEngineOptions = {}) {
+    this.canvas = canvas;
     this.options = options;
-    this.canvas = options.canvas;
-    this.clock = new THREE.Clock();
     this.init();
   }
 
@@ -79,100 +86,168 @@ export class CosmicEngine {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.25;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Camera
-    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 50000);
+    this.camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 80000);
     this.camera.position.copy(this.targetPosition);
 
     // Escena principal
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x020208);
-    this.scene.fog = new THREE.FogExp2(0x020208, 0.00035);
+    this.scene.background = new THREE.Color(0x010206);
+    this.scene.fog = new THREE.FogExp2(0x010206, 0.00015);
 
     // PostProcessing Bloom & Vignette
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     const bloomEffect = new BloomEffect({
-      intensity: 1.4,
-      luminanceThreshold: 0.35,
-      luminanceSmoothing: 0.8,
-      mipmapBlur: true
+      intensity: 1.5,
+      luminanceThreshold: 0.18,
+      luminanceSmoothing: 0.88
     });
     const vignetteEffect = new VignetteEffect({
-      eskil: false,
-      offset: 0.25,
-      darkness: 0.55
+      darkness: 0.55,
+      offset: 0.25
     });
-    this.composer.addPass(new EffectPass(this.camera, bloomEffect, vignetteEffect));
 
-    // Fondo de estrellas
+    const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect);
+    this.composer.addPass(effectPass);
+
+    // 1. Cielo Estrellado Harvard OBAFGKM & Vía Láctea Fotorrealista (Sin niebla)
     this.createBackgroundStarfield();
+    this.createMilkyWayBand();
 
-    // Inicializar escenas modularizadas
+    // 2. Sub-escenas
     this.solarScene = new SolarSystemScene(this.scene);
     this.earthScene = new EarthScene(this.scene);
     this.deepScene = new DeepSpaceScene(this.scene);
     this.nightScene = new NightSkyScene(this.scene);
 
-    // Activar modo inicial
-    this.setMode(this.options.initialMode || 'solar');
-
-    // Eventos
+    // 3. Eventos de navegación libre (arrastre, clic, zoom, táctil)
     window.addEventListener('resize', this.onWindowResize);
     this.canvas.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('pointermove', this.onPointerMove);
+    window.addEventListener('pointerup', this.onPointerUp);
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false });
+    this.canvas.addEventListener('touchstart', this.onTouchStart, { passive: true });
+    this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: true });
+    this.canvas.addEventListener('touchend', this.onTouchEnd);
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    this.setMode('solar');
   }
 
+  /**
+   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
+   * sin niebla (fog: false) y con sprites circulares luminosos.
+   */
   private createBackgroundStarfield(): void {
     const starCount = 14000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
-    const sizes = new Float32Array(starCount);
 
     for (let i = 0; i < starCount; i++) {
       const u = Math.random();
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      const r = 400 + Math.random() * 1600;
+      const r = 1200 + Math.random() * 8000;
 
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = r * Math.cos(phi);
 
-      // 1. Clasificación Espectral Harvard OBAFGKM (Temperatura de cuerpo negro -> sRGB)
+      // Clasificación Harvard OBAFGKM -> Color CIE sRGB
       const tempKelvin = AstrophysicsUtils.sampleOBAFGKMTemperature();
       const color = AstrophysicsUtils.kelvinToRGB(tempKelvin);
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
-
-      // 2. Ley Logarítmica de Pogson para magnitud aparente m_v [-1.0, 6.5]
-      const magV = -1.0 + Math.pow(Math.random(), 2.8) * 7.5;
-      const { size } = AstrophysicsUtils.pogsonMagnitudeToSize(magV);
-      sizes[i] = size;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
+    const starTexture = ProceduralTextures.generateStarDot();
     const material = new THREE.PointsMaterial({
-      size: 1.8,
+      map: starTexture,
+      size: 6.5,
       vertexColors: true,
       transparent: true,
-      opacity: 0.88,
-      sizeAttenuation: true
+      opacity: 0.95,
+      sizeAttenuation: true,
+      fog: false,
+      depthWrite: false
     });
 
     const starfield = new THREE.Points(geometry, material);
     starfield.name = 'BACKGROUND_STARS_OBAFGKM';
     this.scene.add(starfield);
+  }
+
+  /**
+   * Genera la banda galáctica volumétrica de la Vía Láctea
+   * inclinada respecto a la eclíptica con polvo interestelar y nebulosidad cian/violeta/ámbar.
+   */
+  private createMilkyWayBand(): void {
+    const particleCount = 15000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const palette = [
+      new THREE.Color('#8b7bff'), // Violeta nebulosa
+      new THREE.Color('#5ce1d6'), // Cian ionizado
+      new THREE.Color('#fbbf24'), // Ámbar estelar
+      new THREE.Color('#f472b6'), // Rosa hidrógeno
+      new THREE.Color('#ffffff')  // Núcleo blanco
+    ];
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 1000 + Math.pow(Math.random(), 0.7) * 4500;
+      const spreadY = (Math.random() - 0.5) * (radius * 0.18);
+
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const y = spreadY;
+
+      // Inclinar el disco galáctico 60 grados respecto al plano del Sistema Solar
+      const tilt = (60 * Math.PI) / 180;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y * Math.cos(tilt) - z * Math.sin(tilt);
+      positions[i * 3 + 2] = y * Math.sin(tilt) + z * Math.cos(tilt);
+
+      const color = palette[Math.floor(Math.random() * palette.length)].clone();
+      const intensity = 0.65 + Math.random() * 0.35;
+      colors[i * 3] = color.r * intensity;
+      colors[i * 3 + 1] = color.g * intensity;
+      colors[i * 3 + 2] = color.b * intensity;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const starTexture = ProceduralTextures.generateStarDot();
+    const material = new THREE.PointsMaterial({
+      map: starTexture,
+      size: 11.0,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.55,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      depthWrite: false
+    });
+
+    const milkyWay = new THREE.Points(geometry, material);
+    milkyWay.name = 'MILKY_WAY_GALACTIC_BAND';
+    this.scene.add(milkyWay);
   }
 
   public setMode(mode: SceneMode): void {
@@ -191,7 +266,7 @@ export class CosmicEngine {
       this.setCameraTarget(new THREE.Vector3(0, 2, 7), new THREE.Vector3(0, 0, 0), 7);
       this.interactiveObjects = this.earthScene.getAllInteractiveObjects();
     } else if (mode === 'deep') {
-      this.setCameraTarget(new THREE.Vector3(42, 10, 15), new THREE.Vector3(42, 6, -18), 35);
+      this.setCameraTarget(new THREE.Vector3(42, 12, 25), new THREE.Vector3(42, 6, -18), 40);
       this.interactiveObjects = this.deepScene.getAllInteractiveObjects();
     } else if (mode === 'observatory') {
       this.setCameraTarget(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 20, 0), 1);
@@ -249,6 +324,13 @@ export class CosmicEngine {
   };
 
   private onPointerDown = (event: MouseEvent): void => {
+    this.isDragging = true;
+    this.dragButton = event.button;
+    this.lastPointerX = event.clientX;
+    this.lastPointerY = event.clientY;
+    this.isOrbitingAroundTarget = false;
+
+    // Selección de objetos con clic primario breve
     const rect = this.canvas.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -263,6 +345,12 @@ export class CosmicEngine {
       }
       if (obj && obj.userData?.id) {
         this.selectedObjectId = obj.userData.id;
+        // Transicionar suavemente la cámara al objeto seleccionado
+        const objPos = new THREE.Vector3();
+        obj.getWorldPosition(objPos);
+        const radius = (obj as any).geometry?.parameters?.radius || 4.0;
+        this.setCameraTarget(objPos.clone().add(new THREE.Vector3(0, radius * 1.5, radius * 3.5)), objPos, radius * 4.5);
+
         if (this.options.onObjectSelected) {
           this.options.onObjectSelected({
             id: obj.userData.id,
@@ -270,18 +358,87 @@ export class CosmicEngine {
             data: obj.userData.data
           });
         }
+        return;
       }
-    } else {
+    } else if (event.button === 0) {
       if (this.options.onObjectSelected) {
         this.options.onObjectSelected(null);
       }
     }
   };
 
+  private onPointerMove = (event: MouseEvent): void => {
+    if (!this.isDragging) return;
+
+    const dx = event.clientX - this.lastPointerX;
+    const dy = event.clientY - this.lastPointerY;
+    this.lastPointerX = event.clientX;
+    this.lastPointerY = event.clientY;
+
+    if (this.dragButton === 0 && !event.shiftKey) {
+      // Arrastre primario: Órbita libre alrededor del targetLookAt
+      this.orbitTheta -= dx * 0.0055;
+      this.orbitPhi = Math.max(0.12, Math.min(Math.PI - 0.12, this.orbitPhi - dy * 0.0055));
+
+      const sinPhi = Math.sin(this.orbitPhi);
+      this.targetPosition.set(
+        this.targetLookAt.x + this.activeTargetDistance * sinPhi * Math.cos(this.orbitTheta),
+        this.targetLookAt.y + this.activeTargetDistance * Math.cos(this.orbitPhi),
+        this.targetLookAt.z + this.activeTargetDistance * sinPhi * Math.sin(this.orbitTheta)
+      );
+    } else {
+      // Arrastre secundario o Shift+Arrastre: Navegación libre / Vuelo (Pan en espacio 3D)
+      const panSpeed = this.activeTargetDistance * 0.0018;
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
+
+      const offset = right.multiplyScalar(-dx * panSpeed).add(up.multiplyScalar(dy * panSpeed));
+      this.targetLookAt.add(offset);
+      this.targetPosition.add(offset);
+    }
+  };
+
+  private onPointerUp = (): void => {
+    this.isDragging = false;
+  };
+
   private onWheel = (event: WheelEvent): void => {
     event.preventDefault();
-    const zoomDelta = event.deltaY * 0.05;
-    this.activeTargetDistance = Math.max(3.0, Math.min(250, this.activeTargetDistance + zoomDelta));
+    const zoomDelta = event.deltaY * 0.045;
+    this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + zoomDelta));
+
+    const sinPhi = Math.sin(this.orbitPhi);
+    this.targetPosition.set(
+      this.targetLookAt.x + this.activeTargetDistance * sinPhi * Math.cos(this.orbitTheta),
+      this.targetLookAt.y + this.activeTargetDistance * Math.cos(this.orbitPhi),
+      this.targetLookAt.z + this.activeTargetDistance * sinPhi * Math.sin(this.orbitTheta)
+    );
+  };
+
+  private onTouchStart = (event: TouchEvent): void => {
+    if (event.touches.length === 2) {
+      this.pinchStartDistance = Math.hypot(
+        event.touches[0].clientX - event.touches[1].clientX,
+        event.touches[0].clientY - event.touches[1].clientY
+      );
+    }
+  };
+
+  private onTouchMove = (event: TouchEvent): void => {
+    if (event.touches.length === 2 && this.pinchStartDistance !== null) {
+      const d = Math.hypot(
+        event.touches[0].clientX - event.touches[1].clientX,
+        event.touches[0].clientY - event.touches[1].clientY
+      );
+      const delta = (this.pinchStartDistance - d) * 0.35;
+      this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + delta));
+      this.pinchStartDistance = d;
+    }
+  };
+
+  private onTouchEnd = (): void => {
+    this.pinchStartDistance = null;
+    this.isDragging = false;
   };
 
   public animate = (): void => {
@@ -297,19 +454,20 @@ export class CosmicEngine {
       }
     }
 
-    // 2. Rotación orbital cinemática suave
-    if (this.isOrbitingAroundTarget && this.currentMode !== 'observatory') {
-      this.cameraAngle += delta * 0.12;
+    // 2. Órbita automática suave si no está interactuando el usuario
+    if (this.isOrbitingAroundTarget && !this.isDragging && this.currentMode !== 'observatory') {
+      this.orbitTheta += delta * 0.08;
+      const sinPhi = Math.sin(this.orbitPhi);
       this.targetPosition.set(
-        this.targetLookAt.x + Math.cos(this.cameraAngle) * this.activeTargetDistance,
-        this.targetLookAt.y + this.activeTargetDistance * 0.35,
-        this.targetLookAt.z + Math.sin(this.cameraAngle) * this.activeTargetDistance
+        this.targetLookAt.x + this.activeTargetDistance * sinPhi * Math.cos(this.orbitTheta),
+        this.targetLookAt.y + this.activeTargetDistance * Math.cos(this.orbitPhi),
+        this.targetLookAt.z + this.activeTargetDistance * sinPhi * Math.sin(this.orbitTheta)
       );
     }
 
     // 3. Amortiguación cinemática (Lerp / Slerp)
-    this.camera.position.lerp(this.targetPosition, 0.08);
-    this.currentLookAt.lerp(this.targetLookAt, 0.08);
+    this.camera.position.lerp(this.targetPosition, 0.1);
+    this.currentLookAt.lerp(this.targetLookAt, 0.1);
     this.camera.lookAt(this.currentLookAt);
 
     // 4. Actualizar escena activa
@@ -345,7 +503,12 @@ export class CosmicEngine {
     }
     window.removeEventListener('resize', this.onWindowResize);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+    window.removeEventListener('pointermove', this.onPointerMove);
+    window.removeEventListener('pointerup', this.onPointerUp);
     this.canvas.removeEventListener('wheel', this.onWheel);
+    this.canvas.removeEventListener('touchstart', this.onTouchStart);
+    this.canvas.removeEventListener('touchmove', this.onTouchMove);
+    this.canvas.removeEventListener('touchend', this.onTouchEnd);
     this.renderer.dispose();
   }
 }

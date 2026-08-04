@@ -72,10 +72,8 @@ export const App: React.FC = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
 
-    const engine = new CosmicEngine({
-      canvas,
-      initialMode: currentMode,
-      onObjectSelected: (objData) => {
+    const engine = new CosmicEngine(canvas, {
+      onObjectSelected: (objData: any) => {
         if (!objData) {
           setSelectedObject(null);
           return;
