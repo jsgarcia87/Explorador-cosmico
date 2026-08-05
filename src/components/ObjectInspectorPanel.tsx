@@ -99,43 +99,48 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
 
   return (
     <aside
-      className="fixed top-20 right-6 z-40 w-96 max-h-[82vh] flex flex-col rounded-2xl bg-slate-950/80 backdrop-blur-2xl border border-white/15 shadow-2xl overflow-hidden animate-slide-in"
+      className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:left-auto md:top-20 md:right-6 md:w-96 max-h-[60vh] md:max-h-[82vh] z-40 flex flex-col rounded-t-3xl md:rounded-2xl bg-slate-950/90 md:bg-slate-950/80 backdrop-blur-3xl md:backdrop-blur-2xl border-t md:border-t-0 md:border border-white/20 md:border-white/15 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] md:shadow-2xl overflow-hidden animate-slide-up md:animate-slide-in"
       aria-label="Panel de inspección astronómica"
     >
+      {/* Indicador de arrastre para móviles (decorativo) */}
+      <div className="md:hidden flex justify-center pt-3 pb-1 bg-slate-900/60">
+        <div className="w-12 h-1.5 rounded-full bg-white/20" />
+      </div>
+
       {/* Cabecera del panel */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900/60">
+      <div className="flex items-center justify-between p-4 pt-2 md:pt-4 border-b border-white/10 bg-slate-900/60">
         <div className="flex items-center space-x-3">
-          <span className="text-2xl" role="img" aria-label={name}>
+          <span className="text-2xl md:text-3xl" role="img" aria-label={name}>
             {icon}
           </span>
           <div>
-            <h3 className="font-outfit font-bold text-lg text-white leading-tight">
+            <h3 className="font-outfit font-bold text-lg md:text-xl text-white leading-tight">
               {name}
             </h3>
-            <span className="text-xs font-mono text-cyan-400">
+            <span className="text-xs md:text-sm font-mono text-cyan-400">
               {type}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-1 md:space-x-2">
           <button
             onClick={handleSpeak}
             title="Narrar con Voz Guía"
-            className="p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-colors"
+            className="p-2.5 md:p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 transition-colors"
             aria-label="Escuchar narración"
           >
-            <Volume2 className="w-4 h-4" />
+            <Volume2 className="w-5 h-5 md:w-4 md:h-4" />
           </button>
           <button
             onClick={() => {
               cosmicAudio.stopSpeech();
               onClose();
             }}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2.5 md:p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
             aria-label="Cerrar panel de inspección"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5 md:w-4 md:h-4" />
           </button>
         </div>
       </div>
