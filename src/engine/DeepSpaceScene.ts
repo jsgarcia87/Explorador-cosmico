@@ -87,10 +87,22 @@ export class DeepSpaceScene {
 
       // Chorros relativistas de plasma (Jets polares con difuminado suave)
       const jetGeo = new THREE.CylinderGeometry(0.4, 2.4, 26, 32, 1, true);
+      const jetPos = jetGeo.attributes.position;
+      const jetColors = new Float32Array(jetPos.count * 3);
+      const jetBaseColor = new THREE.Color(0x55d0ff);
+      for (let i = 0; i < jetPos.count; i++) {
+        const y = jetPos.getY(i);
+        const t = (y + 13) / 26; // 0 en base, 1 en punta
+        const intensity = (1.0 - t) * 0.45; // fade to black for additive blending
+        jetColors[i * 3] = jetBaseColor.r * intensity;
+        jetColors[i * 3 + 1] = jetBaseColor.g * intensity;
+        jetColors[i * 3 + 2] = jetBaseColor.b * intensity;
+      }
+      jetGeo.setAttribute('color', new THREE.BufferAttribute(jetColors, 3));
+
       const jetMat = new THREE.MeshBasicMaterial({
-        color: 0x55d0ff,
+        vertexColors: true,
         transparent: true,
-        opacity: 0.45,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide
       });
@@ -127,10 +139,22 @@ export class DeepSpaceScene {
 
       // Haces de radiación rotatorios suaves
       const beamGeo = new THREE.ConeGeometry(2.4, 20, 48, 1, true);
+      const beamPos = beamGeo.attributes.position;
+      const beamColors = new Float32Array(beamPos.count * 3);
+      const beamBaseColor = new THREE.Color(0x8be9fd).multiplyScalar(4.0);
+      for (let i = 0; i < beamPos.count; i++) {
+        const y = beamPos.getY(i);
+        const t = (y + 10) / 20; // 0 en base (y = -10), 1 en punta (y = 10)
+        const intensity = (1.0 - t) * 0.5; // fade to black for additive blending
+        beamColors[i * 3] = beamBaseColor.r * intensity;
+        beamColors[i * 3 + 1] = beamBaseColor.g * intensity;
+        beamColors[i * 3 + 2] = beamBaseColor.b * intensity;
+      }
+      beamGeo.setAttribute('color', new THREE.BufferAttribute(beamColors, 3));
+
       const beamMat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0x8be9fd).multiplyScalar(4.0),
+        vertexColors: true,
         transparent: true,
-        opacity: 0.5,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide
       });
