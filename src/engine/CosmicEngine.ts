@@ -58,6 +58,7 @@ export class CosmicEngine {
   // Interactividad
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private mouse: THREE.Vector2 = new THREE.Vector2();
+  private selectedObjectRadius: number = 2.5;
   private interactiveObjects: THREE.Object3D[] = [];
   private selectedObjectId: string | null = null;
 
@@ -387,7 +388,13 @@ export class CosmicEngine {
         const objPos = new THREE.Vector3();
         obj.getWorldPosition(objPos);
         const radius = (obj as any).geometry?.parameters?.radius || 4.0;
-        this.setCameraTarget(objPos.clone().add(new THREE.Vector3(0, radius * 1.5, radius * 3.5)), objPos, radius * 4.5);
+        this.selectedObjectRadius = radius;
+        
+        // Calcular offset basado en la dirección del Sol (origen) para enfocar el lado iluminado
+        const sunDir = objPos.clone().normalize();
+        const camOffset = sunDir.multiplyScalar(-radius * 3.5).add(new THREE.Vector3(0, radius * 1.5, 0));
+        
+        this.setCameraTarget(objPos.clone().add(camOffset), objPos, radius * 4.5);
 
         if (this.options.onObjectSelected) {
           this.options.onObjectSelected({
@@ -400,6 +407,7 @@ export class CosmicEngine {
       }
     } else if (event.button === 0) {
       if (this.options.onObjectSelected) {
+        this.selectedObjectRadius = 2.5;
         this.options.onObjectSelected(null);
       }
     }
@@ -443,7 +451,8 @@ export class CosmicEngine {
   private onWheel = (event: WheelEvent): void => {
     event.preventDefault();
     const zoomDelta = event.deltaY * 0.045;
-    this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + zoomDelta));
+    const minDist = this.selectedObjectRadius ? this.selectedObjectRadius * 1.8 : 2.5;
+    this.activeTargetDistance = Math.max(minDist, Math.min(1200, this.activeTargetDistance + zoomDelta));
 
     const sinPhi = Math.sin(this.orbitPhi);
     this.targetPosition.set(
@@ -469,7 +478,8 @@ export class CosmicEngine {
         event.touches[0].clientY - event.touches[1].clientY
       );
       const delta = (this.pinchStartDistance - d) * 0.35;
-      this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + delta));
+      const minDist = this.selectedObjectRadius ? this.selectedObjectRadius * 1.8 : 2.5;
+      this.activeTargetDistance = Math.max(minDist, Math.min(1200, this.activeTargetDistance + delta));
       this.pinchStartDistance = d;
     }
   };

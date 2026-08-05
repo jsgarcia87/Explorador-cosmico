@@ -35,16 +35,7 @@ export class DeepSpaceScene {
   private createDeepObject(data: DeepSpaceObjectData): void {
     // 1. Gargantua (Agujero Negro Relativista Nativo GRRT en 3D)
     if (data.isGrrtBlackHole) {
-      const mesh = new THREE.Group();
-      mesh.name = data.name;
-      mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
-      mesh.userData = {
-        id: data.id,
-        type: 'deep_space',
-        data: data
-      };
-
-      const geo = new THREE.PlaneGeometry(14, 14);
+      const geo = new THREE.SphereGeometry(4.2, 64, 64);
       this.gargantuaMaterial = RelativisticBlackHoleShader.createMaterial({
         spin: 0.9,
         accretionRate: 1.25,
@@ -53,11 +44,14 @@ export class DeepSpaceScene {
         outerHex: '#ff5500'
       });
 
-      const bhEffect = new THREE.Mesh(geo, this.gargantuaMaterial);
-      bhEffect.onBeforeRender = function(renderer, scene, camera) {
-        this.quaternion.copy(camera.quaternion);
+      const mesh = new THREE.Mesh(geo, this.gargantuaMaterial);
+      mesh.name = data.name;
+      mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
+      mesh.userData = {
+        id: data.id,
+        type: 'deep_space',
+        data: data
       };
-      mesh.add(bhEffect);
 
       // Anillo de Einstein (Esfera fotónica por lente gravitacional)
       const photonRingGeo = new THREE.TorusGeometry(4.35, 0.09, 16, 64);
@@ -73,11 +67,29 @@ export class DeepSpaceScene {
 
       // Disco de Acreción exterior con gradiente térmico Doppler
       const diskGeo = new THREE.RingGeometry(4.5, 12.5, 96);
+      // Crear textura de gradiente radial para el disco de acreción
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const context = canvas.getContext('2d');
+      if (context) {
+        // El innerRadius es 4.5, outerRadius 12.5. En UV (0-1), el inner es 4.5/12.5 = 0.36
+        const gradient = context.createRadialGradient(128, 128, 128 * 0.36, 128, 128, 128);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); // Blanco
+        gradient.addColorStop(0.2, 'rgba(100, 200, 255, 0.9)'); // Azul
+        gradient.addColorStop(0.5, 'rgba(255, 150, 50, 0.8)'); // Naranja
+        gradient.addColorStop(1, 'rgba(255, 50, 0, 0.0)'); // Rojo difuso a transparente
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, 256, 256);
+      }
+      const diskTexture = new THREE.CanvasTexture(canvas);
+
       const diskMat = new THREE.MeshBasicMaterial({
-        color: 0xff6622,
+        map: diskTexture,
+        color: 0xffffff, // El gradiente ya tiene los colores
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.52,
+        opacity: 0.85,
         blending: THREE.AdditiveBlending
       });
       const diskMesh = new THREE.Mesh(diskGeo, diskMat);
@@ -93,24 +105,26 @@ export class DeepSpaceScene {
 
       // Chorros relativistas de plasma (Jets polares con difuminado suave)
       const jetGeo = new THREE.CylinderGeometry(0.4, 2.4, 26, 32, 1, true);
-      const jetPos = jetGeo.attributes.position;
-      const jetColors = new Float32Array(jetPos.count * 3);
-      const jetBaseColor = new THREE.Color(0x55d0ff);
-      for (let i = 0; i < jetPos.count; i++) {
-        const y = jetPos.getY(i);
-        const t = (y + 13) / 26; // 0 en base, 1 en punta
-        const intensity = (1.0 - t) * 0.45; // fade to black for additive blending
-        jetColors[i * 3] = jetBaseColor.r * intensity;
-        jetColors[i * 3 + 1] = jetBaseColor.g * intensity;
-        jetColors[i * 3 + 2] = jetBaseColor.b * intensity;
+      
+      const jetCanvas = document.createElement('canvas');
+      jetCanvas.width = 64;
+      jetCanvas.height = 256;
+      const jetCtx = jetCanvas.getContext('2d');
+      if (jetCtx) {
+        const jetGrad = jetCtx.createLinearGradient(0, 0, 0, 256);
+        jetGrad.addColorStop(0, 'rgba(85, 208, 255, 0.0)'); // Punta invisible
+        jetGrad.addColorStop(1, 'rgba(85, 208, 255, 1.0)'); // Base opaca
+        jetCtx.fillStyle = jetGrad;
+        jetCtx.fillRect(0, 0, 64, 256);
       }
-      jetGeo.setAttribute('color', new THREE.BufferAttribute(jetColors, 3));
+      const jetTexture = new THREE.CanvasTexture(jetCanvas);
 
       const jetMat = new THREE.MeshBasicMaterial({
-        vertexColors: true,
+        map: jetTexture,
         transparent: true,
         blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        depthWrite: false
       });
       const topJet = new THREE.Mesh(jetGeo, jetMat);
       topJet.position.y = 13;
@@ -145,24 +159,26 @@ export class DeepSpaceScene {
 
       // Haces de radiación rotatorios suaves
       const beamGeo = new THREE.ConeGeometry(2.4, 20, 48, 1, true);
-      const beamPos = beamGeo.attributes.position;
-      const beamColors = new Float32Array(beamPos.count * 3);
-      const beamBaseColor = new THREE.Color(0x8be9fd).multiplyScalar(4.0);
-      for (let i = 0; i < beamPos.count; i++) {
-        const y = beamPos.getY(i);
-        const t = (y + 10) / 20; // 0 en base (y = -10), 1 en punta (y = 10)
-        const intensity = (1.0 - t) * 0.5; // fade to black for additive blending
-        beamColors[i * 3] = beamBaseColor.r * intensity;
-        beamColors[i * 3 + 1] = beamBaseColor.g * intensity;
-        beamColors[i * 3 + 2] = beamBaseColor.b * intensity;
+      
+      const beamCanvas = document.createElement('canvas');
+      beamCanvas.width = 64;
+      beamCanvas.height = 256;
+      const beamCtx = beamCanvas.getContext('2d');
+      if (beamCtx) {
+        const beamGrad = beamCtx.createLinearGradient(0, 0, 0, 256);
+        beamGrad.addColorStop(0, 'rgba(139, 233, 253, 0.0)'); // Punta invisible
+        beamGrad.addColorStop(1, 'rgba(139, 233, 253, 1.0)'); // Base opaca
+        beamCtx.fillStyle = beamGrad;
+        beamCtx.fillRect(0, 0, 64, 256);
       }
-      beamGeo.setAttribute('color', new THREE.BufferAttribute(beamColors, 3));
+      const beamTexture = new THREE.CanvasTexture(beamCanvas);
 
       const beamMat = new THREE.MeshBasicMaterial({
-        vertexColors: true,
+        map: beamTexture,
         transparent: true,
         blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide
+        side: THREE.DoubleSide,
+        depthWrite: false
       });
       this.pulsarBeam1 = new THREE.Mesh(beamGeo, beamMat);
       this.pulsarBeam1.position.y = 10;
@@ -378,8 +394,10 @@ export class DeepSpaceScene {
 
     for (let i = 0; i < positions.length; i++) {
       for (let j = i + 1; j < positions.length; j++) {
-        points.push(positions[i]);
-        points.push(positions[j]);
+        if (positions[i].distanceTo(positions[j]) < 40) {
+          points.push(positions[i]);
+          points.push(positions[j]);
+        }
       }
     }
 
@@ -387,7 +405,7 @@ export class DeepSpaceScene {
     const material = new THREE.LineBasicMaterial({
       color: 0x6e48ab,
       transparent: true,
-      opacity: 0.2,
+      opacity: 0.1,
       blending: THREE.AdditiveBlending
     });
     const web = new THREE.LineSegments(geometry, material);

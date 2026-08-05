@@ -85,49 +85,17 @@ export class RelativisticBlackHoleShader {
       }
 
       void main() {
-        // Vector de visión desde la cámara al fragmento
-        vec3 viewDir = normalize(vWorldPosition - cameraPosition);
-        float fresnel = pow(1.0 - abs(dot(viewDir, vNormal)), 4.0);
-
-        // Coordenadas radiales relativas al centro del objeto
-        vec2 centeredUv = (vUv - 0.5) * 2.0;
-        float dist = length(centeredUv);
-
-        // 1. Horizonte de sucesos oscuro (Sombra del agujero negro)
-        float horizonRadius = 0.38 - spin * 0.08;
-        if (dist < horizonRadius) {
-          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-          return;
-        }
-
-        // 2. Anillo de Einstein (Esfera fotónica de alta curvatura)
-        float photonRadius = horizonRadius + 0.12;
-        float einsteinRing = smoothstep(photonRadius - 0.08, photonRadius, dist) -
-                             smoothstep(photonRadius, photonRadius + 0.15, dist);
-
-        // 3. Disco de Acreción con flujo espiral y efecto Doppler Relativista
-        float angle = atan(centeredUv.y, centeredUv.x);
-        float spiral = sin(dist * 22.0 - angle * 2.0 - time * 3.5) * 0.5 + 0.5;
-        float plasmaTurbulence = noise(vec2(dist * 12.0 - time * 1.5, angle * 4.0));
-
-        // Asimetría Doppler: El lado que se mueve hacia el observador es mucho más brillante y azulado
-        float dopplerFactor = 1.0 + 0.65 * sin(angle - time * 0.5) * sin(inclination);
+        vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+        float NdotV = max(0.0, dot(normalize(vNormal), viewDir));
         
-        // Gradiente de temperatura y color (Blanco/azul interno -> Naranja/rojo externo)
-        float diskMix = smoothstep(horizonRadius, 1.0, dist);
-        vec3 baseColor = mix(diskColorInner, diskColorOuter, pow(diskMix, 0.8));
-        
-        // Aumentar brillo azulado donde actúa el Doppler boosting
-        vec3 finalColor = baseColor * (0.8 + 0.4 * spiral + 0.5 * plasmaTurbulence) * dopplerFactor * accretionRate;
+        // Fresnel sutil para el borde (efecto de lente gravitacional muy fino en el limbo)
+        float fresnel = pow(1.0 - NdotV, 5.0);
 
-        // Añadir resplandor del Anillo de Einstein
-        finalColor += vec3(1.0, 0.92, 0.75) * einsteinRing * 2.2 * accretionRate;
-        finalColor += vec3(0.3, 0.7, 1.0) * fresnel * 0.6;
+        // Horizonte negro + resplandor de borde
+        vec3 finalColor = mix(diskColorInner, diskColorOuter, 0.5) * fresnel * 2.5;
 
-        float alpha = smoothstep(horizonRadius - 0.02, horizonRadius + 0.05, dist) *
-                      (1.0 - smoothstep(0.85, 1.0, dist));
-
-        gl_FragColor = vec4(finalColor, clamp(alpha * 1.15, 0.0, 1.0));
+        // Alpha = 1.0 para ocluir las estrellas de fondo (requiere NormalBlending)
+        gl_FragColor = vec4(finalColor, 1.0);
       }
     `;
 
@@ -135,10 +103,10 @@ export class RelativisticBlackHoleShader {
       uniforms,
       vertexShader,
       fragmentShader,
-      transparent: true,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
+      transparent: false,
+      side: THREE.FrontSide,
+      depthWrite: true,
+      blending: THREE.NormalBlending
     });
   }
 }

@@ -34,8 +34,8 @@ export class AtmosphereScatteringShader {
     varying vec3 vViewPosition;
 
     void main() {
-      // Normal en coordenadas mundiales
-      vNormal = normalize(normalMatrix * normal);
+      // Normal en coordenadas mundiales reales
+      vNormal = normalize(mat3(modelMatrix) * normal);
       
       // Posición en coordenadas mundiales
       vec4 worldPos = modelMatrix * vec4(position, 1.0);
@@ -87,7 +87,8 @@ export class AtmosphereScatteringShader {
       float NdotL = dot(normal, sunDir);
       float dayFactor = smoothstep(-0.25, 0.25, NdotL);
       float terminatorBand = 1.0 - abs(NdotL * 2.0);
-      terminatorBand = max(0.0, terminatorBand * terminatorBand);
+      terminatorBand = max(0.0, terminatorBand);
+      terminatorBand = terminatorBand * terminatorBand;
 
       // 3. Ángulo entre visión y sol para dispersión frontal Mie
       float VdotL = dot(-viewDir, sunDir);

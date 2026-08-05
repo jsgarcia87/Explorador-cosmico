@@ -221,6 +221,7 @@ export class SolarSystemScene {
         sunDirection: new THREE.Vector3(1, 0, 0)
       });
       const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
+      mesh.userData.atmoMat = atmoMat;
       mesh.add(atmoMesh);
     }
 
@@ -297,14 +298,9 @@ export class SolarSystemScene {
       }
 
       // Actualizar la dirección del sol en el shader atmosférico
-      if (id !== 'sol') {
+      if (id !== 'sol' && mesh.userData.atmoMat) {
         const sunDir = new THREE.Vector3().copy(mesh.position).multiplyScalar(-1).normalize();
-        mesh.children.forEach(child => {
-          const childMesh = child as THREE.Mesh;
-          if (childMesh.material && (childMesh.material as THREE.ShaderMaterial).uniforms?.uSunDirection) {
-            (childMesh.material as THREE.ShaderMaterial).uniforms.uSunDirection.value.copy(sunDir);
-          }
-        });
+        mesh.userData.atmoMat.uniforms.uSunDirection.value.copy(sunDir);
       }
     });
 
