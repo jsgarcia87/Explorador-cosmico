@@ -321,7 +321,7 @@ export class DeepSpaceScene {
         const gasSprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: ProceduralTextures.generateGlowSprite(hex),
-            color: new THREE.Color(hex).multiplyScalar(3.0),
+            color: new THREE.Color(0xffffff).multiplyScalar(3.0),
             transparent: true,
             opacity: 0.18 + Math.random() * 0.12,
             blending: THREE.AdditiveBlending

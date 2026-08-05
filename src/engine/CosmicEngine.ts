@@ -84,7 +84,7 @@ export class CosmicEngine {
     });
     this.renderer.setSize(width, height);
     this.updateAdaptivePixelRatio(width);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1.25;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

@@ -93,6 +93,8 @@ export class SolarSystemScene {
       instancedMesh.setMatrixAt(i, dummy.matrix);
     }
     
+    instancedMesh.instanceMatrix.needsUpdate = true;
+    
     // Velocidad de órbita global (Ley de Kepler simplificada v ~ 1/sqrt(r))
     instancedMesh.userData = { isBelt: true, orbitSpeed: 0.05 / Math.sqrt(minAU) };
     
@@ -257,7 +259,6 @@ export class SolarSystemScene {
         depthTest: true
       });
       const line = new THREE.Line(geo, mat);
-      line.rotation.x = Math.PI / 2;
       this.rootGroup.add(line);
       this.orbitLines.push(line);
       return;
