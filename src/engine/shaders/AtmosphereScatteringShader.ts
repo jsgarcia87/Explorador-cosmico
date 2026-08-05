@@ -80,7 +80,7 @@ export class AtmosphereScatteringShader {
       // En el centro del disco N·V ~ 1; en el horizonte tangencial N·V ~ 0
       float NdotV = max(0.0, dot(normal, viewDir));
       float limbFactor = 1.0 - NdotV;
-      float opticalDepth = pow(limbFactor, 3.0 / max(0.5, uDensity));
+      float opticalDepth = pow(limbFactor, 6.0 / max(0.5, uDensity));
 
       // 2. Ángulo solar respecto a la normal del planeta (Día vs Noche)
       // N·L > 0 (Día), N·L = 0 (Terminador amanecer/atardecer), N·L < 0 (Noche)

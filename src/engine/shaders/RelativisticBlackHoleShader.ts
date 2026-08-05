@@ -87,7 +87,7 @@ export class RelativisticBlackHoleShader {
       void main() {
         // Vector de visión desde la cámara al fragmento
         vec3 viewDir = normalize(vWorldPosition - cameraPosition);
-        float fresnel = pow(1.0 - abs(dot(viewDir, vNormal)), 2.5);
+        float fresnel = pow(1.0 - abs(dot(viewDir, vNormal)), 4.0);
 
         // Coordenadas radiales relativas al centro del objeto
         vec2 centeredUv = (vUv - 0.5) * 2.0;

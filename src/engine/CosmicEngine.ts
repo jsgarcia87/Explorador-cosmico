@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { EffectComposer } from 'postprocessing';
-import { RenderPass, BloomEffect, VignetteEffect, EffectPass } from 'postprocessing';
+import { RenderPass, BloomEffect, VignetteEffect, EffectPass, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
 import { SolarSystemScene } from './SolarSystemScene';
 import { EarthScene } from './EarthScene';
 import { DeepSpaceScene } from './DeepSpaceScene';
@@ -111,8 +111,9 @@ export class CosmicEngine {
       darkness: 0.55,
       offset: 0.25
     });
+    const toneMappingEffect = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC });
 
-    const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect);
+    const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect, toneMappingEffect);
     this.composer.addPass(effectPass);
 
     // 1. Cielo Estrellado Harvard OBAFGKM & Vía Láctea Fotorrealista (Sin niebla)
