@@ -112,7 +112,7 @@ export class DeepSpaceScene {
     if (data.hasPulsarBeams) {
       const geo = new THREE.SphereGeometry(2.0, 64, 64);
       const mat = new THREE.MeshBasicMaterial({
-        color: 0xccffff
+        color: new THREE.Color(0xccffff).multiplyScalar(6.0)
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = data.name;
@@ -123,23 +123,12 @@ export class DeepSpaceScene {
         data: data
       };
 
-      // Halo magnético azulado
-      const glowTexture = ProceduralTextures.generateGlowSprite(data.color);
-      const glowMat = new THREE.SpriteMaterial({
-        map: glowTexture,
-        color: 0x33b8ff,
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending
-      });
-      const glowSprite = new THREE.Sprite(glowMat);
-      glowSprite.scale.set(12, 12, 1);
-      mesh.add(glowSprite);
+      // Glowing is handled by HDR Bloom instead of fake sprites
 
       // Haces de radiación rotatorios suaves
       const beamGeo = new THREE.ConeGeometry(2.4, 20, 48, 1, true);
       const beamMat = new THREE.MeshBasicMaterial({
-        color: 0x8be9fd,
+        color: new THREE.Color(0x8be9fd).multiplyScalar(4.0),
         transparent: true,
         opacity: 0.5,
         blending: THREE.AdditiveBlending,
@@ -163,7 +152,7 @@ export class DeepSpaceScene {
     if (data.id === 'gigante_roja') {
       const geo = new THREE.SphereGeometry(4.5, 64, 64);
       const mat = new THREE.MeshBasicMaterial({
-        color: 0xff3311
+        color: new THREE.Color(0xff3311).multiplyScalar(6.0)
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = data.name;
@@ -175,18 +164,7 @@ export class DeepSpaceScene {
       };
       this.betelgeuseMesh = mesh;
 
-      // Corona plasmática envolvente
-      const glowTexture = ProceduralTextures.generateGlowSprite('#ff3311');
-      const glowMat = new THREE.SpriteMaterial({
-        map: glowTexture,
-        color: 0xff4411,
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending
-      });
-      const glowSprite = new THREE.Sprite(glowMat);
-      glowSprite.scale.set(18, 18, 1);
-      mesh.add(glowSprite);
+      // Glowing is handled by HDR Bloom instead of fake sprites
 
       this.rootGroup.add(mesh);
       this.objectMeshes.set(data.id, mesh);
@@ -230,9 +208,10 @@ export class DeepSpaceScene {
 
         // Bulbo central cálido (naranja/ámbar) -> Brazos exteriores jóvenes (blanco azulado)
         const mix = 1 - t;
-        colArr[i * 3] = 0.58 + 0.42 * mix;
-        colArr[i * 3 + 1] = 0.62 + 0.28 * mix;
-        colArr[i * 3 + 2] = 1.0 - 0.3 * mix;
+        const intensity = 1.0 + Math.pow(mix, 4.0) * 12.0; // Central stars trigger HDR bloom
+        colArr[i * 3] = (0.58 + 0.42 * mix) * intensity;
+        colArr[i * 3 + 1] = (0.62 + 0.28 * mix) * intensity;
+        colArr[i * 3 + 2] = (1.0 - 0.3 * mix) * intensity;
       }
 
       const galGeo = new THREE.BufferGeometry();
@@ -275,18 +254,7 @@ export class DeepSpaceScene {
       const dustPoints = new THREE.Points(dGeo, dMat);
       mesh.add(dustPoints);
 
-      // Halo del núcleo galáctico
-      const coreGlow = ProceduralTextures.generateGlowSprite('#fff1cc');
-      const coreMat = new THREE.SpriteMaterial({
-        map: coreGlow,
-        color: 0xffe9b3,
-        transparent: true,
-        opacity: 0.75,
-        blending: THREE.AdditiveBlending
-      });
-      const coreSprite = new THREE.Sprite(coreMat);
-      coreSprite.scale.set(8, 6, 1);
-      mesh.add(coreSprite);
+      // Glowing is handled by HDR Bloom instead of fake sprites
     } else {
       // NEBULOSA VOLUMÉTRICA (Paleta H-alfa, OIII, Azufre-II y estrellas de guardería estelar)
       const particleCount = 1400;
@@ -336,7 +304,7 @@ export class DeepSpaceScene {
       sGeo.setAttribute('position', new THREE.BufferAttribute(sPosArr, 3));
       const sMat = new THREE.PointsMaterial({
         size: 0.85,
-        color: 0xfff8ee,
+        color: new THREE.Color(0xfff8ee).multiplyScalar(5.0),
         map: starDot,
         transparent: true,
         opacity: 0.95,
@@ -353,7 +321,7 @@ export class DeepSpaceScene {
         const gasSprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: ProceduralTextures.generateGlowSprite(hex),
-            color: hex,
+            color: new THREE.Color(hex).multiplyScalar(3.0),
             transparent: true,
             opacity: 0.18 + Math.random() * 0.12,
             blending: THREE.AdditiveBlending

@@ -98,14 +98,17 @@ export class CosmicEngine {
     this.scene.background = new THREE.Color(0x010206);
     this.scene.fog = new THREE.FogExp2(0x010206, 0.00015);
 
-    // PostProcessing Bloom & Vignette
-    this.composer = new EffectComposer(this.renderer);
+    // PostProcessing Bloom & Vignette (Requires HDR for proper ToneMapping)
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: THREE.HalfFloatType
+    });
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     const bloomEffect = new BloomEffect({
       intensity: 1.5,
-      luminanceThreshold: 0.18,
-      luminanceSmoothing: 0.88
+      mipmapBlur: true,
+      luminanceThreshold: 1.0,
+      luminanceSmoothing: 0.1
     });
     const vignetteEffect = new VignetteEffect({
       darkness: 0.55,

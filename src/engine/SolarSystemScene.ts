@@ -8,7 +8,7 @@ export class SolarSystemScene {
   private scene: THREE.Scene;
   public rootGroup: THREE.Group = new THREE.Group();
   private celestialMeshes: Map<string, THREE.Mesh> = new Map();
-  private orbitLines: THREE.LineLoop[] = [];
+  private orbitLines: THREE.Line[] = [];
   private sunLight!: THREE.PointLight;
   private ambientLight!: THREE.AmbientLight;
 
@@ -18,12 +18,12 @@ export class SolarSystemScene {
   }
 
   private init(): void {
-    // 1. Iluminación
-    this.ambientLight = new THREE.AmbientLight(0x222238, 0.45);
+    // 1. Iluminación (Fotorrealista: bajo ambiente para alto contraste día/noche)
+    this.ambientLight = new THREE.AmbientLight(0x222238, 0.02);
     this.rootGroup.add(this.ambientLight);
 
     // Sol ilumina todo el sistema solar según 1/r^2
-    this.sunLight = new THREE.PointLight(0xfff5e6, 4.5, 4000, 1.25);
+    this.sunLight = new THREE.PointLight(0xfff5e6, 6.0, 4000, 1.5);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
@@ -39,8 +39,64 @@ export class SolarSystemScene {
       }
     });
 
+    // 3. Cinturones de Asteroides
+    this.createAsteroidBelts();
+
     this.scene.add(this.rootGroup);
     this.setVisible(false);
+  }
+
+  private createAsteroidBelts(): void {
+    // Cinturón de asteroides principal (entre Marte y Júpiter: ~2.1 a 3.3 AU)
+    this.createBelt(2.15, 3.25, 12000, 0x888888, 0.04);
+
+    // Cinturón de Kuiper (más allá de Neptuno: ~30 a 50 AU)
+    this.createBelt(30.0, 50.0, 15000, 0x667799, 0.06);
+  }
+
+  private createBelt(minAU: number, maxAU: number, count: number, color: number, sizeScale: number): void {
+    const geo = new THREE.DodecahedronGeometry(sizeScale, 0);
+    const mat = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: 0.9,
+      metalness: 0.1,
+      flatShading: true
+    });
+    
+    const instancedMesh = new THREE.InstancedMesh(geo, mat, count);
+    const dummy = new THREE.Object3D();
+
+    for (let i = 0; i < count; i++) {
+      // Distribución probabilística para simular anillos (huecos de Kirkwood)
+      let t = Math.random();
+      if (t > 0.3 && t < 0.35) t += 0.05; // Simular hueco resonante
+      if (t > 0.6 && t < 0.63) t -= 0.03;
+      
+      const rAU = minAU + (maxAU - minAU) * t;
+      const rScene = KeplerianOrbitEngine.mapDistanceAUToScene(rAU);
+      
+      const angle = Math.random() * Math.PI * 2;
+      const x = Math.cos(angle) * rScene;
+      const z = Math.sin(angle) * rScene;
+      
+      // Inclinación orbital aleatoria ligera y grosor vertical
+      const y = (Math.random() - 0.5) * rScene * 0.05;
+      
+      dummy.position.set(x, y, z);
+      
+      // Rotación y escala aleatoria
+      dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      const scale = 0.3 + Math.random() * 1.5;
+      dummy.scale.set(scale, scale, scale);
+      
+      dummy.updateMatrix();
+      instancedMesh.setMatrixAt(i, dummy.matrix);
+    }
+    
+    // Velocidad de órbita global (Ley de Kepler simplificada v ~ 1/sqrt(r))
+    instancedMesh.userData = { isBelt: true, orbitSpeed: 0.05 / Math.sqrt(minAU) };
+    
+    this.rootGroup.add(instancedMesh);
   }
 
   private getTextureOptionsForBody(id: string): PlanetTextureOptions {
@@ -86,7 +142,7 @@ export class SolarSystemScene {
       const sunMap = ProceduralTextures.generateSunTexture();
       mat = new THREE.MeshBasicMaterial({
         map: sunMap,
-        color: data.color
+        color: new THREE.Color(data.color).multiplyScalar(8.0)
       });
     } else if (data.id === 'tierra') {
       const earthMap = ProceduralTextures.generateEarthTexture();
@@ -130,34 +186,7 @@ export class SolarSystemScene {
     mesh.rotation.z = data.tilt;
 
     // Corona Solar para el Sol (efecto halo difuso NASA)
-    if (isSun) {
-      const coronaTexture = ProceduralTextures.generateSunCorona();
-      const coronaMat = new THREE.SpriteMaterial({
-        map: coronaTexture,
-        color: 0xffe2a0,
-        transparent: true,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending
-      });
-      const coronaSprite = new THREE.Sprite(coronaMat);
-      const coronaScale = data.radius * 3.8;
-      coronaSprite.scale.set(coronaScale, coronaScale, 1);
-      mesh.add(coronaSprite);
-    } else {
-      // Sprite de resplandor atmosférico exterior para planetas
-      const glowTexture = ProceduralTextures.generateGlowSprite(data.color);
-      const glowMat = new THREE.SpriteMaterial({
-        map: glowTexture,
-        color: data.color,
-        transparent: true,
-        opacity: 0.35,
-        blending: THREE.AdditiveBlending
-      });
-      const glowSprite = new THREE.Sprite(glowMat);
-      const glowScale = data.radius * 2.8;
-      glowSprite.scale.set(glowScale, glowScale, 1);
-      mesh.add(glowSprite);
-    }
+    // Glowing is now handled exclusively by HDR UnrealBloom on the postprocessing pipeline
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
@@ -215,7 +244,7 @@ export class SolarSystemScene {
       // Circunferencia simple para cuerpos sin elementos orbitales
       const points: THREE.Vector3[] = [];
       const segments = 128;
-      for (let i = 0; i < segments; i++) {
+      for (let i = 0; i <= segments; i++) {
         const theta = (i / segments) * Math.PI * 2;
         points.push(new THREE.Vector3(Math.cos(theta) * data.distance, 0, Math.sin(theta) * data.distance));
       }
@@ -223,9 +252,11 @@ export class SolarSystemScene {
       const mat = new THREE.LineBasicMaterial({
         color: (data as any).orbitColor || 0x444466,
         transparent: true,
-        opacity: 0.28
+        opacity: 0.18,
+        depthWrite: false,
+        depthTest: true
       });
-      const line = new THREE.LineLoop(geo, mat);
+      const line = new THREE.Line(geo, mat);
       line.rotation.x = Math.PI / 2;
       this.rootGroup.add(line);
       this.orbitLines.push(line);
@@ -238,9 +269,11 @@ export class SolarSystemScene {
     const mat = new THREE.LineBasicMaterial({
       color: (data as any).orbitColor || 0x444466,
       transparent: true,
-      opacity: 0.32
+      opacity: 0.18,
+      depthWrite: false,
+      depthTest: true
     });
-    const line = new THREE.LineLoop(geo, mat);
+    const line = new THREE.Line(geo, mat);
     this.rootGroup.add(line);
     this.orbitLines.push(line);
   }
@@ -260,6 +293,13 @@ export class SolarSystemScene {
         const astrometry = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements);
         mesh.position.copy(astrometry.position);
         mesh.userData.astrometry = astrometry;
+      }
+    });
+
+    // Rotar cinturones de asteroides
+    this.rootGroup.children.forEach(child => {
+      if (child.userData.isBelt) {
+        child.rotation.y += delta * child.userData.orbitSpeed * Math.min(timeSpeed, 50) * 0.01;
       }
     });
   }

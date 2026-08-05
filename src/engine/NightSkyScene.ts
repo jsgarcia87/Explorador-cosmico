@@ -73,7 +73,7 @@ export class NightSkyScene {
 
       const { size } = AstrophysicsUtils.pogsonMagnitudeToSize(star.mag);
       const starGeo = new THREE.SphereGeometry(size * 0.9, 16, 16);
-      const starMat = new THREE.MeshBasicMaterial({ color: star.color, fog: false });
+      const starMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(star.color).multiplyScalar(4.0), fog: false });
       const starMesh = new THREE.Mesh(starGeo, starMat);
       starMesh.position.copy(pos);
       starMesh.name = star.name;
