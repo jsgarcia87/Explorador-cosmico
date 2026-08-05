@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#010206"/>
+  <circle cx="256" cy="256" r="180" stroke="url(#gold_grad)" stroke-width="6" stroke-dasharray="8 6" opacity="0.6"/>
+  <circle cx="256" cy="256" r="95" fill="url(#sun_grad)"/>
+  <ellipse cx="256" cy="256" rx="210" ry="60" stroke="#5ce1d6" stroke-width="8" transform="rotate(-24 256 256)" opacity="0.9"/>
+  <circle cx="390" cy="195" r="22" fill="#8b7bff"/>
+  <circle cx="140" cy="310" r="14" fill="#60a5fa"/>
+  <defs>
+    <linearGradient id="gold_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <radialGradient id="sun_grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#fef08a"/>
+      <stop offset="85%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>

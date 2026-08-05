@@ -14,6 +14,7 @@ import { AstroAssistantModal } from './components/AstroAssistantModal';
 import { TeacherClassroomModal } from './components/TeacherClassroomModal';
 import { QuizModal } from './components/QuizModal';
 import { GrrtModal } from './components/GrrtModal';
+import { QuickHelpModal } from './components/QuickHelpModal';
 import { AccessibilityController, AccessibilitySettings } from './components/AccessibilityController';
 
 import './styles/index.css';
@@ -42,6 +43,16 @@ export const App: React.FC = () => {
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
   const [isGrrtOpen, setIsGrrtOpen] = useState<boolean>(false);
   const [isA11yOpen, setIsA11yOpen] = useState<boolean>(false);
+  const [isQuickHelpOpen, setIsQuickHelpOpen] = useState<boolean>(false);
+
+  // Mostrar Guía de Misión NASA al primer usuario
+  useEffect(() => {
+    const hasSeenHelp = localStorage.getItem('nasa_onboarding_shown');
+    if (!hasSeenHelp) {
+      setIsQuickHelpOpen(true);
+      localStorage.setItem('nasa_onboarding_shown', 'true');
+    }
+  }, []);
 
   // Configuración de Accesibilidad (WCAG 2.1 AA)
   const [a11ySettings, setA11ySettings] = useState<AccessibilitySettings>({
@@ -215,6 +226,8 @@ export const App: React.FC = () => {
         handleModeChange('deep');
       } else if (e.key === '4') {
         handleModeChange('observatory');
+      } else if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+        setIsQuickHelpOpen(prev => !prev);
       } else if (e.key === 'Escape') {
         setSelectedObject(null);
         setIsLabOpen(false);
@@ -223,6 +236,7 @@ export const App: React.FC = () => {
         setIsQuizOpen(false);
         setIsGrrtOpen(false);
         setIsA11yOpen(false);
+        setIsQuickHelpOpen(false);
       }
     };
 
@@ -262,6 +276,7 @@ export const App: React.FC = () => {
         onOpenQuiz={() => setIsQuizOpen(true)}
         onOpenAccessibility={() => setIsA11yOpen(true)}
         onOpenGrrt={() => setIsGrrtOpen(true)}
+        onOpenQuickHelp={() => setIsQuickHelpOpen(true)}
         fps={fps}
       />
 
@@ -328,6 +343,11 @@ export const App: React.FC = () => {
       <GrrtModal
         isOpen={isGrrtOpen}
         onClose={() => setIsGrrtOpen(false)}
+      />
+
+      <QuickHelpModal
+        isOpen={isQuickHelpOpen}
+        onClose={() => setIsQuickHelpOpen(false)}
       />
 
       <AccessibilityController

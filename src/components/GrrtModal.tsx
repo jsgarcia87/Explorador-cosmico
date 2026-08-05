@@ -1,363 +1,242 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X, Sparkles, ShieldCheck, Activity, RotateCcw, Sliders } from 'lucide-react';
-import * as THREE from 'three';
-import { RelativisticBlackHoleShader } from '../engine/shaders/RelativisticBlackHoleShader';
+import React, { useState } from 'react';
+import { X, Sparkles, BookOpen, Atom, Eye, Flame, Compass, ChevronRight, ChevronDown } from 'lucide-react';
 
 interface GrrtModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface EduSection {
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  content: string[];
+  formula?: string;
+  funFact: string;
+}
+
+const EDU_SECTIONS: EduSection[] = [
+  {
+    id: 'kerr',
+    title: '1. Métrica de Kerr & Horizonte de Sucesos',
+    subtitle: 'La distorsión del espaciotiempo en rotación',
+    icon: <Atom className="w-5 h-5 text-cyan-400" />,
+    content: [
+      'A diferencia de los agujeros negros estáticos (Schwarzschild), los agujeros negros astrofísicos reales como Gargantua o M87* poseen un momento angular extremadamente elevado (espín a/M).',
+      'Este giro arrastra el tejido del espaciotiempo a su alrededor en un fenómeno conocido como "arrastre del sistema de referencia" (Frame Dragging o efecto Lense-Thirring).',
+      'El horizonte de sucesos es el límite de no retorno donde la velocidad de escape iguala a la velocidad de la luz (c).'
+    ],
+    formula: 'r_+ = \\frac{GM}{c^2} \\left(1 + \\sqrt{1 - a_*^2}\\right)',
+    funFact: 'En un agujero negro con espín máximo (a = 0.999), el horizonte de sucesos se reduce a la mitad del tamaño que tendría uno estático de la misma masa.'
+  },
+  {
+    id: 'lensing',
+    title: '2. Lente Gravitacional & Esfera Fotónica',
+    subtitle: 'Por qué vemos la parte trasera del disco',
+    icon: <Eye className="w-5 h-5 text-violet-400" />,
+    content: [
+      'La inmensa gravedad curva las trayectorias de los fotones según la ecuación geodésica de Binet. La luz emitida por la parte trasera del disco de acreción viaja por encima y por debajo del agujero negro hasta nuestros ojos.',
+      'A una distancia de 1.5 radios de Schwarzschild se encuentra la "Esfera Fotónica": una zona donde la gravedad es tan precisa que los fotones pueden orbitar en círculos infinitos antes de escapar o caer.',
+      'El anillo brillante que rodea la sombra negra (Anillo de Einstein) está formado por fotones que han dado múltiples vueltas alrededor del horizonte antes de llegar a la cámara.'
+    ],
+    formula: 'd^2u/d\\phi^2 + u = \\frac{3GM}{c^2} u^2',
+    funFact: 'Si pudieras permanecer inmóvil dentro de la esfera fotónica de un agujero negro supermasivo, podrías ver tu propia nuca mirando hacia adelante.'
+  },
+  {
+    id: 'doppler',
+    title: '3. Asimetría Doppler Relativista',
+    subtitle: 'El brillo del frente de avance',
+    icon: <Flame className="w-5 h-5 text-amber-400" />,
+    content: [
+      'El plasma en el disco interior orbita a fracciones significativas de la velocidad de la luz. Esto provoca dos efectos ópticos masivos del relativismo especial y general:',
+      '• Beaming (Impulso Doppler): El lado del disco que gira hacia nosotros concentra sus fotones y aumenta su frecuencia (desplazamiento al azul y brillo extremo).',
+      '• Desplazamiento al Rojo Gravitacional: Los fotones pierden energía al escalar fuera del pozo gravitatorio, enrojeciendo el lado que se aleja y las zonas más cercanas al horizonte.'
+    ],
+    formula: 'I_{\\nu} = D^3 I_{\\nu, 0} \\quad \\text{donde } D = \\frac{1}{\\gamma(1 - \\beta \\cos\\theta)}',
+    funFact: 'Esta asimetría lumínica fue observada empíricamente por el Event Horizon Telescope (EHT) en la famosa fotografía del agujero negro M87* y en Sgr A*.'
+  },
+  {
+    id: 'jets',
+    title: '4. Jets Relativistas GRMHD',
+    subtitle: 'Chorros polares impulsados por campos magnéticos',
+    icon: <Compass className="w-5 h-5 text-blue-400" />,
+    content: [
+      'Las líneas de campo magnético arremolinadas en el disco se retuercen intensamente en el eje de rotación del agujero negro (Mecanismo de Blandford-Znajek).',
+      'Este dinamo electromagnético colosal extrae energía rotacional directamente de la ergosfera, disparando haces gemelos de plasma y radiación sincrotrón en direcciones opuestas a velocidades cercanas a la de la luz.'
+    ],
+    formula: 'P_{BZ} \\propto B^2 r_H^2 a_*^2 c',
+    funFact: 'El jet de M87* se proyecta más de 5,000 años luz en el espacio profundo, perforando toda su galaxia anfitriona.'
+  }
+];
+
 export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Parámetros relativistas interactivos
-  const [spin, setSpin] = useState<number>(0.92);
-  const [accretionRate, setAccretionRate] = useState<number>(1.35);
-  const [inclinationDeg, setInclinationDeg] = useState<number>(72);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-
-  // Referencias a Three.js en runtime
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const shaderMatRef = useRef<THREE.ShaderMaterial | null>(null);
-  const blackHoleGroupRef = useRef<THREE.Group | null>(null);
-  const animIdRef = useRef<number | null>(null);
-
-  // Control de arrastre del ratón para girar la vista en 3D
-  const isDraggingRef = useRef<boolean>(false);
-  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const cameraAngleRef = useRef<{ theta: number; phi: number }>({
-    theta: 0.2,
-    phi: (72 * Math.PI) / 180
-  });
-
-  useEffect(() => {
-    if (!isOpen || !canvasRef.current || !containerRef.current) return;
-
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
-
-    const scene = new THREE.Scene();
-    sceneRef.current = scene;
-
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    const radiusDist = 18;
-    camera.position.set(0, radiusDist * Math.cos(cameraAngleRef.current.phi), radiusDist * Math.sin(cameraAngleRef.current.phi));
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas: canvasRef.current,
-      antialias: true,
-      alpha: true
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
-    rendererRef.current = renderer;
-
-    const group = new THREE.Group();
-    blackHoleGroupRef.current = group;
-
-    // Shader nativo de Agujero Negro y Anillo de Einstein
-    const shaderMat = RelativisticBlackHoleShader.createMaterial({
-      spin: spin,
-      accretionRate: accretionRate,
-      inclination: (inclinationDeg * Math.PI) / 180,
-      innerHex: '#ffffff',
-      outerHex: '#ff5500'
-    });
-    shaderMatRef.current = shaderMat;
-
-    const sphereGeo = new THREE.SphereGeometry(4.8, 64, 64);
-    const blackHoleMesh = new THREE.Mesh(sphereGeo, shaderMat);
-    group.add(blackHoleMesh);
-
-    // Disco difuso exterior de plasma ionizado
-    const diskGeo = new THREE.RingGeometry(4.9, 13.5, 64);
-    const diskMat = new THREE.MeshBasicMaterial({
-      color: 0xff6622,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.38,
-      blending: THREE.AdditiveBlending
-    });
-    const diskMesh = new THREE.Mesh(diskGeo, diskMat);
-    diskMesh.rotation.x = Math.PI / 2;
-    group.add(diskMesh);
-
-    scene.add(group);
-
-    const clock = new THREE.Clock();
-    const animate = () => {
-      animIdRef.current = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-
-      if (!isPaused && shaderMatRef.current) {
-        shaderMatRef.current.uniforms.time.value += delta * 1.8;
-      }
-
-      // Actualizar cámara por arrastre
-      if (cameraRef.current) {
-        const r = 18;
-        const th = cameraAngleRef.current.theta;
-        const ph = cameraAngleRef.current.phi;
-        cameraRef.current.position.set(
-          r * Math.sin(ph) * Math.sin(th),
-          r * Math.cos(ph),
-          r * Math.sin(ph) * Math.cos(th)
-        );
-        cameraRef.current.lookAt(0, 0, 0);
-      }
-
-      renderer.render(scene, camera);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      if (!containerRef.current || !rendererRef.current || !cameraRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
-      cameraRef.current.aspect = w / h;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(w, h);
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      if (animIdRef.current !== null) {
-        cancelAnimationFrame(animIdRef.current);
-      }
-      window.removeEventListener('resize', handleResize);
-      renderer.dispose();
-    };
-  }, [isOpen]);
-
-  // Actualizar uniforms en tiempo real sin recargar la escena
-  useEffect(() => {
-    if (shaderMatRef.current) {
-      shaderMatRef.current.uniforms.spin.value = spin;
-      shaderMatRef.current.uniforms.accretionRate.value = accretionRate;
-      shaderMatRef.current.uniforms.inclination.value = (inclinationDeg * Math.PI) / 180;
-    }
-  }, [spin, accretionRate, inclinationDeg]);
+  const [activeTab, setActiveTab] = useState<string>('kerr');
+  const [showEduPanel, setShowEduPanel] = useState<boolean>(true);
 
   if (!isOpen) return null;
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDraggingRef.current = true;
-    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDraggingRef.current) return;
-    const dx = e.clientX - lastMousePosRef.current.x;
-    const dy = e.clientY - lastMousePosRef.current.y;
-    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
-
-    cameraAngleRef.current.theta += dx * 0.008;
-    cameraAngleRef.current.phi = Math.max(
-      0.15,
-      Math.min(Math.PI - 0.15, cameraAngleRef.current.phi - dy * 0.008)
-    );
-  };
-
-  const handlePointerUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  // Cálculos astronómicos mostrados en el panel de telemetría
-  const rSchw = 2.0; // Radio de Schwarzschild base en unidades normalizadas
-  const horizonRadius = (rSchw * (1 - spin * 0.35)).toFixed(2);
-  const photonSphere = (Number(horizonRadius) * 1.5).toFixed(2);
-  const dopplerBoost = (1 + spin * Math.sin((inclinationDeg * Math.PI) / 180) * 0.85).toFixed(2);
+  const currentSection = EDU_SECTIONS.find(s => s.id === activeTab) || EDU_SECTIONS[0];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="grrt-title"
-    >
-      <div className="w-full max-w-7xl h-[90vh] flex flex-col rounded-2xl bg-slate-950 border border-white/20 shadow-2xl overflow-hidden">
-        {/* Cabecera */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-900/90">
-          <div className="flex items-center space-x-3">
-            <span className="w-3 h-3 rounded-full bg-orange-500 animate-ping" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
+      {/* Marco principal inmersivo */}
+      <div className="relative w-full h-full flex flex-col bg-[#05060f] text-slate-100 overflow-hidden">
+        
+        {/* Barra superior NASA/ESA */}
+        <header className="flex items-center justify-between px-6 py-4 bg-[#0a0c18]/90 border-b border-cyan-500/25 z-20 backdrop-blur-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#22d3ee]" />
             <div>
-              <h2 id="grrt-title" className="text-lg font-outfit font-bold text-white flex items-center space-x-2">
-                <span>Simulador Relativista Nativo GRRT (Kerr • Schwarzschild)</span>
-                <span className="text-xs font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                  Gargantua • M87*
+              <h2 className="text-base font-bold tracking-widest uppercase text-white font-mono flex items-center gap-2">
+                Observatorio Geodésico Relativista GPU
+                <span className="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  Simulación Científica GRRT
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                Simulación nativa WebGL con curvatura geodésica, esfera fotónica, Anillo de Einstein y efecto Doppler en tiempo real.
+                Resolución nativa en tiempo real de la ecuación de Binet, métrica de Kerr-Schwarzschild y radiación Doppler
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => {
-                setSpin(0.92);
-                setAccretionRate(1.35);
-                setInclinationDeg(72);
-              }}
-              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-medium flex items-center space-x-1.5 transition-colors border border-white/10"
-              title="Restaurar parámetros por defecto"
+              onClick={() => setShowEduPanel(!showEduPanel)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all border ${
+                showEduPanel
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                  : 'bg-slate-800/60 text-slate-300 border-slate-700 hover:bg-slate-800'
+              }`}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reiniciar Parámetros</span>
+              <BookOpen className="w-4 h-4 text-cyan-400" />
+              {showEduPanel ? 'Ocultar Guía Astronómica' : 'Guía del Científico Astronómico'}
             </button>
+
             <button
               onClick={onClose}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
-              aria-label="Cerrar simulador GRRT"
+              className="p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
+              title="Cerrar Simulador"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Cuerpo del simulador: Canvas 3D + Panel lateral de telemetría y controles */}
-        <div className="flex-1 w-full h-full relative flex flex-col lg:flex-row overflow-hidden bg-black">
-          {/* Visor WebGL 3D en tiempo real */}
-          <div
-            ref={containerRef}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            className="flex-1 h-full relative cursor-grab active:cursor-grabbing select-none"
-          >
-            <canvas ref={canvasRef} className="w-full h-full block" />
-
-            {/* Ayuda de navegación en pantalla */}
-            <div className="absolute top-4 left-4 pointer-events-none px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 backdrop-blur-md text-xs text-slate-300">
-              <span className="font-medium text-orange-300">Arrastra con el ratón</span> para rotar el plano orbital del Agujero Negro en tiempo real.
-            </div>
-
-            {/* Ficha rápida superior derecha */}
-            <div className="absolute top-4 right-4 pointer-events-none px-3.5 py-2 rounded-xl bg-slate-900/80 border border-white/10 backdrop-blur-md text-right">
-              <div className="text-[11px] uppercase tracking-wider text-slate-400 font-mono">Radio de Horizonte</div>
-              <div className="text-sm font-bold font-mono text-orange-400">R = {horizonRadius} rₛ</div>
-            </div>
+        {/* Contenedor dividido: Visor Raytracer 3D + Panel Astrofísico */}
+        <div className="relative flex-1 flex overflow-hidden">
+          
+          {/* VISOR DE TRAZADO DE RAYOS GRRT EN TIEMPO REAL */}
+          <div className="relative flex-1 h-full bg-black">
+            <iframe
+              src="./simulador-grrt/index.html"
+              title="Simulador Raytracer GRRT"
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            />
           </div>
 
-          {/* Panel Lateral de Control Relativista */}
-          <div className="w-full lg:w-96 bg-slate-900/70 border-t lg:border-t-0 lg:border-l border-white/10 p-5 flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
-              <div className="flex items-center space-x-2 pb-3 border-b border-white/10">
-                <Sliders className="w-4 h-4 text-orange-400" />
-                <h3 className="font-outfit font-semibold text-white text-sm">Controles de Relatividad General</h3>
-              </div>
-
-              {/* Slider 1: Espín de Kerr */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Espín de Kerr (a/M)</span>
-                  <span className="font-mono text-orange-400 font-bold">{spin.toFixed(2)}</span>
+          {/* PANEL ASISTENTE DEL CIENTÍFICO ASTRONÓMICO (DESPLEGABLE) */}
+          {showEduPanel && (
+            <aside className="w-96 max-w-[90vw] h-full bg-[#0a0d1e]/95 border-l border-cyan-500/20 flex flex-col z-20 backdrop-blur-xl animate-in slide-in-from-right duration-300">
+              
+              {/* Cabecera del Astrónomo */}
+              <div className="p-5 border-b border-white/10 bg-gradient-to-r from-cyan-950/40 to-violet-950/30">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-400">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs uppercase font-mono tracking-widest text-cyan-400 font-bold block">
+                      Astrofísica Relativista
+                    </span>
+                    <h3 className="text-sm font-bold text-white">
+                      Guía Científica del Agujero Negro
+                    </h3>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.0"
-                  max="0.99"
-                  step="0.01"
-                  value={spin}
-                  onChange={(e) => setSpin(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                />
-                <p className="text-[11px] text-slate-400 leading-tight">
-                  Controla el arrastre del espacio-tiempo (Frame-Dragging). Valores cercanos a 1 contraen el horizonte interior.
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Interactúa con los controles de la derecha en el visor 3D para modificar el espín y la acreción mientras exploras los principios fundamentales:
                 </p>
               </div>
 
-              {/* Slider 2: Tasa de Acreción */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Tasa de Acreción (Ṁ)</span>
-                  <span className="font-mono text-cyan-400 font-bold">{accretionRate.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.2"
-                  max="2.5"
-                  step="0.05"
-                  value={accretionRate}
-                  onChange={(e) => setAccretionRate(parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                />
-                <p className="text-[11px] text-slate-400 leading-tight">
-                  Intensidad del flujo ionizado en el disco coronal y luminosidad de la esfera fotónica.
-                </p>
+              {/* Pestañas de conceptos */}
+              <div className="grid grid-cols-2 gap-1 p-3 border-b border-white/10 bg-black/30">
+                {EDU_SECTIONS.map((section) => {
+                  const isActive = section.id === activeTab;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveTab(section.id)}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all text-left ${
+                        isActive
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      {section.icon}
+                      <span className="truncate">{section.title.split('.')[1].trim()}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Slider 3: Inclinación del Observador */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-300 font-medium">Inclinación Visual (θ)</span>
-                  <span className="font-mono text-emerald-400 font-bold">{inclinationDeg}°</span>
+              {/* Contenido de la sección seleccionada */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm">
+                <div>
+                  <span className="text-xs font-mono text-cyan-400 font-bold block uppercase mb-1">
+                    Concepto Fundamental
+                  </span>
+                  <h4 className="text-base font-bold text-white mb-1">
+                    {currentSection.title}
+                  </h4>
+                  <p className="text-xs text-violet-300 font-medium">
+                    {currentSection.subtitle}
+                  </p>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="88"
-                  step="1"
-                  value={inclinationDeg}
-                  onChange={(e) => setInclinationDeg(parseInt(e.target.value, 10))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                />
-                <p className="text-[11px] text-slate-400 leading-tight">
-                  Inclinación respecto al plano del disco. A mayor inclinación, mayor asimetría visual por efecto Doppler.
-                </p>
+
+                {/* Explicación en párrafos */}
+                <div className="space-y-3">
+                  {currentSection.content.map((paragraph, index) => (
+                    <p key={index} className="text-slate-300 text-xs leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+
+                {/* Fórmula científica */}
+                {currentSection.formula && (
+                  <div className="p-3.5 rounded-xl bg-black/60 border border-cyan-500/30 text-center">
+                    <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                      Fórmula Físico-Matemática
+                    </span>
+                    <code className="text-xs font-mono text-cyan-300 font-bold tracking-wider">
+                      {currentSection.formula}
+                    </code>
+                  </div>
+                )}
+
+                {/* Dato Curioso del Astrónomo */}
+                <div className="p-4 rounded-xl bg-gradient-to-br from-violet-900/30 to-cyan-900/20 border border-violet-500/30">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Dato Astronómico
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-200 leading-relaxed italic">
+                    "{currentSection.funFact}"
+                  </p>
+                </div>
               </div>
 
-              {/* Telemetría Astrofísica calculada en vivo */}
-              <div className="p-4 rounded-xl bg-slate-950/80 border border-white/10 space-y-2.5 font-mono text-xs">
-                <div className="text-slate-400 uppercase tracking-wider text-[10px]">Telemetría Relativista en Vivo</div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Esfera Fotónica (r_ph):</span>
-                  <span className="text-white font-bold">{photonSphere} rₛ</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Boost Doppler:</span>
-                  <span className="text-amber-400 font-bold">x{dopplerBoost}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Tipo Métrica:</span>
-                  <span className="text-emerald-400 font-bold">{spin > 0.05 ? 'Kerr (Rotatorio)' : 'Schwarzschild'}</span>
-                </div>
+              {/* Pie de guía */}
+              <div className="p-4 border-t border-white/10 bg-black/40 text-[11px] text-slate-400 text-center font-mono">
+                Usa el ratón para rotar (clic izquierdo) y hacer zoom (rueda) sobre la métrica gravitacional.
               </div>
-            </div>
+            </aside>
+          )}
 
-            {/* Métrica en pie de panel */}
-            <div className="pt-4 border-t border-white/10 text-[11px] text-slate-400">
-              <div className="flex items-center space-x-1.5 mb-1 text-slate-300 font-medium">
-                <Activity className="w-3.5 h-3.5 text-orange-400" />
-                <span>Geodésicas Fotónicas Integradas</span>
-              </div>
-              <p className="leading-snug">
-                El haz de luz curvo muestra el Anillo de Einstein donde los fotones orbitan el agujero negro antes de escapar o caer al horizonte.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Pie de página explicativo */}
-        <div className="p-3 border-t border-white/10 bg-slate-900/80 flex items-center justify-between text-xs text-slate-400">
-          <span className="flex items-center space-x-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Motor nativo 100% WebGL/GLSL integrado en el proyecto (Sin dependencias externas ni iframes).</span>
-          </span>
-          <span className="font-mono text-orange-400 hidden sm:inline">
-            ds² = -(1 - 2Mr/ρ²)dt² - (4Mar sin²θ/ρ²)dtdφ + (ρ²/Δ)dr² + ...
-          </span>
         </div>
       </div>
     </div>

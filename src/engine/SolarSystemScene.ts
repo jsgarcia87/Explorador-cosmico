@@ -83,8 +83,18 @@ export class SolarSystemScene {
 
     let mat: THREE.Material;
     if (isSun) {
+      const sunMap = ProceduralTextures.generateSunTexture();
       mat = new THREE.MeshBasicMaterial({
+        map: sunMap,
         color: data.color
+      });
+    } else if (data.id === 'tierra') {
+      const earthMap = ProceduralTextures.generateEarthTexture();
+      mat = new THREE.MeshStandardMaterial({
+        map: earthMap,
+        roughness: 0.65,
+        metalness: 0.15,
+        wireframe: false
       });
     } else {
       const textureOptions = this.getTextureOptionsForBody(data.id);
@@ -151,13 +161,15 @@ export class SolarSystemScene {
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
-      const ringGeo = new THREE.RingGeometry(data.radius * 1.35, data.radius * 2.3, 64);
+      const ringMap = ProceduralTextures.generateRingTexture();
+      const ringGeo = new THREE.RingGeometry(data.radius * 1.35, data.radius * 2.3, 96);
       const ringMat = new THREE.MeshStandardMaterial({
+        map: ringMap,
         color: 0xd8c69b,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.85,
-        roughness: 0.5
+        opacity: 0.92,
+        roughness: 0.4
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = Math.PI / 2 + 0.35;

@@ -1,44 +1,39 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
     <head>
-        <title>Black Hole Simulation</title>
+        <title>Observatorio GRRT — Simulación Relativista de Agujero Negro</title>
         <link rel="icon" type="image/svg+xml" href="assets/img/icons/black-hole.svg"> 
         <meta charset="utf-8">
-        <meta name="description" content="A browser-based black hole visualization with Schwarzschild lensing based on the exact Binet equation, approximate spin effects, accretion-flow models, presentation presets, and recording tools.">
+        <meta name="description" content="Simulación científica de agujero negro basada en la ecuación geodésica de Binet, métrica de Kerr-Schwarzschild, disco de acreción Doppler y jets relativistas.">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta property="og:type"               content="website" />
-        <meta property="og:url"                content="https://adriwin06.github.io/black-hole" />
-        <meta property="og:title"              content="Black Hole Simulation" />
-        <meta property="og:description"        content="A browser-based black hole visualization with Schwarzschild lensing based on the exact Binet equation, approximate spin effects, accretion-flow models, presentation presets, and recording tools." />
-        <meta property="og:image"              content="https://adriwin06.github.io/black-hole/assets/gif/banner.gif" />
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
     </head>
     <body>
         <div id="hint-text" class="hidden-phone initially-hidden">
-            Left drag: orbit, Right drag: pan, Left+Right drag: roll. Observer menu is in the XYZ indicator (bottom-left).
+            Arrastre Izquierdo: órbita | Arrastre Derecho: encuadre | Rueda: zoom orbital. Menú del observador en indicador XYZ (inferior izquierda).
         </div>
         <div class="info ">
             <div id="loader">
-                Loading...
+                Inicializando Motor Geodésico Relativista GPU...
                 <div class="disclaimer">
-                This WebGL application requires a recent version of Chrome or Firefox.
+                Simulación científica calculando trayectorias fotónicas en tiempo real (Métrica de Kerr & Schwarzschild).
                 </div>
             </div>
 
         </div>
 
-        <div class="link-bar">
-            <a href="../index.html" style="color: #00f0ff; font-weight: bold;"><i class="fa fa-rocket fa-lg"></i> ⬅ Volver al Explorador Cósmico</a>
-            |
-            <a href="README" target="_blank"><i class="fa fa-question-circle fa-lg"></i> What is this?</a>
-            |
-            <a href="https://github.com/Adriwin06/black-hole" target="_blank"><i class="fa fa-github fa-lg"></i> Source</a>
-            |
-            <a href="docs/physics.html" target="_blank"><i class="fa fa-lg">&Sigma;</i> Physics</a>
-            |
-            <a href="COPYRIGHT" target="_blank"><i class="fa fa-copyright fa-lg"></i> Copyright</a>
+        <div class="link-bar" style="background: rgba(5,6,15,0.92); border-bottom: 1px solid rgba(0,240,255,0.3); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; font-family: sans-serif; backdrop-filter: blur(10px); z-index: 1000; position: relative;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <span style="color: #00f0ff; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; font-size: 14px;">⚡ Observatorio GRRT — Agujero Negro Relativista (Gargantua • M87*)</span>
+                <span style="color: #8b93b8; font-size: 13px;">| Motor Geodésico GPU (Métrica de Kerr-Schwarzschild)</span>
+            </div>
+            <div style="display: flex; gap: 20px; font-size: 13px; color: #eef1fb;">
+                <span><strong style="color: #e0b054;">Horizonte de Sucesos:</strong> r_s = 2GM/c²</span>
+                <span><strong style="color: #5ce1d6;">Esfera Fotónica:</strong> r_ph = 1.5 r_s</span>
+                <span><strong style="color: #ff77aa;">Asimetría Doppler:</strong> Factor Relativista D³</span>
+            </div>
         </div>
 
         <script src="js-libs/jquery-2.1.4.min.js"></script>

@@ -16,6 +16,7 @@ interface TopNavigationProps {
   onOpenQuiz: () => void;
   onOpenAccessibility: () => void;
   onOpenGrrt: () => void;
+  onOpenQuickHelp: () => void;
   fps: number;
 }
 
@@ -32,6 +33,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   onOpenQuiz,
   onOpenAccessibility,
   onOpenGrrt,
+  onOpenQuickHelp,
   fps
 }) => {
   const profile = USER_PROFILES[activeProfile];
@@ -112,6 +114,16 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
       {/* Derecha: Herramientas, Laboratorio, Asistente y Perfil */}
       <div className="flex items-center space-x-2">
+        {/* Guía Rápida NASA */}
+        <button
+          onClick={onOpenQuickHelp}
+          title="Guía Rápida de Misión y Controles"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-medium transition-all"
+        >
+          <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden sm:inline">Guía NASA</span>
+        </button>
+
         {/* Agujero Negro GRRT */}
         <button
           onClick={onOpenGrrt}

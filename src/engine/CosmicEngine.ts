@@ -76,7 +76,6 @@ export class CosmicEngine {
     const width = this.canvas.clientWidth || window.innerWidth;
     const height = this.canvas.clientHeight || window.innerHeight;
 
-    // Renderer HDR
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -84,7 +83,7 @@ export class CosmicEngine {
       alpha: false
     });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.updateAdaptivePixelRatio(width);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
     this.renderer.shadowMap.enabled = true;
@@ -144,6 +143,10 @@ export class CosmicEngine {
    * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
    * sin niebla (fog: false) y con sprites circulares luminosos.
    */
+  /**
+   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
+   * sin niebla (fog: false) con capa dual de profundidad para visibilidad constante.
+   */
   private createBackgroundStarfield(): void {
     const starCount = 14000;
     const geometry = new THREE.BufferGeometry();
@@ -173,13 +176,16 @@ export class CosmicEngine {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const starTexture = ProceduralTextures.generateStarDot();
+    
+    // Capa principal con atenuación de tamaño (estrellas grandes y brillantes)
     const material = new THREE.PointsMaterial({
       map: starTexture,
-      size: 6.5,
+      size: 32.0,
       vertexColors: true,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.98,
       sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
       fog: false,
       depthWrite: false
     });
@@ -187,6 +193,22 @@ export class CosmicEngine {
     const starfield = new THREE.Points(geometry, material);
     starfield.name = 'BACKGROUND_STARS_OBAFGKM';
     this.scene.add(starfield);
+
+    // Segunda capa sin atenuación para garantizar un cielo estrellado nítido a cualquier distancia o zoom
+    const fixedMaterial = new THREE.PointsMaterial({
+      map: starTexture,
+      size: 2.2,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.88,
+      sizeAttenuation: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      depthWrite: false
+    });
+    const starfieldFixed = new THREE.Points(geometry, fixedMaterial);
+    starfieldFixed.name = 'BACKGROUND_STARS_FIXED';
+    this.scene.add(starfieldFixed);
   }
 
   /**
@@ -194,7 +216,7 @@ export class CosmicEngine {
    * inclinada respecto a la eclíptica con polvo interestelar y nebulosidad cian/violeta/ámbar.
    */
   private createMilkyWayBand(): void {
-    const particleCount = 15000;
+    const particleCount = 18000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -235,10 +257,10 @@ export class CosmicEngine {
     const starTexture = ProceduralTextures.generateStarDot();
     const material = new THREE.PointsMaterial({
       map: starTexture,
-      size: 11.0,
+      size: 34.0,
       vertexColors: true,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.75,
       sizeAttenuation: true,
       blending: THREE.AdditiveBlending,
       fog: false,
@@ -313,6 +335,13 @@ export class CosmicEngine {
     );
   }
 
+  private updateAdaptivePixelRatio(width: number): void {
+    if (!this.renderer) return;
+    const isMobile = width <= 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    const maxRatio = isMobile ? 1.5 : 2.0;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxRatio));
+  }
+
   private onWindowResize = (): void => {
     if (!this.canvas || !this.renderer) return;
     const width = this.canvas.clientWidth || window.innerWidth;
@@ -321,6 +350,7 @@ export class CosmicEngine {
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
     this.composer.setSize(width, height);
+    this.updateAdaptivePixelRatio(width);
   };
 
   private onPointerDown = (event: MouseEvent): void => {
