@@ -6,7 +6,7 @@ import { ProceduralTextures } from './textures/ProceduralTextures';
 export class DeepSpaceScene {
   private scene: THREE.Scene;
   public rootGroup: THREE.Group = new THREE.Group();
-  private objectMeshes: Map<string, THREE.Mesh> = new Map();
+  private objectMeshes: Map<string, THREE.Object3D> = new Map();
   private pulsarBeam1!: THREE.Mesh;
   private pulsarBeam2!: THREE.Mesh;
   private gargantuaMaterial!: THREE.ShaderMaterial;
@@ -35,7 +35,16 @@ export class DeepSpaceScene {
   private createDeepObject(data: DeepSpaceObjectData): void {
     // 1. Gargantua (Agujero Negro Relativista Nativo GRRT en 3D)
     if (data.isGrrtBlackHole) {
-      const geo = new THREE.SphereGeometry(4.2, 64, 64);
+      const mesh = new THREE.Group();
+      mesh.name = data.name;
+      mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
+      mesh.userData = {
+        id: data.id,
+        type: 'deep_space',
+        data: data
+      };
+
+      const geo = new THREE.PlaneGeometry(14, 14);
       this.gargantuaMaterial = RelativisticBlackHoleShader.createMaterial({
         spin: 0.9,
         accretionRate: 1.25,
@@ -44,14 +53,11 @@ export class DeepSpaceScene {
         outerHex: '#ff5500'
       });
 
-      const mesh = new THREE.Mesh(geo, this.gargantuaMaterial);
-      mesh.name = data.name;
-      mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
-      mesh.userData = {
-        id: data.id,
-        type: 'deep_space',
-        data: data
+      const bhEffect = new THREE.Mesh(geo, this.gargantuaMaterial);
+      bhEffect.onBeforeRender = function(renderer, scene, camera) {
+        this.quaternion.copy(camera.quaternion);
       };
+      mesh.add(bhEffect);
 
       // Anillo de Einstein (Esfera fotónica por lente gravitacional)
       const photonRingGeo = new THREE.TorusGeometry(4.35, 0.09, 16, 64);

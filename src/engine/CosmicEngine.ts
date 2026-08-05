@@ -329,14 +329,18 @@ export class CosmicEngine {
     this.interactiveObjects = [];
   }
 
-  public setCameraTarget(pos: THREE.Vector3, lookAt: THREE.Vector3, distance: number = 25): void {
+  public setCameraTarget(pos: THREE.Vector3, lookAt: THREE.Vector3, distance?: number): void {
     this.targetLookAt.copy(lookAt);
-    this.activeTargetDistance = distance;
-    this.targetPosition.set(
-      lookAt.x + Math.cos(this.cameraAngle) * distance,
-      lookAt.y + distance * 0.45,
-      lookAt.z + Math.sin(this.cameraAngle) * distance
-    );
+    this.targetPosition.copy(pos);
+    
+    const offset = new THREE.Vector3().subVectors(this.targetPosition, this.targetLookAt);
+    this.activeTargetDistance = distance !== undefined ? distance : offset.length();
+    
+    if (offset.lengthSq() > 0.0001) {
+      this.orbitPhi = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
+      this.orbitTheta = Math.atan2(offset.z, offset.x);
+    }
+    this.isOrbitingAroundTarget = true;
   }
 
   private updateAdaptivePixelRatio(width: number): void {
@@ -485,6 +489,16 @@ export class CosmicEngine {
       this.currentDate = new Date(this.currentDate.getTime() + msDelta);
       if (this.options.onDateChange) {
         this.options.onDateChange(this.currentDate);
+      }
+    }
+
+    // Trackear continuamente al objeto seleccionado si se está moviendo
+    if (this.selectedObjectId) {
+      const obj = this.interactiveObjects.find(o => o.userData.id === this.selectedObjectId);
+      if (obj) {
+        const objPos = new THREE.Vector3();
+        obj.getWorldPosition(objPos);
+        this.targetLookAt.copy(objPos);
       }
     }
 

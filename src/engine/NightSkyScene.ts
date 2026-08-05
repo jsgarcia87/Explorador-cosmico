@@ -81,7 +81,8 @@ export class NightSkyScene {
         id: constellation.id,
         starId: star.id,
         type: 'constellation_star',
-        constellationData: constellation
+        constellationData: constellation,
+        originalColor: star.color
       };
 
       constGroup.add(starMesh);
@@ -121,7 +122,8 @@ export class NightSkyScene {
     this.starMeshes.forEach((mesh) => {
       const mat = mesh.material as THREE.MeshBasicMaterial;
       if (spectrum === 'visible') {
-        mat.color.setHex(0xffffff);
+        const origHex = mesh.userData.originalColor !== undefined ? mesh.userData.originalColor : 0xffffff;
+        mat.color.setHex(origHex).multiplyScalar(4.0);
       } else {
         mat.color.setHex(baseColor);
       }
@@ -145,7 +147,7 @@ export class NightSkyScene {
   }
 
   public getAllInteractiveObjects(): THREE.Object3D[] {
-    return this.starMeshes;
+    return [...this.starMeshes, this.issMesh];
   }
 
   public setVisible(visible: boolean): void {

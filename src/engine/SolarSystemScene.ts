@@ -295,6 +295,17 @@ export class SolarSystemScene {
         mesh.position.copy(astrometry.position);
         mesh.userData.astrometry = astrometry;
       }
+
+      // Actualizar la dirección del sol en el shader atmosférico
+      if (id !== 'sol') {
+        const sunDir = new THREE.Vector3().copy(mesh.position).multiplyScalar(-1).normalize();
+        mesh.children.forEach(child => {
+          const childMesh = child as THREE.Mesh;
+          if (childMesh.material && (childMesh.material as THREE.ShaderMaterial).uniforms?.uSunDirection) {
+            (childMesh.material as THREE.ShaderMaterial).uniforms.uSunDirection.value.copy(sunDir);
+          }
+        });
+      }
     });
 
     // Rotar cinturones de asteroides
