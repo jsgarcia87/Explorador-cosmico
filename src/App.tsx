@@ -9,6 +9,7 @@ import { ProfileSelector } from './components/ProfileSelector';
 import { TimeController } from './components/TimeController';
 import { ObjectInspectorPanel, SelectedObjectData } from './components/ObjectInspectorPanel';
 import { ObservatoryHUD } from './components/ObservatoryHUD';
+import { ConstellationLegend } from './components/ConstellationLegend';
 import { PhysicsLabModal } from './components/PhysicsLabModal';
 import { AstroAssistantModal } from './components/AstroAssistantModal';
 import { TeacherClassroomModal } from './components/TeacherClassroomModal';
@@ -182,6 +183,24 @@ export const App: React.FC = () => {
     }
   }, [currentMode]);
 
+  const handleToggleConstellation = useCallback((id: string, visible: boolean) => {
+    if (engineRef.current && currentMode === 'observatory') {
+      const nightScene = engineRef.current.getNightSkyScene();
+      if (nightScene) {
+        nightScene.toggleConstellationLines(id, visible);
+      }
+    }
+  }, [currentMode]);
+
+  const handleHideAllConstellations = useCallback(() => {
+    if (engineRef.current && currentMode === 'observatory') {
+      const nightScene = engineRef.current.getNightSkyScene();
+      if (nightScene) {
+        nightScene.hideAllConstellationLines();
+      }
+    }
+  }, [currentMode]);
+
   // Modo Kiosko para Museos: auto-reinicio por inactividad
   useEffect(() => {
     if (activeProfile !== 'kiosko') return;
@@ -292,10 +311,16 @@ export const App: React.FC = () => {
 
       {/* Panel Multiespectrum en Modo Observatorio */}
       {currentMode === 'observatory' && (
-        <ObservatoryHUD
-          currentSpectrum={currentSpectrum}
-          onSpectrumChange={handleSpectrumChange}
-        />
+        <>
+          <ObservatoryHUD
+            currentSpectrum={currentSpectrum}
+            onSpectrumChange={handleSpectrumChange}
+          />
+          <ConstellationLegend
+            onToggleConstellation={handleToggleConstellation}
+            onHideAll={handleHideAllConstellations}
+          />
+        </>
       )}
 
       {/* Drawer de Inspección Pedagógica y Telemetría */}

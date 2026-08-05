@@ -20,9 +20,10 @@ export class ProceduralTextures {
   private static glowCache: Map<string, THREE.CanvasTexture> = new Map();
   private static starDotTexture: THREE.CanvasTexture | null = null;
   private static sunCoronaTexture: THREE.CanvasTexture | null = null;
-  private static earthTextureCache: THREE.CanvasTexture | null = null;
+  private static earthTextureCache: { map: THREE.CanvasTexture, bumpMap: THREE.CanvasTexture, roughnessMap: THREE.CanvasTexture } | null = null;
   private static sunTextureCache: THREE.CanvasTexture | null = null;
   private static ringTextureCache: THREE.CanvasTexture | null = null;
+  private static milkyWayCache: THREE.CanvasTexture | null = null;
 
   /**
    * Generador de ruido pseudo-Perlin 2D rápido para turbulencia planetaria fotorrealista.
@@ -60,16 +61,26 @@ export class ProceduralTextures {
   /**
    * Genera la textura fotorrealista de la Tierra (Océanos profundos, continentes fractales, cordilleras, hielo y nubes)
    */
-  public static generateEarthTexture(): THREE.CanvasTexture {
+  public static generateEarthTexture(): { map: THREE.CanvasTexture, bumpMap: THREE.CanvasTexture, roughnessMap: THREE.CanvasTexture } {
     if (this.earthTextureCache) return this.earthTextureCache;
 
     const w = 1024;
     const h = 512;
+    
     const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    const bumpCanvas = document.createElement('canvas');
+    const roughCanvas = document.createElement('canvas');
+    canvas.width = bumpCanvas.width = roughCanvas.width = w;
+    canvas.height = bumpCanvas.height = roughCanvas.height = h;
+    
     const ctx = canvas.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(canvas);
+    const bumpCtx = bumpCanvas.getContext('2d');
+    const roughCtx = roughCanvas.getContext('2d');
+    
+    if (!ctx || !bumpCtx || !roughCtx) {
+      const tex = new THREE.CanvasTexture(canvas);
+      return { map: tex, bumpMap: tex, roughnessMap: tex };
+    }
 
     // 1. Océano profundo con degradado batimétrico
     const oceanGrad = ctx.createLinearGradient(0, 0, 0, h);
@@ -78,14 +89,26 @@ export class ProceduralTextures {
     oceanGrad.addColorStop(1, '#061633');
     ctx.fillStyle = oceanGrad;
     ctx.fillRect(0, 0, w, h);
+    
+    // Bump base (océano es nivel 0 o plano)
+    bumpCtx.fillStyle = 'rgb(10, 10, 10)';
+    bumpCtx.fillRect(0, 0, w, h);
+    
+    // Roughness base (océano es brillante/suave)
+    roughCtx.fillStyle = 'rgb(40, 40, 40)'; // 0.15 roughness
+    roughCtx.fillRect(0, 0, w, h);
 
     const imgData = ctx.getImageData(0, 0, w, h);
+    const bumpData = bumpCtx.getImageData(0, 0, w, h);
+    const roughData = roughCtx.getImageData(0, 0, w, h);
+    
     const data = imgData.data;
+    const bData = bumpData.data;
+    const rData = roughData.data;
 
     // 2. Continentes procedimentales fractales y casquetes polares
     for (let y = 0; y < h; y++) {
       const ny = y / h;
-      const lat = (ny - 0.5) * Math.PI; // -PI/2 to PI/2
       for (let x = 0; x < w; x++) {
         const nx = x / w;
         const n = this.fractalNoise(nx * 8, ny * 4, 6);
@@ -95,9 +118,12 @@ export class ProceduralTextures {
         if (ny < 0.12 || ny > 0.88) {
           const iceEdge = (ny < 0.12 ? (0.12 - ny) : (ny - 0.88)) * 8.5;
           if (n + iceEdge > 0.65) {
-            data[idx] = 245;
-            data[idx + 1] = 250;
-            data[idx + 2] = 255;
+            // Color Hielo
+            data[idx] = 245; data[idx + 1] = 250; data[idx + 2] = 255;
+            // Bump Hielo (rugosidad media/baja)
+            bData[idx] = bData[idx+1] = bData[idx+2] = 120 + Math.random() * 20;
+            // Roughness Hielo
+            rData[idx] = rData[idx+1] = rData[idx+2] = 120;
             continue;
           }
         }
@@ -105,50 +131,67 @@ export class ProceduralTextures {
         // Continentes terrestres (Umbral n > 0.52)
         if (n > 0.52) {
           const altitude = (n - 0.52) / 0.48; // 0..1
+          const bumpVal = Math.floor(20 + altitude * 235); // 20 to 255
+          bData[idx] = bData[idx+1] = bData[idx+2] = bumpVal;
+          rData[idx] = rData[idx+1] = rData[idx+2] = 220; // Tierra es rugosa
+
           if (altitude > 0.65) {
             // Alta montaña nevada / rocosa
-            data[idx] = 180;
-            data[idx + 1] = 175;
-            data[idx + 2] = 170;
+            data[idx] = 180; data[idx + 1] = 175; data[idx + 2] = 170;
           } else if (altitude > 0.35) {
-            // Mesetas áridas / praderas pardo-amarillentas
+            // Mesetas áridas
             data[idx] = 142 + Math.round(altitude * 40);
             data[idx + 1] = 118 + Math.round(altitude * 20);
             data[idx + 2] = 68;
           } else {
-            // Llanuras fértiles verdes
+            // Llanuras
             data[idx] = 42 + Math.round(altitude * 50);
             data[idx + 1] = 104 + Math.round(altitude * 60);
             data[idx + 2] = 48;
           }
         } else if (n > 0.48) {
-          // Plataforma continental marina poco profunda (turquesa)
-          data[idx] = 24;
-          data[idx + 1] = 78;
-          data[idx + 2] = 124;
+          // Plataforma continental marina (turquesa)
+          data[idx] = 24; data[idx + 1] = 78; data[idx + 2] = 124;
+          bData[idx] = bData[idx+1] = bData[idx+2] = 15;
+          rData[idx] = rData[idx+1] = rData[idx+2] = 80; // Agua somera menos pulida
         }
       }
     }
     ctx.putImageData(imgData, 0, 0);
+    bumpCtx.putImageData(bumpData, 0, 0);
+    roughCtx.putImageData(roughData, 0, 0);
 
-    // 3. Bandas de formaciones nubosas ciclónicas superpuestas
+    // 3. Bandas de formaciones nubosas ciclónicas superpuestas (afectan bump)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+    bumpCtx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // nubes dan ligero relieve
+    roughCtx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // nubes son totalmente rugosas
+    
     for (let i = 0; i < 40; i++) {
       const cx = Math.random() * w;
       const cy = h * (0.2 + Math.random() * 0.6);
       const rx = 30 + Math.random() * 110;
       const ry = rx * (0.2 + Math.random() * 0.25);
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rx, ry, (Math.random() - 0.5) * 0.5, 0, Math.PI * 2);
-      ctx.fill();
+      
+      [ctx, bumpCtx, roughCtx].forEach(c => {
+        c.beginPath();
+        c.ellipse(cx, cy, rx, ry, (Math.random() - 0.5) * 0.5, 0, Math.PI * 2);
+        c.fill();
+      });
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.needsUpdate = true;
-    this.earthTextureCache = texture;
-    return texture;
+    const map = new THREE.CanvasTexture(canvas);
+    const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+    const roughnessMap = new THREE.CanvasTexture(roughCanvas);
+
+    [map, bumpMap, roughnessMap].forEach(t => {
+      t.wrapS = THREE.RepeatWrapping;
+      t.wrapT = THREE.ClampToEdgeWrapping;
+      t.needsUpdate = true;
+    });
+
+    const result = { map, bumpMap, roughnessMap };
+    this.earthTextureCache = result;
+    return result;
   }
 
   /**
@@ -292,7 +335,7 @@ export class ProceduralTextures {
   public static generatePlanetTexture(
     baseHex: string | number,
     options: PlanetTextureOptions = {}
-  ): THREE.CanvasTexture {
+  ): { map: THREE.CanvasTexture, bumpMap: THREE.CanvasTexture } {
     const {
       bands = false,
       bandSoft = false,
@@ -306,26 +349,30 @@ export class ProceduralTextures {
     const w = 1024;
     const h = 512;
     const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+    const bumpCanvas = document.createElement('canvas');
+    canvas.width = bumpCanvas.width = w;
+    canvas.height = bumpCanvas.height = h;
     const ctx = canvas.getContext('2d');
+    const bumpCtx = bumpCanvas.getContext('2d');
 
-    if (!ctx) {
-      return new THREE.CanvasTexture(canvas);
+    if (!ctx || !bumpCtx) {
+      const tex = new THREE.CanvasTexture(canvas);
+      return { map: tex, bumpMap: tex };
     }
 
     const baseColor = new THREE.Color(baseHex);
     ctx.fillStyle = baseColor.getStyle();
     ctx.fillRect(0, 0, w, h);
+    
+    // Bump base medio
+    bumpCtx.fillStyle = 'rgb(128, 128, 128)';
+    bumpCtx.fillRect(0, 0, w, h);
 
-    // 1. Bandas atmosféricas gaseosas con cizalladura y vórtices (Júpiter, Saturno, Urano, Neptuno)
+    // 1. Bandas atmosféricas gaseosas
     if (bands) {
       const bandCount = bandSoft ? 22 : 36;
       for (let i = 0; i < bandCount; i++) {
         const y = (h / bandCount) * i;
-        const hsl = { h: 0, s: 0, l: 0 };
-        baseColor.getHSL(hsl);
-
         const shade = baseColor.clone();
         shade.offsetHSL(
           0,
@@ -333,171 +380,205 @@ export class ProceduralTextures {
           (Math.random() - 0.5) * (bandSoft ? 0.09 : 0.22)
         );
 
-        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(
-          shade.g * 255
-        )}, ${Math.round(shade.b * 255)}, ${
-          bandSoft ? 0.4 + Math.random() * 0.25 : 0.5 + Math.random() * 0.35
-        })`;
+        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(shade.g * 255)}, ${Math.round(shade.b * 255)}, ${bandSoft ? 0.4 + Math.random() * 0.25 : 0.5 + Math.random() * 0.35})`;
         const bh = h / bandCount + 4;
         ctx.fillRect(0, y, w, bh);
+        
+        // El gas también afecta sutilmente al relieve de las nubes altas
+        bumpCtx.fillStyle = `rgba(${Math.random() > 0.5 ? 255 : 0}, ${Math.random() > 0.5 ? 255 : 0}, ${Math.random() > 0.5 ? 255 : 0}, 0.05)`;
+        bumpCtx.fillRect(0, y, w, bh);
 
-        // Vórtices de cizalladura atmosférica en la frontera de las bandas
+        // Vórtices
         if (!bandSoft) {
           for (let s = 0; s < 7; s++) {
             ctx.fillStyle = `rgba(255, 245, 230, ${0.05 + Math.random() * 0.08})`;
-            ctx.beginPath();
-            ctx.ellipse(
-              Math.random() * w,
-              y + bh / 2,
-              40 + Math.random() * 130,
-              bh * 0.42,
-              (Math.random() - 0.5) * 0.1,
-              0,
-              Math.PI * 2
-            );
-            ctx.fill();
+            bumpCtx.fillStyle = `rgba(255, 255, 255, 0.1)`;
+            [ctx, bumpCtx].forEach(c => {
+              c.beginPath();
+              c.ellipse(
+                Math.random() * w, y + bh / 2, 40 + Math.random() * 130, bh * 0.42,
+                (Math.random() - 0.5) * 0.1, 0, Math.PI * 2
+              );
+              c.fill();
+            });
           }
         }
       }
     }
 
-    // 2. Moteado rocoso y albedo superficial con ruido fractal
+    // 2. Moteado rocoso (afecta al relieve)
     if (blotches && !craters) {
       for (let i = 0; i < 110; i++) {
         const shade = baseColor.clone();
         shade.offsetHSL(0, (Math.random() - 0.5) * 0.12, (Math.random() - 0.5) * 0.22);
-        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(
-          shade.g * 255
-        )}, ${Math.round(shade.b * 255)}, ${0.15 + Math.random() * 0.25})`;
+        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(shade.g * 255)}, ${Math.round(shade.b * 255)}, ${0.15 + Math.random() * 0.25})`;
+        bumpCtx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.random() * 0.15})`; // Relieve positivo
+        
         const rx = 20 + Math.random() * 80;
         const ry = rx * (0.45 + Math.random() * 0.55);
-        ctx.beginPath();
-        ctx.ellipse(
-          Math.random() * w,
-          Math.random() * h,
-          rx,
-          ry,
-          Math.random() * Math.PI,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        const cx = Math.random() * w;
+        const cy = Math.random() * h;
+        const rot = Math.random() * Math.PI;
+        
+        [ctx, bumpCtx].forEach(c => {
+          c.beginPath();
+          c.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2);
+          c.fill();
+        });
       }
     }
 
-    // 3. Cráteres de impacto con sistemas de rayos brillantes y sombras rocosas (Mercurio, Marte, Luna)
+    // 3. Cráteres de impacto con relieve
     if (craters) {
       for (let i = 0; i < 140; i++) {
         const shade = baseColor.clone();
         shade.offsetHSL(0, 0, (Math.random() - 0.5) * 0.14);
-        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(
-          shade.g * 255
-        )}, ${Math.round(shade.b * 255)}, ${0.12 + Math.random() * 0.22})`;
+        ctx.fillStyle = `rgba(${Math.round(shade.r * 255)}, ${Math.round(shade.g * 255)}, ${Math.round(shade.b * 255)}, ${0.12 + Math.random() * 0.22})`;
+        // Fondo del cráter (más bajo)
+        bumpCtx.fillStyle = 'rgba(50, 50, 50, 0.4)';
+        
         const rx = 15 + Math.random() * 60;
         const ry = rx * (0.65 + Math.random() * 0.35);
-        ctx.beginPath();
-        ctx.ellipse(
-          Math.random() * w,
-          Math.random() * h,
-          rx,
-          ry,
-          Math.random() * Math.PI,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
+        const cx = Math.random() * w;
+        const cy = Math.random() * h;
+        const rot = Math.random() * Math.PI;
+
+        [ctx, bumpCtx].forEach(c => {
+          c.beginPath();
+          c.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2);
+          c.fill();
+        });
+        
+        // Borde del cráter (alto relieve)
+        bumpCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        bumpCtx.lineWidth = 4;
+        bumpCtx.beginPath();
+        bumpCtx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2);
+        bumpCtx.stroke();
       }
 
-      // Cuencas de impacto con rayos de eyección de regolito
       for (let i = 0; i < 55; i++) {
         const cx = Math.random() * w;
         const cy = Math.random() * h;
         const cr = 5 + Math.random() * 34;
 
-        // Sombras interiores del cráter
         ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-        ctx.beginPath();
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-        ctx.fill();
+        bumpCtx.fillStyle = 'rgba(20, 20, 20, 0.8)';
+        [ctx, bumpCtx].forEach(c => {
+          c.beginPath();
+          c.arc(cx, cy, cr, 0, Math.PI * 2);
+          c.fill();
+        });
 
-        // Aro superior iluminado por el Sol
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        bumpCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; // borde muy alto
         ctx.lineWidth = 2.0;
-        ctx.beginPath();
-        ctx.arc(cx - cr * 0.12, cy - cr * 0.12, cr * 0.95, 0, Math.PI * 2);
-        ctx.stroke();
+        bumpCtx.lineWidth = 3.0;
+        [ctx, bumpCtx].forEach(c => {
+          c.beginPath();
+          c.arc(cx - cr * 0.12, cy - cr * 0.12, cr * 0.95, 0, Math.PI * 2);
+          c.stroke();
+        });
 
-        // Rayos de eyección en los cráteres grandes
+        // Rayos de eyección
         if (cr > 18) {
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+          bumpCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
           ctx.lineWidth = 1.5;
+          bumpCtx.lineWidth = 2.0;
           for (let r = 0; r < 8; r++) {
             const ang = (Math.PI * 2 / 8) * r + Math.random() * 0.3;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + Math.cos(ang) * cr * 2.8, cy + Math.sin(ang) * cr * 2.8);
-            ctx.stroke();
+            [ctx, bumpCtx].forEach(c => {
+              c.beginPath();
+              c.moveTo(cx, cy);
+              c.lineTo(cx + Math.cos(ang) * cr * 2.8, cy + Math.sin(ang) * cr * 2.8);
+              c.stroke();
+            });
           }
         }
       }
     }
 
-    // 4. Casquetes polares de hielo y regolito congelado (Marte)
     if (poles) {
       const poleH = h * poleSize;
-
-      // Polo norte
       const gradN = ctx.createLinearGradient(0, 0, 0, poleH);
       gradN.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
       gradN.addColorStop(0.7, 'rgba(235, 245, 255, 0.65)');
       gradN.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = gradN;
-      ctx.fillRect(0, 0, w, poleH);
+      
+      const bumpGradN = bumpCtx.createLinearGradient(0, 0, 0, poleH);
+      bumpGradN.addColorStop(0, 'rgba(200, 200, 200, 0.5)');
+      bumpGradN.addColorStop(1, 'rgba(128, 128, 128, 0)');
 
-      // Polo sur
+      ctx.fillStyle = gradN;
+      bumpCtx.fillStyle = bumpGradN;
+      [ctx, bumpCtx].forEach(c => c.fillRect(0, 0, w, poleH));
+
       const gradS = ctx.createLinearGradient(0, h - poleH, 0, h);
       gradS.addColorStop(0, 'rgba(255, 255, 255, 0)');
       gradS.addColorStop(0.3, 'rgba(235, 245, 255, 0.65)');
       gradS.addColorStop(1, 'rgba(255, 255, 255, 0.95)');
+      
+      const bumpGradS = bumpCtx.createLinearGradient(0, h - poleH, 0, h);
+      bumpGradS.addColorStop(0, 'rgba(128, 128, 128, 0)');
+      bumpGradS.addColorStop(1, 'rgba(200, 200, 200, 0.5)');
+
       ctx.fillStyle = gradS;
-      ctx.fillRect(0, h - poleH, w, poleH);
+      bumpCtx.fillStyle = bumpGradS;
+      [ctx, bumpCtx].forEach(c => c.fillRect(0, h - poleH, w, poleH));
     }
 
-    // 5. Tormenta gigante (Gran Mancha Roja de Júpiter o Gran Mancha Oscura de Neptuno)
     if (spot) {
       const sx = w * spot.x;
       const sy = h * spot.y;
       const spotColor = new THREE.Color(spot.colorHex);
 
       ctx.save();
+      bumpCtx.save();
+      
       ctx.translate(sx, sy);
-      ctx.fillStyle = `rgba(${Math.round(spotColor.r * 255)}, ${Math.round(
-        spotColor.g * 255
-      )}, ${Math.round(spotColor.b * 255)}, 0.9)`;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, spot.rx, spot.ry, 0, 0, Math.PI * 2);
-      ctx.fill();
+      bumpCtx.translate(sx, sy);
+      
+      ctx.fillStyle = `rgba(${Math.round(spotColor.r * 255)}, ${Math.round(spotColor.g * 255)}, ${Math.round(spotColor.b * 255)}, 0.9)`;
+      bumpCtx.fillStyle = `rgba(180, 180, 180, 0.5)`; // Alto relieve por presión
+      [ctx, bumpCtx].forEach(c => {
+        c.beginPath();
+        c.ellipse(0, 0, spot.rx, spot.ry, 0, 0, Math.PI * 2);
+        c.fill();
+      });
 
-      // Ojo interior ciclónico de la tormenta
       ctx.fillStyle = 'rgba(255, 235, 210, 0.4)';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, spot.rx * 0.45, spot.ry * 0.45, 0, 0, Math.PI * 2);
-      ctx.fill();
+      bumpCtx.fillStyle = 'rgba(80, 80, 80, 0.6)'; // Ojo hundido
+      [ctx, bumpCtx].forEach(c => {
+        c.beginPath();
+        c.ellipse(0, 0, spot.rx * 0.45, spot.ry * 0.45, 0, 0, Math.PI * 2);
+        c.fill();
+      });
 
-      // Anillo periférico de turbulencia de alta velocidad
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      bumpCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
       ctx.lineWidth = 3.0;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, spot.rx * 1.05, spot.ry * 1.05, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      bumpCtx.lineWidth = 4.0;
+      [ctx, bumpCtx].forEach(c => {
+        c.beginPath();
+        c.ellipse(0, 0, spot.rx * 1.05, spot.ry * 1.05, 0, 0, Math.PI * 2);
+        c.stroke();
+      });
+      
       ctx.restore();
+      bumpCtx.restore();
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.needsUpdate = true;
-    return texture;
+    const map = new THREE.CanvasTexture(canvas);
+    const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+    
+    [map, bumpMap].forEach(t => {
+      t.wrapS = THREE.RepeatWrapping;
+      t.wrapT = THREE.ClampToEdgeWrapping;
+      t.needsUpdate = true;
+    });
+    
+    return { map, bumpMap };
   }
 
   /**
@@ -593,5 +674,102 @@ export class ProceduralTextures {
     this.starDotTexture = new THREE.CanvasTexture(canvas);
     this.starDotTexture.needsUpdate = true;
     return this.starDotTexture;
+  }
+
+  /**
+   * Genera una textura equirectangular fotorealista de la Vía Láctea para domos celestes.
+   */
+  public static generateMilkyWayTexture(): THREE.CanvasTexture {
+    if (this.milkyWayCache) return this.milkyWayCache;
+
+    const w = 2048;
+    const h = 1024;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    // Fondo del espacio profundo (azul muy oscuro)
+    ctx.fillStyle = '#010206';
+    ctx.fillRect(0, 0, w, h);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+    
+    const centerY = h / 2;
+
+    for (let y = 0; y < h; y++) {
+      const ny = y / h;
+      for (let x = 0; x < w; x++) {
+        const nx = x / w;
+        const idx = (y * w + x) * 4;
+
+        // Distancia al plano galáctico (centro en Y) con algo de curvatura de ruido
+        const distToEquator = Math.abs(y - centerY) / centerY; 
+        
+        // Ruido fractal de varias octavas para formar nubes de polvo y gas
+        const noise = this.fractalNoise(nx * 12, ny * 12, 5);
+        const noise2 = this.fractalNoise(nx * 20 + 5, ny * 15 + 5, 4);
+
+        // Densidad galáctica se concentra fuertemente en el ecuador
+        const galacticDensity = Math.max(0, 1 - distToEquator * 2.5);
+        
+        // Polvo oscuro que tapa estrellas (Dark Rifts)
+        const dust = Math.max(0, noise2 * 1.5 - 0.5) * galacticDensity;
+
+        // Gas brillante
+        const gas = Math.max(0, noise * galacticDensity - 0.3) * 2;
+        
+        // Estrellas individuales densamente agrupadas (ruido de alta frecuencia)
+        const starNoise = Math.random();
+        const starProb = 0.985 - (galacticDensity * 0.05); // más probable en el centro
+
+        if (starNoise > starProb && dust < 0.3) {
+          // Generar una estrella brillante
+          const intensity = Math.random();
+          data[idx] = 200 + intensity * 55;
+          data[idx+1] = 200 + intensity * 55;
+          data[idx+2] = 255; // Ligeramente azules
+          data[idx+3] = 255;
+        } else {
+          // Color del polvo/gas
+          const r = 15 + gas * 40 - dust * 30;
+          const g = 20 + gas * 30 - dust * 30;
+          const b = 40 + gas * 60 - dust * 20;
+
+          data[idx] = Math.max(2, Math.min(255, r));
+          data[idx+1] = Math.max(2, Math.min(255, g));
+          data[idx+2] = Math.max(4, Math.min(255, b));
+          data[idx+3] = 255;
+        }
+      }
+    }
+    
+    ctx.putImageData(imgData, 0, 0);
+
+    // Añadir super-estrellas con resplandor, concentradas en el ecuador
+    for (let i = 0; i < 500; i++) {
+      const sx = Math.random() * w;
+      const sy = centerY + (Math.random() - 0.5) * (h * 0.4) * Math.pow(Math.random(), 2);
+      const sr = 0.5 + Math.random() * 2;
+      
+      const radGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 3);
+      radGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      radGrad.addColorStop(1, 'rgba(150, 200, 255, 0)');
+      
+      ctx.fillStyle = radGrad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    
+    this.milkyWayCache = tex;
+    return tex;
   }
 }

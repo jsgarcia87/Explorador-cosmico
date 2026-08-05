@@ -21,6 +21,19 @@ export class DeepSpaceScene {
     const ambientLight = new THREE.AmbientLight(0x221a30, 0.7);
     this.rootGroup.add(ambientLight);
 
+    // 1. Esfera de bóveda celeste profunda (Vía Láctea)
+    const domeGeo = new THREE.SphereGeometry(180, 48, 48);
+    const milkyWayTex = ProceduralTextures.generateMilkyWayTexture();
+    const domeMat = new THREE.MeshBasicMaterial({
+      map: milkyWayTex,
+      color: 0x888888, // Un poco oscurecido para resaltar el deep space
+      side: THREE.BackSide,
+      fog: false
+    });
+    const dome = new THREE.Mesh(domeGeo, domeMat);
+    dome.rotation.x = Math.PI / 4;
+    this.rootGroup.add(dome);
+
     DEEP_SPACE_OBJECTS.forEach((item) => {
       this.createDeepObject(item);
     });

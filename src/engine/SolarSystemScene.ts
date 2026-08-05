@@ -147,18 +147,22 @@ export class SolarSystemScene {
         color: new THREE.Color(data.color).multiplyScalar(8.0)
       });
     } else if (data.id === 'tierra') {
-      const earthMap = ProceduralTextures.generateEarthTexture();
+      const { map, bumpMap, roughnessMap } = ProceduralTextures.generateEarthTexture();
       mat = new THREE.MeshStandardMaterial({
-        map: earthMap,
-        roughness: 0.65,
+        map: map,
+        bumpMap: bumpMap,
+        bumpScale: 0.05,
+        roughnessMap: roughnessMap,
         metalness: 0.15,
         wireframe: false
       });
     } else {
       const textureOptions = this.getTextureOptionsForBody(data.id);
-      const map = ProceduralTextures.generatePlanetTexture(data.color, textureOptions);
+      const { map, bumpMap } = ProceduralTextures.generatePlanetTexture(data.color, textureOptions);
       mat = new THREE.MeshStandardMaterial({
         map: map,
+        bumpMap: bumpMap,
+        bumpScale: 0.08,
         roughness: 0.75,
         metalness: 0.1,
         wireframe: false

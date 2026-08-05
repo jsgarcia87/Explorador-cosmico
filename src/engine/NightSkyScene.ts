@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONSTELLATIONS_IAU, ConstellationData } from '../data/constellations';
 import { AstrophysicsUtils } from './AstrophysicsUtils';
+import { ProceduralTextures } from './textures/ProceduralTextures';
 
 export type TelescopeSpectrum = 'visible' | 'infrared' | 'ultraviolet' | 'xray' | 'radio';
 
@@ -9,6 +10,7 @@ export class NightSkyScene {
   public rootGroup: THREE.Group = new THREE.Group();
   private starMeshes: THREE.Mesh[] = [];
   private lineGroups: THREE.Group[] = [];
+  private backgroundStars!: THREE.Points;
   private issMesh!: THREE.Mesh;
   private issAngle: number = 0;
   private currentSpectrum: TelescopeSpectrum = 'visible';
@@ -22,13 +24,22 @@ export class NightSkyScene {
     const ambient = new THREE.AmbientLight(0xffffff, 0.8);
     this.rootGroup.add(ambient);
 
-    // 1. Esfera de bóveda celeste oscura
+    // 1. Esfera de bóveda celeste profunda (Vía Láctea)
     const domeGeo = new THREE.SphereGeometry(180, 48, 48);
+    const milkyWayTex = ProceduralTextures.generateMilkyWayTexture();
     const domeMat = new THREE.MeshBasicMaterial({
-      color: 0x030612,
-      side: THREE.BackSide
+      map: milkyWayTex,
+      color: 0xffffff,
+      side: THREE.BackSide,
+      fog: false
     });
-    this.rootGroup.add(new THREE.Mesh(domeGeo, domeMat));
+    const dome = new THREE.Mesh(domeGeo, domeMat);
+    // Orientar la Vía Láctea
+    dome.rotation.x = Math.PI / 4; 
+    this.rootGroup.add(dome);
+
+    // 1b. Generar campo estelar denso de fondo (~5000 estrellas)
+    this.generateBackgroundStars();
 
     // 2. Construir constelaciones por RA / Dec en la bóveda
     CONSTELLATIONS_IAU.forEach((constellation) => {
@@ -48,6 +59,57 @@ export class NightSkyScene {
 
     this.scene.add(this.rootGroup);
     this.setVisible(false);
+  }
+
+  private generateBackgroundStars(): void {
+    const starCount = 5000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+    
+    const colorPalette = [
+      new THREE.Color(0xffffff), // Blanco
+      new THREE.Color(0xaabbff), // Azulado
+      new THREE.Color(0xffddaa), // Amarillento
+      new THREE.Color(0xff8866), // Rojizo
+    ];
+
+    for (let i = 0; i < starCount; i++) {
+      // Distribución en la esfera (radio ~170)
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const r = 170 + Math.random() * 5;
+
+      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.cos(phi);
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+
+      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+      // Atenuar las estrellas de fondo
+      const intensity = 0.3 + Math.random() * 0.5;
+      colors[i * 3] = color.r * intensity;
+      colors[i * 3 + 1] = color.g * intensity;
+      colors[i * 3 + 2] = color.b * intensity;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const starDot = ProceduralTextures.generateStarDot();
+    const material = new THREE.PointsMaterial({
+      size: 0.8,
+      vertexColors: true,
+      map: starDot,
+      transparent: true,
+      depthWrite: false,
+      fog: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    this.backgroundStars = new THREE.Points(geometry, material);
+    this.rootGroup.add(this.backgroundStars);
   }
 
   private buildConstellation(constellation: ConstellationData): void {
@@ -107,8 +169,21 @@ export class NightSkyScene {
       }
     });
 
+    // Por defecto, las líneas de constelaciones están ocultas para mantener fotorrealismo
+    constGroup.visible = false;
     this.rootGroup.add(constGroup);
     this.lineGroups.push(constGroup);
+  }
+
+  public toggleConstellationLines(id: string, visible: boolean): void {
+    const group = this.lineGroups.find(g => g.userData.id === id);
+    if (group) {
+      group.visible = visible;
+    }
+  }
+
+  public hideAllConstellationLines(): void {
+    this.lineGroups.forEach(g => g.visible = false);
   }
 
   public setSpectrum(spectrum: TelescopeSpectrum): void {
