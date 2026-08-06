@@ -27,7 +27,7 @@ export class EarthScene {
 
   private init(): void {
     // 1. Luz solar principal con irradiancia de vacío (sin luz difusa falsa en el lado nocturno)
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 3.8);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.5);
     sunLight.position.copy(this.sunDirection).multiplyScalar(100);
     sunLight.castShadow = true;
     this.rootGroup.add(sunLight);
@@ -55,7 +55,7 @@ export class EarthScene {
     const cloudsMat = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.48,
+      opacity: 0.25,
       roughness: 0.95
     });
     this.cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
@@ -73,23 +73,7 @@ export class EarthScene {
     this.atmosphereMesh = new THREE.Mesh(atmoGeo, atmoMat);
     this.earthMesh.add(this.atmosphereMesh);
 
-    // 5. Coronas Aurorales Boreales y Australes en los polos
-    const auroraGeo = new THREE.RingGeometry(2.15, 2.65, 64);
-    const auroraMat = new THREE.MeshBasicMaterial({
-      color: 0x33ff88,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.42,
-      blending: THREE.AdditiveBlending
-    });
-    const northAurora = new THREE.Mesh(auroraGeo, auroraMat);
-    northAurora.position.y = 2.92;
-    northAurora.rotation.x = Math.PI / 2;
-    this.earthMesh.add(northAurora);
 
-    const southAurora = northAurora.clone();
-    southAurora.position.y = -2.92;
-    this.earthMesh.add(southAurora);
 
     // 6. Satélite Natural: La Luna (Inclinación orbital 5.14° respecto a la eclíptica)
     const moonGeo = new THREE.SphereGeometry(0.82, 48, 48);

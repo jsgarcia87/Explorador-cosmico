@@ -502,7 +502,7 @@ export class CosmicEngine {
 
     // 1. Reloj astronómico kepleriano
     if (!this.isPaused && this.timeSpeed !== 0) {
-      const msDelta = delta * 1000 * this.timeSpeed * 3600;
+      const msDelta = delta * 1000 * this.timeSpeed;
       this.currentDate = new Date(this.currentDate.getTime() + msDelta);
       if (this.options.onDateChange) {
         this.options.onDateChange(this.currentDate);

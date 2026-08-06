@@ -28,8 +28,8 @@ export class SolarSystemScene {
     const hemiLight = new THREE.HemisphereLight(0x334455, 0x111122, 0.15);
     this.rootGroup.add(hemiLight);
 
-    // Sol ilumina todo el sistema solar según 1/r^2 (Luz principal)
-    this.sunLight = new THREE.PointLight(0xfff5e6, 850000, 50000, 1.2);
+    // Sol ilumina todo el sistema solar sin decaimiento para evitar quemar la escena
+    this.sunLight = new THREE.PointLight(0xfff5e6, 8.5, 0, 0);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
