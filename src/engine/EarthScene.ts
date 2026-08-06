@@ -36,9 +36,16 @@ export class EarthScene {
     const ambientLight = new THREE.AmbientLight(0x0a1020, 0.08);
     this.rootGroup.add(ambientLight);
 
-    // 2. Globo Terrestre con Shader Procedural Día/Noche (Océanos + Continentes + Luces de Ciudad Nocturnas)
+    // 2. Globo Terrestre
     const earthGeo = new THREE.SphereGeometry(3.0, 64, 64);
-    const earthMat = this.createEarthDayNightMaterial();
+    const textureLoader = new THREE.TextureLoader();
+    const earthMap = textureLoader.load('/textures/tierra.jpg');
+    earthMap.colorSpace = THREE.SRGBColorSpace;
+    const earthMat = new THREE.MeshStandardMaterial({
+      map: earthMap,
+      roughness: 0.85,
+      metalness: 0.1
+    });
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.earthMesh.name = 'La Tierra (Globo Habitable J2000)';
     this.earthMesh.userData = {
@@ -77,8 +84,10 @@ export class EarthScene {
 
     // 6. Satélite Natural: La Luna (Inclinación orbital 5.14° respecto a la eclíptica)
     const moonGeo = new THREE.SphereGeometry(0.82, 48, 48);
+    const moonMap = textureLoader.load('/textures/luna.jpg');
+    moonMap.colorSpace = THREE.SRGBColorSpace;
     const moonMat = new THREE.MeshStandardMaterial({
-      color: 0xb2b1ac,
+      map: moonMap,
       roughness: 0.9,
       metalness: 0.05
     });
@@ -94,103 +103,6 @@ export class EarthScene {
     this.setVisible(false);
   }
 
-  /**
-   * Crea el shader procedural del Globo Terrestre con comportamiento día/noche:
-   * - Día: Océano azul profundo con reflejo especular (Sun Glint) + Continentes.
-   * - Terminador: Gradiente crepuscular.
-   * - Noche: Clústeres de luces urbanas doradas en la cara en sombra.
-   */
-  private createEarthDayNightMaterial(): THREE.ShaderMaterial {
-    return new THREE.ShaderMaterial({
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        varying vec3 vLocalPos;
-
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vLocalPos = position;
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPos = worldPos.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPos;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uSunDir;
-        varying vec3 vNormal;
-        varying vec3 vWorldPos;
-        varying vec3 vLocalPos;
-
-        // Ruido pseudo-procedural en GPU para distribución de masas continentales y luces
-        float hash(vec3 p) {
-          p = fract(p * 0.3183099 + 0.1);
-          p *= 17.0;
-          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-        }
-
-        float noise(vec3 x) {
-          vec3 i = floor(x);
-          vec3 f = fract(x);
-          f = f * f * (3.0 - 2.0 * f);
-          return mix(
-            mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
-                mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
-            mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-                mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
-            f.z);
-        }
-
-        void main() {
-          vec3 normal = normalize(vNormal);
-          vec3 sunDir = normalize(uSunDir);
-          
-          // Ángulo solar (Día > 0, Terminador ~ 0, Noche < 0)
-          float NdotL = dot(normal, sunDir);
-          float dayFactor = smoothstep(-0.15, 0.25, NdotL);
-          float nightFactor = 1.0 - smoothstep(-0.35, 0.1, NdotL);
-
-          // Topografía continental generada por ruido octavado
-          vec3 pos = normalize(vLocalPos) * 4.5;
-          float n = noise(pos) * 0.5 + noise(pos * 2.2) * 0.3 + noise(pos * 4.4) * 0.2;
-          
-          // Clasificación Continente vs Océano
-          bool isLand = n > 0.52;
-
-          // Albedo de Día (Océanos azul profundo vs Tierra verde-ocre)
-          vec3 oceanColor = vec3(0.04, 0.18, 0.45);
-          vec3 landColor = mix(vec3(0.18, 0.32, 0.15), vec3(0.55, 0.45, 0.32), (n - 0.52) * 3.0);
-          vec3 baseDay = isLand ? landColor : oceanColor;
-
-          // Especularidad del Sol en el océano (Sun Glint real en agua)
-          vec3 viewDir = normalize(cameraPosition - vWorldPos);
-          vec3 halfDir = normalize(sunDir + viewDir);
-          float spec = 0.0;
-          if (!isLand && NdotL > 0.0) {
-            spec = pow(max(0.0, dot(normal, halfDir)), 32.0) * 0.65;
-          }
-
-          vec3 dayLitColor = (baseDay * max(0.05, NdotL) + vec3(1.0, 0.95, 0.8) * spec) * dayFactor;
-
-          // Cara Nocturna: Luces de Ciudades en Continentes
-          vec3 cityColor = vec3(1.0, 0.8, 0.35);
-          float cityNoise = noise(pos * 8.0) * noise(pos * 16.0);
-          float cityIntensity = isLand ? smoothstep(0.12, 0.38, cityNoise) * 2.2 : 0.0;
-          vec3 nightLitColor = cityColor * cityIntensity * nightFactor;
-
-          // Tinte crepuscular cálido en el terminador
-          float terminator = (1.0 - abs(NdotL * 2.2));
-          terminator = max(0.0, terminator * terminator);
-          vec3 terminatorTint = vec3(0.9, 0.4, 0.15) * terminator * 0.35;
-
-          vec3 finalColor = dayLitColor + nightLitColor + terminatorTint;
-          gl_FragColor = vec4(finalColor, 1.0);
-        }
-      `,
-      uniforms: {
-        uSunDir: { value: this.sunDirection }
-      }
-    });
-  }
 
   public update(delta: number, timeSpeed: number): void {
     if (!this.rootGroup.visible) return;

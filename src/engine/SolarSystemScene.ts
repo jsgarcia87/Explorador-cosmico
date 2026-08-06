@@ -148,17 +148,21 @@ export class SolarSystemScene {
     const isSun = data.id === 'sol';
     const geo = new THREE.SphereGeometry(data.radius, 64, 64);
 
+    const textureLoader = new THREE.TextureLoader();
     let mat: THREE.Material;
     if (isSun) {
-      const sunMap = ProceduralTextures.generateSunTexture();
+      const sunMap = textureLoader.load('/textures/sol.jpg');
+      sunMap.colorSpace = THREE.SRGBColorSpace;
       mat = new THREE.MeshBasicMaterial({
         map: sunMap,
-        color: new THREE.Color(data.color).multiplyScalar(8.0)
+        color: new THREE.Color(data.color).multiplyScalar(8.0) // Bloom HDR overexposure
       });
     } else if (data.id === 'tierra') {
-      const { map, bumpMap, roughnessMap } = ProceduralTextures.generateEarthTexture();
+      const earthMap = textureLoader.load('/textures/tierra.jpg');
+      earthMap.colorSpace = THREE.SRGBColorSpace;
+      const { bumpMap, roughnessMap } = ProceduralTextures.generateEarthTexture(); // Keep procedural bump
       mat = new THREE.MeshStandardMaterial({
-        map: map,
+        map: earthMap,
         bumpMap: bumpMap,
         bumpScale: 0.05,
         roughnessMap: roughnessMap,
@@ -166,12 +170,10 @@ export class SolarSystemScene {
         wireframe: false
       });
     } else {
-      const textureOptions = this.getTextureOptionsForBody(data.id);
-      const { map, bumpMap } = ProceduralTextures.generatePlanetTexture(data.color, textureOptions);
+      const map = textureLoader.load(`/textures/${data.id}.jpg`);
+      map.colorSpace = THREE.SRGBColorSpace;
       mat = new THREE.MeshStandardMaterial({
         map: map,
-        bumpMap: bumpMap,
-        bumpScale: 0.08,
         roughness: 0.75,
         metalness: 0.1,
         wireframe: false
@@ -205,7 +207,8 @@ export class SolarSystemScene {
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
-      const ringMap = ProceduralTextures.generateRingTexture();
+      const ringMap = new THREE.TextureLoader().load('/textures/saturno_anillo.png');
+      ringMap.colorSpace = THREE.SRGBColorSpace;
       const ringGeo = new THREE.RingGeometry(data.radius * 1.35, data.radius * 2.3, 96);
       const ringMat = new THREE.MeshStandardMaterial({
         map: ringMap,
@@ -331,5 +334,11 @@ export class SolarSystemScene {
 
   public setVisible(visible: boolean): void {
     this.rootGroup.visible = visible;
+  }
+
+  public setGuidesVisible(visible: boolean): void {
+    this.orbitLines.forEach(line => {
+      line.visible = visible;
+    });
   }
 }

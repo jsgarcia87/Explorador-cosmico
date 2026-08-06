@@ -1,7 +1,7 @@
 import React from 'react';
 import { SceneMode } from '../engine/CosmicEngine';
 import { ProfileId, USER_PROFILES } from '../data/profiles';
-import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye } from 'lucide-react';
+import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff } from 'lucide-react';
 
 interface TopNavigationProps {
   currentMode: SceneMode;
@@ -10,6 +10,8 @@ interface TopNavigationProps {
   onOpenProfileSelector: () => void;
   isMuted: boolean;
   onToggleMute: () => void;
+  isGuidesVisible: boolean;
+  onToggleGuides: () => void;
   onOpenPhysicsLab: () => void;
   onOpenAssistant: () => void;
   onOpenTeacherModal: () => void;
@@ -27,6 +29,8 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   onOpenProfileSelector,
   isMuted,
   onToggleMute,
+  isGuidesVisible,
+  onToggleGuides,
   onOpenPhysicsLab,
   onOpenAssistant,
   onOpenTeacherModal,
@@ -190,6 +194,16 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
           aria-label="Configuración de Accesibilidad"
         >
           <Eye className="w-4 h-4 md:w-4 md:h-4" />
+        </button>
+
+        {/* Alternar Guías (Modo Inmersión) */}
+        <button
+          onClick={onToggleGuides}
+          title={isGuidesVisible ? 'Ocultar órbitas y guías (G)' : 'Mostrar órbitas y guías (G)'}
+          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
+          aria-label="Alternar Inmersión"
+        >
+          {isGuidesVisible ? <Eye className="w-4 h-4 md:w-4 md:h-4" /> : <EyeOff className="w-4 h-4 md:w-4 md:h-4 text-slate-500" />}
         </button>
 
         {/* Silenciar Audio */}

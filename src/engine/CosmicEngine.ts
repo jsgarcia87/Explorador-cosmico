@@ -307,6 +307,12 @@ export class CosmicEngine {
     }
   }
 
+  public setGuidesVisible(visible: boolean): void {
+    if (this.currentMode === 'solar' && 'setGuidesVisible' in this.solarScene) {
+      (this.solarScene as any).setGuidesVisible(visible);
+    }
+  }
+
   public start(): void {
     this.clock.start();
     this.lastFpsTime = performance.now();

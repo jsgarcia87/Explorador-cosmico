@@ -45,6 +45,7 @@ export const App: React.FC = () => {
   const [isGrrtOpen, setIsGrrtOpen] = useState<boolean>(false);
   const [isA11yOpen, setIsA11yOpen] = useState<boolean>(false);
   const [isQuickHelpOpen, setIsQuickHelpOpen] = useState<boolean>(false);
+  const [isGuidesVisible, setIsGuidesVisible] = useState<boolean>(true);
 
   // Mostrar Guía de Misión NASA al primer usuario
   useEffect(() => {
@@ -138,8 +139,9 @@ export const App: React.FC = () => {
     setSelectedObject(null);
     if (engineRef.current) {
       engineRef.current.setMode(mode);
+      engineRef.current.setGuidesVisible(isGuidesVisible);
     }
-  }, []);
+  }, [isGuidesVisible]);
 
   const handleSpeedChange = useCallback((speed: number) => {
     setTimeSpeed(speed);
@@ -148,11 +150,22 @@ export const App: React.FC = () => {
     }
   }, []);
 
+
   const handleTogglePause = useCallback(() => {
     setIsPaused((prev) => {
       const next = !prev;
       if (engineRef.current) {
         engineRef.current.setTimePaused(next);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleGuides = useCallback(() => {
+    setIsGuidesVisible((prev) => {
+      const next = !prev;
+      if (engineRef.current) {
+        engineRef.current.setGuidesVisible(next);
       }
       return next;
     });
@@ -237,6 +250,8 @@ export const App: React.FC = () => {
       } else if (e.key === ' ') {
         e.preventDefault();
         handleTogglePause();
+      } else if (e.key === 'g' || e.key === 'G') {
+        handleToggleGuides();
       } else if (e.key === '1') {
         handleModeChange('solar');
       } else if (e.key === '2') {
@@ -261,7 +276,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleToggleMute, handleTogglePause, handleModeChange]);
+  }, [handleToggleMute, handleTogglePause, handleToggleGuides, handleModeChange]);
 
   // Iniciar lección pedagógica desde modo Profesor
   const handleStartLesson = (mode: SceneMode, targetId?: string) => {
@@ -289,6 +304,8 @@ export const App: React.FC = () => {
         onOpenProfileSelector={() => setIsProfileOpen(true)}
         isMuted={isMuted}
         onToggleMute={handleToggleMute}
+        isGuidesVisible={isGuidesVisible}
+        onToggleGuides={handleToggleGuides}
         onOpenPhysicsLab={() => setIsLabOpen(true)}
         onOpenAssistant={() => setIsAssistantOpen(true)}
         onOpenTeacherModal={() => setIsTeacherOpen(true)}
