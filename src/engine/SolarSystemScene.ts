@@ -29,13 +29,16 @@ export class SolarSystemScene {
     this.rootGroup.add(hemiLight);
 
     // Sol ilumina todo el sistema solar según 1/r^2 (Luz principal)
-    this.sunLight = new THREE.PointLight(0xfff5e6, 8.5, 5000, 1.2);
+    this.sunLight = new THREE.PointLight(0xfff5e6, 850000, 50000, 1.2);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
     this.sunLight.shadow.mapSize.height = 2048;
     this.sunLight.shadow.bias = -0.0002;
     this.rootGroup.add(this.sunLight);
+
+    const ambientLight = new THREE.AmbientLight(0x050a14, 0.4);
+    this.rootGroup.add(ambientLight);
 
     // 2. Construir Sol y Planetas
     PLANETS.forEach((body: any) => {

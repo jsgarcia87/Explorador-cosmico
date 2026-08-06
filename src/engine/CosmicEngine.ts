@@ -281,6 +281,12 @@ export class CosmicEngine {
     this.currentMode = mode;
     this.clearInteractive();
 
+    if (this.options.onObjectSelected) {
+      this.options.onObjectSelected(null);
+    }
+    this.selectedObjectId = null;
+    this.selectedObjectRadius = 0;
+
     this.solarScene.setVisible(mode === 'solar');
     this.earthScene.setVisible(mode === 'earth');
     this.deepScene.setVisible(mode === 'deep');
@@ -302,6 +308,7 @@ export class CosmicEngine {
   }
 
   public start(): void {
+    this.clock.start();
     this.lastFpsTime = performance.now();
     this.animate();
   }

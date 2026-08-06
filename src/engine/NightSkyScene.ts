@@ -29,7 +29,7 @@ export class NightSkyScene {
     const milkyWayTex = ProceduralTextures.generateMilkyWayTexture();
     const domeMat = new THREE.MeshBasicMaterial({
       map: milkyWayTex,
-      color: 0xffffff,
+      color: 0x222222,
       side: THREE.BackSide,
       fog: false
     });

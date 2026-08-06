@@ -99,7 +99,7 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
 
   return (
     <aside
-      className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:left-auto md:top-20 md:right-6 md:w-96 max-h-[60vh] md:max-h-[82vh] z-40 flex flex-col rounded-t-3xl md:rounded-2xl bg-slate-950/90 md:bg-slate-950/80 backdrop-blur-3xl md:backdrop-blur-2xl border-t md:border-t-0 md:border border-white/20 md:border-white/15 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] md:shadow-2xl overflow-hidden animate-slide-up md:animate-slide-in"
+      className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:left-auto md:top-20 md:right-6 md:w-96 max-h-[60vh] md:max-h-[82vh] z-40 flex flex-col rounded-t-3xl md:rounded-2xl bg-slate-950/95 border-t md:border-t-0 md:border border-white/20 md:border-white/15 shadow-[0_-8px_32px_rgba(0,0,0,0.5)] md:shadow-2xl overflow-hidden animate-slide-up md:animate-slide-in"
       aria-label="Panel de inspección astronómica"
     >
       {/* Indicador de arrastre para móviles (decorativo) */}

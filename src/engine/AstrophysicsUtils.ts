@@ -100,7 +100,12 @@ export class AstrophysicsUtils {
       blue = Math.max(0, Math.min(255, blue));
     }
 
-    return new THREE.Color(red / 255.0, green / 255.0, blue / 255.0);
+    const color = new THREE.Color(red / 255.0, green / 255.0, blue / 255.0);
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+    hsl.s = Math.min(hsl.s, 0.4);
+    color.setHSL(hsl.h, hsl.s, hsl.l);
+    return color;
   }
 
   /**

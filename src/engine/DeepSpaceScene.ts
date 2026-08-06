@@ -469,5 +469,7 @@ export class DeepSpaceScene {
 
   public setVisible(visible: boolean): void {
     this.rootGroup.visible = visible;
+    if (this.pulsarBeam1) this.pulsarBeam1.visible = visible;
+    if (this.pulsarBeam2) this.pulsarBeam2.visible = visible;
   }
 }
