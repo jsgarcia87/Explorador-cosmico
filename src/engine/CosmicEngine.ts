@@ -120,9 +120,14 @@ export class CosmicEngine {
     const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect, toneMappingEffect);
     this.composer.addPass(effectPass);
 
-    // 1. Cielo Estrellado Fotorrealista (NASA Tycho 8K)
+    // 1. Cielo Estrellado Fotorrealista (NASA Tycho 8K/4K adaptativo)
+    const isMobile = window.innerWidth <= 1024 || /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+    const maxTexSize = this.renderer.capabilities.maxTextureSize;
+    const use8K = !isMobile && maxTexSize >= 8192;
+    const starmapUrl = use8K ? '/textures/starmap_8k.jpg' : '/textures/starmap_4k.jpg';
+
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load('/textures/starmap_8k.jpg', (texture) => {
+    textureLoader.load(starmapUrl, (texture) => {
       texture.mapping = THREE.EquirectangularReflectionMapping;
       texture.colorSpace = THREE.SRGBColorSpace;
       this.scene.background = texture;
