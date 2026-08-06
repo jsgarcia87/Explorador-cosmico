@@ -120,9 +120,14 @@ export class CosmicEngine {
     const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect, toneMappingEffect);
     this.composer.addPass(effectPass);
 
-    // 1. Cielo Estrellado Harvard OBAFGKM & Vía Láctea Fotorrealista (Sin niebla)
-    this.createBackgroundStarfield();
-    this.createMilkyWayBand();
+    // 1. Cielo Estrellado Fotorrealista (NASA Tycho 8K)
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('/textures/starmap_8k.jpg', (texture) => {
+      texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      this.scene.background = texture;
+      this.scene.environment = texture;
+    });
 
     // 2. Sub-escenas
     this.solarScene = new SolarSystemScene(this.scene);
@@ -142,139 +147,6 @@ export class CosmicEngine {
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     this.setMode('solar');
-  }
-
-  /**
-   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
-   * sin niebla (fog: false) y con sprites circulares luminosos.
-   */
-  /**
-   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
-   * sin niebla (fog: false) con capa dual de profundidad para visibilidad constante.
-   */
-  private createBackgroundStarfield(): void {
-    const starCount = 14000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(starCount * 3);
-    const colors = new Float32Array(starCount * 3);
-
-    for (let i = 0; i < starCount; i++) {
-      const u = Math.random();
-      const v = Math.random();
-      const theta = u * 2.0 * Math.PI;
-      const phi = Math.acos(2.0 * v - 1.0);
-      const r = 1200 + Math.random() * 8000;
-
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
-
-      // Clasificación Harvard OBAFGKM -> Color CIE sRGB
-      const tempKelvin = AstrophysicsUtils.sampleOBAFGKMTemperature();
-      const color = AstrophysicsUtils.kelvinToRGB(tempKelvin);
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const starTexture = ProceduralTextures.generateStarDot();
-    
-    // Capa principal con atenuación de tamaño (estrellas grandes y brillantes)
-    const material = new THREE.PointsMaterial({
-      map: starTexture,
-      size: 32.0,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.98,
-      sizeAttenuation: true,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-      depthWrite: false
-    });
-
-    const starfield = new THREE.Points(geometry, material);
-    starfield.name = 'BACKGROUND_STARS_OBAFGKM';
-    this.scene.add(starfield);
-
-    // Segunda capa sin atenuación para garantizar un cielo estrellado nítido a cualquier distancia o zoom
-    const fixedMaterial = new THREE.PointsMaterial({
-      map: starTexture,
-      size: 2.2,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.88,
-      sizeAttenuation: false,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-      depthWrite: false
-    });
-    const starfieldFixed = new THREE.Points(geometry, fixedMaterial);
-    starfieldFixed.name = 'BACKGROUND_STARS_FIXED';
-    this.scene.add(starfieldFixed);
-  }
-
-  /**
-   * Genera la banda galáctica volumétrica de la Vía Láctea
-   * inclinada respecto a la eclíptica con polvo interestelar y nebulosidad cian/violeta/ámbar.
-   */
-  private createMilkyWayBand(): void {
-    const particleCount = 18000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-
-    const palette = [
-      new THREE.Color('#8b7bff'), // Violeta nebulosa
-      new THREE.Color('#5ce1d6'), // Cian ionizado
-      new THREE.Color('#fbbf24'), // Ámbar estelar
-      new THREE.Color('#f472b6'), // Rosa hidrógeno
-      new THREE.Color('#ffffff')  // Núcleo blanco
-    ];
-
-    for (let i = 0; i < particleCount; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = 1000 + Math.pow(Math.random(), 0.7) * 4500;
-      const spreadY = (Math.random() - 0.5) * (radius * 0.18);
-
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      const y = spreadY;
-
-      // Inclinar el disco galáctico 60 grados respecto al plano del Sistema Solar
-      const tilt = (60 * Math.PI) / 180;
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y * Math.cos(tilt) - z * Math.sin(tilt);
-      positions[i * 3 + 2] = y * Math.sin(tilt) + z * Math.cos(tilt);
-
-      const color = palette[Math.floor(Math.random() * palette.length)].clone();
-      const intensity = 0.65 + Math.random() * 0.35;
-      colors[i * 3] = color.r * intensity;
-      colors[i * 3 + 1] = color.g * intensity;
-      colors[i * 3 + 2] = color.b * intensity;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const starTexture = ProceduralTextures.generateStarDot();
-    const material = new THREE.PointsMaterial({
-      map: starTexture,
-      size: 34.0,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.75,
-      sizeAttenuation: true,
-      blending: THREE.AdditiveBlending,
-      fog: false,
-      depthWrite: false
-    });
-
-    const milkyWay = new THREE.Points(geometry, material);
-    milkyWay.name = 'MILKY_WAY_GALACTIC_BAND';
-    this.scene.add(milkyWay);
   }
 
   public setMode(mode: SceneMode): void {

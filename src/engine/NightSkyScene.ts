@@ -24,22 +24,8 @@ export class NightSkyScene {
     const ambient = new THREE.AmbientLight(0xffffff, 0.8);
     this.rootGroup.add(ambient);
 
-    // 1. Esfera de bóveda celeste profunda (Vía Láctea)
-    const domeGeo = new THREE.SphereGeometry(180, 48, 48);
-    const milkyWayTex = ProceduralTextures.generateMilkyWayTexture();
-    const domeMat = new THREE.MeshBasicMaterial({
-      map: milkyWayTex,
-      color: 0x222222,
-      side: THREE.BackSide,
-      fog: false
-    });
-    const dome = new THREE.Mesh(domeGeo, domeMat);
-    // Orientar la Vía Láctea
-    dome.rotation.x = Math.PI / 4; 
-    this.rootGroup.add(dome);
-
-    // 1b. Generar campo estelar denso de fondo (~5000 estrellas)
-    this.generateBackgroundStars();
+    // El fondo fotorrealista 8K es proveído globalmente por CosmicEngine (scene.background)
+    // Se elimina la bóveda procedural y las 5000 estrellas aleatorias para evitar sobreposición.
 
     // 2. Construir constelaciones por RA / Dec en la bóveda
     CONSTELLATIONS_IAU.forEach((constellation) => {
@@ -61,56 +47,6 @@ export class NightSkyScene {
     this.setVisible(false);
   }
 
-  private generateBackgroundStars(): void {
-    const starCount = 5000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(starCount * 3);
-    const colors = new Float32Array(starCount * 3);
-    
-    const colorPalette = [
-      new THREE.Color(0xffffff), // Blanco
-      new THREE.Color(0xaabbff), // Azulado
-      new THREE.Color(0xffddaa), // Amarillento
-      new THREE.Color(0xff8866), // Rojizo
-    ];
-
-    for (let i = 0; i < starCount; i++) {
-      // Distribución en la esfera (radio ~170)
-      const u = Math.random();
-      const v = Math.random();
-      const theta = 2 * Math.PI * u;
-      const phi = Math.acos(2 * v - 1);
-      const r = 170 + Math.random() * 5;
-
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.cos(phi);
-      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-
-      const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-      // Atenuar las estrellas de fondo
-      const intensity = 0.3 + Math.random() * 0.5;
-      colors[i * 3] = color.r * intensity;
-      colors[i * 3 + 1] = color.g * intensity;
-      colors[i * 3 + 2] = color.b * intensity;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    const starDot = ProceduralTextures.generateStarDot();
-    const material = new THREE.PointsMaterial({
-      size: 0.8,
-      vertexColors: true,
-      map: starDot,
-      transparent: true,
-      depthWrite: false,
-      fog: false,
-      blending: THREE.AdditiveBlending
-    });
-
-    this.backgroundStars = new THREE.Points(geometry, material);
-    this.rootGroup.add(this.backgroundStars);
-  }
 
   private buildConstellation(constellation: ConstellationData): void {
     const constGroup = new THREE.Group();
