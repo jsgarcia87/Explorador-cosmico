@@ -19,11 +19,17 @@ export class SolarSystemScene {
 
   private init(): void {
     // 1. Iluminación (Fotorrealista: bajo ambiente para alto contraste día/noche)
-    this.ambientLight = new THREE.AmbientLight(0x222238, 0.02);
+    // Aumentamos ligeramente la luz ambiental base
+    this.ambientLight = new THREE.AmbientLight(0x222238, 0.08); 
     this.rootGroup.add(this.ambientLight);
 
-    // Sol ilumina todo el sistema solar según 1/r^2
-    this.sunLight = new THREE.PointLight(0xfff5e6, 6.0, 4000, 1.5);
+    // Añadimos una HemisphereLight para simular la luz estelar dispersa (starlight/galactic glow)
+    // Esto proporciona un sutil tono azulado desde arriba y cálido desde abajo, evitando el negro absoluto
+    const hemiLight = new THREE.HemisphereLight(0x334455, 0x111122, 0.15);
+    this.rootGroup.add(hemiLight);
+
+    // Sol ilumina todo el sistema solar según 1/r^2 (Luz principal)
+    this.sunLight = new THREE.PointLight(0xfff5e6, 8.5, 5000, 1.2);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;

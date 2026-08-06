@@ -18,8 +18,13 @@ export class DeepSpaceScene {
   }
 
   private init(): void {
-    const ambientLight = new THREE.AmbientLight(0x221a30, 0.7);
+    // 1. Iluminación ambiental y galáctica base
+    const ambientLight = new THREE.AmbientLight(0x221a30, 0.4); // Reducido para mejor contraste
     this.rootGroup.add(ambientLight);
+
+    // Añadir luz de hemisferio para resaltar los detalles de gas y polvo
+    const hemiLight = new THREE.HemisphereLight(0x443366, 0x111122, 0.6);
+    this.rootGroup.add(hemiLight);
 
     // 1. Esfera de bóveda celeste profunda (Vía Láctea)
     const domeGeo = new THREE.SphereGeometry(180, 48, 48);
@@ -148,6 +153,10 @@ export class DeepSpaceScene {
       bottomJet.rotation.z = Math.PI;
       mesh.add(bottomJet);
 
+      // Luz puntual emitida por el disco de acreción del agujero negro
+      const bhLight = new THREE.PointLight(0xffaa55, 6.0, 500, 1.5);
+      mesh.add(bhLight);
+
       this.rootGroup.add(mesh);
       this.objectMeshes.set(data.id, mesh);
       return;
@@ -202,6 +211,10 @@ export class DeepSpaceScene {
       this.pulsarBeam2.rotation.z = Math.PI;
       mesh.add(this.pulsarBeam2);
 
+      // Luz puntual pulsante azul-cyan para el pulsar
+      const pulsarLight = new THREE.PointLight(0x88ddff, 8.0, 300, 2.0);
+      mesh.add(pulsarLight);
+
       this.rootGroup.add(mesh);
       this.objectMeshes.set(data.id, mesh);
       return;
@@ -224,6 +237,10 @@ export class DeepSpaceScene {
       this.betelgeuseMesh = mesh;
 
       // Glowing is handled by HDR Bloom instead of fake sprites
+
+      // Luz masiva roja emitida por la estrella supergigante
+      const betelgeuseLight = new THREE.PointLight(0xff3311, 10.0, 1000, 1.2);
+      mesh.add(betelgeuseLight);
 
       this.rootGroup.add(mesh);
       this.objectMeshes.set(data.id, mesh);
