@@ -27,7 +27,7 @@ export class EarthScene {
 
   private init(): void {
     // 1. Luz solar principal con irradiancia de vacío (sin luz difusa falsa en el lado nocturno)
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 1.5);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 5.5);
     sunLight.position.copy(this.sunDirection).multiplyScalar(100);
     sunLight.castShadow = true;
     this.rootGroup.add(sunLight);
