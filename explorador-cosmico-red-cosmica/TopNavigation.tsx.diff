@@ -1,0 +1,31 @@
+--- repo_orig/Explorador-cosmico-main/src/components/TopNavigation.tsx	2026-08-05 07:49:23.000000000 +0000
++++ repo/Explorador-cosmico-main/src/components/TopNavigation.tsx	2026-08-06 20:01:10.737057420 +0000
+@@ -1,7 +1,7 @@
+ import React from 'react';
+ import { SceneMode } from '../engine/CosmicEngine';
+ import { ProfileId, USER_PROFILES } from '../data/profiles';
+-import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye } from 'lucide-react';
++import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, Network } from 'lucide-react';
+ 
+ interface TopNavigationProps {
+   currentMode: SceneMode;
+@@ -115,6 +115,19 @@
+           <Telescope className="w-4 h-4 md:w-3.5 md:h-3.5" />
+           <span className="hidden lg:inline">Observatorio Sky</span>
+         </button>
++
++        <button
++          onClick={() => onModeChange('cosmicweb')}
++          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
++            currentMode === 'cosmicweb'
++              ? 'bg-gradient-to-r from-violet-500/80 to-violet-600 text-white shadow-lg shadow-violet-500/25'
++              : 'text-slate-300 hover:text-white hover:bg-white/5'
++          }`}
++          title="Red Cósmica (Estructura a Gran Escala)"
++        >
++          <Network className="w-4 h-4 md:w-3.5 md:h-3.5" />
++          <span className="hidden lg:inline">Red Cósmica</span>
++        </button>
+       </nav>
+ 
+       {/* Derecha: Herramientas, Laboratorio, Asistente y Perfil */}

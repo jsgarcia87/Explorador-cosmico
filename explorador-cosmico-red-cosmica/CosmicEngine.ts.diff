@@ -1,0 +1,400 @@
+--- repo_orig/Explorador-cosmico-main/src/engine/CosmicEngine.ts	2026-08-05 07:49:23.000000000 +0000
++++ repo/Explorador-cosmico-main/src/engine/CosmicEngine.ts	2026-08-06 20:00:53.890020510 +0000
+@@ -5,10 +5,11 @@
+ import { EarthScene } from './EarthScene';
+ import { DeepSpaceScene } from './DeepSpaceScene';
+ import { NightSkyScene } from './NightSkyScene';
++import { CosmicWebScene } from './CosmicWebScene';
+ import { AstrophysicsUtils } from './AstrophysicsUtils';
+ import { ProceduralTextures } from './textures/ProceduralTextures';
+ 
+-export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory';
++export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory' | 'cosmicweb';
+ 
+ export interface CosmicEngineOptions {
+   onFpsUpdate?: (fps: number) => void;
+@@ -32,6 +33,7 @@
+   private earthScene!: EarthScene;
+   private deepScene!: DeepSpaceScene;
+   private nightScene!: NightSkyScene;
++  private cosmicWebScene!: CosmicWebScene;
+ 
+   // Cámara cinemática y navegación orbital
+   private targetPosition: THREE.Vector3 = new THREE.Vector3(0, 35, 75);
+@@ -50,6 +52,26 @@
+   private orbitPhi: number = 1.15;
+   private pinchStartDistance: number | null = null;
+ 
++  // Navegación libre estilo nave (alternativa al modo órbita clásico)
++  private navigationMode: 'orbit' | 'free' = 'orbit';
++  private freeYaw: number = 0;
++  private freePitch: number = 0;
++  private freeVelocity: THREE.Vector3 = new THREE.Vector3();
++  private freeMoveInput: THREE.Vector3 = new THREE.Vector3(0, 0, 0); // x=lateral, y=vertical, z=adelante
++  private freeBoostButton: boolean = false;
++  private freeBaseSpeed: number = 26;
++  private freeDamping: number = 4.5;
++  private freeLookSensitivity: number = 0.0028;
++  private freeKeys: Record<string, boolean> = {};
++  private freeAutopilot: {
++    startPos: THREE.Vector3;
++    startQuat: THREE.Quaternion;
++    endPos: THREE.Vector3;
++    endQuat: THREE.Quaternion;
++    t0: number;
++    duration: number;
++  } | null = null;
++
+   // Control de tiempo astronómico
+   public timeSpeed: number = 1; // 1x = tiempo real, 1000x = veloz
+   public currentDate: Date = new Date();
+@@ -128,6 +150,12 @@
+     this.earthScene = new EarthScene(this.scene);
+     this.deepScene = new DeepSpaceScene(this.scene);
+     this.nightScene = new NightSkyScene(this.scene);
++    this.cosmicWebScene = new CosmicWebScene(this.scene);
++
++    // Umbral de raycasting para THREE.Points (por defecto es casi imposible
++    // impactar una nube de puntos con un rayo); necesario para poder
++    // seleccionar la Red Cósmica con clic/tap.
++    this.raycaster.params.Points = { threshold: 3.5 };
+ 
+     // 3. Eventos de navegación libre (arrastre, clic, zoom, táctil)
+     window.addEventListener('resize', this.onWindowResize);
+@@ -139,6 +167,8 @@
+     this.canvas.addEventListener('touchmove', this.onTouchMove, { passive: true });
+     this.canvas.addEventListener('touchend', this.onTouchEnd);
+     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
++    window.addEventListener('keydown', this.onKeyDown);
++    window.addEventListener('keyup', this.onKeyUp);
+ 
+     this.setMode('solar');
+   }
+@@ -284,6 +314,7 @@
+     this.earthScene.setVisible(mode === 'earth');
+     this.deepScene.setVisible(mode === 'deep');
+     this.nightScene.setVisible(mode === 'observatory');
++    this.cosmicWebScene.setVisible(mode === 'cosmicweb');
+ 
+     if (mode === 'solar') {
+       this.setCameraTarget(new THREE.Vector3(0, 35, 75), new THREE.Vector3(0, 0, 0), 80);
+@@ -297,6 +328,15 @@
+     } else if (mode === 'observatory') {
+       this.setCameraTarget(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 20, 0), 1);
+       this.interactiveObjects = this.nightScene.getAllInteractiveObjects();
++    } else if (mode === 'cosmicweb') {
++      const center = this.cosmicWebScene.getFieldCenter();
++      const radius = this.cosmicWebScene.getFieldRadius();
++      this.setCameraTarget(
++        center.clone().add(new THREE.Vector3(0, radius * 0.3, radius * 1.1)),
++        center,
++        radius * 1.2
++      );
++      this.interactiveObjects = this.cosmicWebScene.getAllInteractiveObjects();
+     }
+   }
+ 
+@@ -363,6 +403,9 @@
+     this.lastPointerX = event.clientX;
+     this.lastPointerY = event.clientY;
+     this.isOrbitingAroundTarget = false;
++    if (this.navigationMode === 'free') {
++      this.freeAutopilot = null;
++    }
+ 
+     // Selección de objetos con clic primario breve
+     const rect = this.canvas.getBoundingClientRect();
+@@ -383,7 +426,12 @@
+         const objPos = new THREE.Vector3();
+         obj.getWorldPosition(objPos);
+         const radius = (obj as any).geometry?.parameters?.radius || 4.0;
+-        this.setCameraTarget(objPos.clone().add(new THREE.Vector3(0, radius * 1.5, radius * 3.5)), objPos, radius * 4.5);
++
++        if (this.navigationMode === 'free') {
++          this.flyToObjectFree(objPos, radius);
++        } else {
++          this.setCameraTarget(objPos.clone().add(new THREE.Vector3(0, radius * 1.5, radius * 3.5)), objPos, radius * 4.5);
++        }
+ 
+         if (this.options.onObjectSelected) {
+           this.options.onObjectSelected({
+@@ -409,6 +457,13 @@
+     this.lastPointerX = event.clientX;
+     this.lastPointerY = event.clientY;
+ 
++    if (this.navigationMode === 'free') {
++      this.freeAutopilot = null;
++      this.freeYaw -= dx * this.freeLookSensitivity;
++      this.freePitch = Math.max(-1.5, Math.min(1.5, this.freePitch - dy * this.freeLookSensitivity));
++      return;
++    }
++
+     if (this.dragButton === 0 && !event.shiftKey) {
+       // Arrastre primario: Órbita libre alrededor del targetLookAt
+       this.orbitTheta -= dx * 0.0055;
+@@ -438,6 +493,12 @@
+ 
+   private onWheel = (event: WheelEvent): void => {
+     event.preventDefault();
++    if (this.navigationMode === 'free') {
++      this.freeAutopilot = null;
++      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
++      this.camera.position.addScaledVector(forward, -event.deltaY * 0.03);
++      return;
++    }
+     const zoomDelta = event.deltaY * 0.045;
+     this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + zoomDelta));
+ 
+@@ -465,7 +526,13 @@
+         event.touches[0].clientY - event.touches[1].clientY
+       );
+       const delta = (this.pinchStartDistance - d) * 0.35;
+-      this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + delta));
++      if (this.navigationMode === 'free') {
++        this.freeAutopilot = null;
++        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
++        this.camera.position.addScaledVector(forward, -delta * 0.12);
++      } else {
++        this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + delta));
++      }
+       this.pinchStartDistance = d;
+     }
+   };
+@@ -488,21 +555,26 @@
+       }
+     }
+ 
+-    // 2. Órbita automática suave si no está interactuando el usuario
+-    if (this.isOrbitingAroundTarget && !this.isDragging && this.currentMode !== 'observatory') {
+-      this.orbitTheta += delta * 0.08;
+-      const sinPhi = Math.sin(this.orbitPhi);
+-      this.targetPosition.set(
+-        this.targetLookAt.x + this.activeTargetDistance * sinPhi * Math.cos(this.orbitTheta),
+-        this.targetLookAt.y + this.activeTargetDistance * Math.cos(this.orbitPhi),
+-        this.targetLookAt.z + this.activeTargetDistance * sinPhi * Math.sin(this.orbitTheta)
+-      );
+-    }
++    if (this.navigationMode === 'free') {
++      // 2b. Navegación libre estilo nave (posición + orientación por cuaternión)
++      this.updateFreeFlight(delta);
++    } else {
++      // 2. Órbita automática suave si no está interactuando el usuario
++      if (this.isOrbitingAroundTarget && !this.isDragging && this.currentMode !== 'observatory') {
++        this.orbitTheta += delta * 0.08;
++        const sinPhi = Math.sin(this.orbitPhi);
++        this.targetPosition.set(
++          this.targetLookAt.x + this.activeTargetDistance * sinPhi * Math.cos(this.orbitTheta),
++          this.targetLookAt.y + this.activeTargetDistance * Math.cos(this.orbitPhi),
++          this.targetLookAt.z + this.activeTargetDistance * sinPhi * Math.sin(this.orbitTheta)
++        );
++      }
+ 
+-    // 3. Amortiguación cinemática (Lerp / Slerp)
+-    this.camera.position.lerp(this.targetPosition, 0.1);
+-    this.currentLookAt.lerp(this.targetLookAt, 0.1);
+-    this.camera.lookAt(this.currentLookAt);
++      // 3. Amortiguación cinemática (Lerp / Slerp)
++      this.camera.position.lerp(this.targetPosition, 0.1);
++      this.currentLookAt.lerp(this.targetLookAt, 0.1);
++      this.camera.lookAt(this.currentLookAt);
++    }
+ 
+     // 4. Actualizar escena activa
+     if (this.currentMode === 'solar') {
+@@ -513,6 +585,8 @@
+       this.deepScene.update(delta, this.timeSpeed);
+     } else if (this.currentMode === 'observatory') {
+       this.nightScene.update(delta, this.timeSpeed);
++    } else if (this.currentMode === 'cosmicweb') {
++      this.cosmicWebScene.update(delta);
+     }
+ 
+     // 5. Render HDR & Bloom
+@@ -531,6 +605,178 @@
+     }
+   };
+ 
++  // ============================================================
++  // NAVEGACIÓN LIBRE ESTILO NAVE (alternativa al modo órbita)
++  // ============================================================
++
++  private onKeyDown = (event: KeyboardEvent): void => {
++    this.freeKeys[event.code] = true;
++    if (this.navigationMode === 'free' && ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(event.code)) {
++      this.freeAutopilot = null;
++    }
++  };
++
++  private onKeyUp = (event: KeyboardEvent): void => {
++    this.freeKeys[event.code] = false;
++  };
++
++  /**
++   * Activa el piloto automático de vuelo libre: interpola posición (lerp)
++   * y orientación (slerp de cuaterniones) hasta una posición de aproximación
++   * relativa a la dirección real Sol -> objeto, para llegar siempre por el
++   * lado iluminado. Cualquier entrada manual (teclado, joystick, arrastre)
++   * cancela el piloto automático de inmediato.
++   */
++  private flyToObjectFree(objPos: THREE.Vector3, radius: number): void {
++    const sunDir = objPos.clone();
++    if (sunDir.lengthSq() > 0.0001) {
++      sunDir.normalize();
++    } else {
++      sunDir.set(0, 0, 1);
++    }
++    const dist = Math.max(radius * 4.2, 6);
++    const endPos = objPos
++      .clone()
++      .add(sunDir.clone().multiplyScalar(-dist * 0.75))
++      .add(new THREE.Vector3(0, dist * 0.35, 0));
++    const lookMat = new THREE.Matrix4().lookAt(endPos, objPos, new THREE.Vector3(0, 1, 0));
++    const endQuat = new THREE.Quaternion().setFromRotationMatrix(lookMat);
++
++    this.freeAutopilot = {
++      startPos: this.camera.position.clone(),
++      startQuat: this.camera.quaternion.clone(),
++      endPos,
++      endQuat,
++      t0: performance.now(),
++      duration: 1300
++    };
++  }
++
++  private updateFreeFlight(delta: number): void {
++    if (this.freeAutopilot) {
++      const ap = this.freeAutopilot;
++      const t = Math.min(1, (performance.now() - ap.t0) / ap.duration);
++      const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
++      this.camera.position.lerpVectors(ap.startPos, ap.endPos, ease);
++      this.camera.quaternion.slerpQuaternions(ap.startQuat, ap.endQuat, ease);
++      if (t >= 1) {
++        this.freeAutopilot = null;
++        const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
++        this.freeYaw = e.y;
++        this.freePitch = e.x;
++      }
++      return;
++    }
++
++    // Entrada de teclado (WASD + Q/E), con prioridad sobre joystick/botones táctiles
++    let kx = 0, ky = 0, kz = 0;
++    if (this.freeKeys['KeyW']) kz += 1;
++    if (this.freeKeys['KeyS']) kz -= 1;
++    if (this.freeKeys['KeyD']) kx += 1;
++    if (this.freeKeys['KeyA']) kx -= 1;
++    if (this.freeKeys['KeyE']) ky += 1;
++    if (this.freeKeys['KeyQ']) ky -= 1;
++
++    const inputX = kx !== 0 ? kx : this.freeMoveInput.x;
++    const inputY = ky !== 0 ? ky : this.freeMoveInput.y;
++    const inputZ = kz !== 0 ? kz : this.freeMoveInput.z;
++
++    const euler = new THREE.Euler(this.freePitch, this.freeYaw, 0, 'YXZ');
++    this.camera.quaternion.setFromEuler(euler);
++
++    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
++    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
++    const up = new THREE.Vector3(0, 1, 0);
++
++    const boostActive = this.freeBoostButton || !!this.freeKeys['ShiftLeft'] || !!this.freeKeys['ShiftRight'];
++    const speed = this.freeBaseSpeed * (boostActive ? 3.4 : 1);
++
++    const accel = new THREE.Vector3();
++    accel.addScaledVector(forward, inputZ);
++    accel.addScaledVector(right, inputX);
++    accel.addScaledVector(up, inputY);
++    if (accel.lengthSq() > 0) accel.normalize().multiplyScalar(speed);
++
++    this.freeVelocity.lerp(accel, Math.min(1, delta * this.freeDamping));
++    this.camera.position.addScaledVector(this.freeVelocity, delta);
++  }
++
++  /**
++   * Cambia entre el modo órbita clásico (cámara amarrada a un objetivo) y
++   * la navegación libre estilo nave (posición y orientación totalmente libres).
++   */
++  public setNavigationMode(mode: 'orbit' | 'free'): void {
++    this.navigationMode = mode;
++    if (mode === 'free') {
++      const e = new THREE.Euler().setFromQuaternion(this.camera.quaternion, 'YXZ');
++      this.freeYaw = e.y;
++      this.freePitch = e.x;
++      this.freeVelocity.set(0, 0, 0);
++      this.freeAutopilot = null;
++    }
++  }
++
++  public getNavigationMode(): 'orbit' | 'free' {
++    return this.navigationMode;
++  }
++
++  /** Alimenta el movimiento desde un joystick táctil externo (componente React). */
++  public setFreeMoveInput(x: number, y: number, z: number): void {
++    this.freeMoveInput.set(x, y, z);
++  }
++
++  /** Activa/desactiva el impulso desde un botón táctil externo. */
++  public setFreeBoost(active: boolean): void {
++    this.freeBoostButton = active;
++  }
++
++  /**
++   * Leyenda de objetos celestes: posición proyectada en pantalla (o el
++   * borde más cercano si están fuera de vista) y distancia en vivo,
++   * para que un componente HUD dibuje marcadores tipo videojuego.
++   */
++  public getLegendData(): Array<{
++    id: string;
++    name: string;
++    type: string;
++    distance: number;
++    screenX: number;
++    screenY: number;
++    onScreen: boolean;
++    behind: boolean;
++    selected: boolean;
++  }> {
++    const width = this.canvas.clientWidth || window.innerWidth;
++    const height = this.canvas.clientHeight || window.innerHeight;
++    const worldPos = new THREE.Vector3();
++    const result: ReturnType<CosmicEngine['getLegendData']> = [];
++
++    for (const obj of this.interactiveObjects) {
++      obj.getWorldPosition(worldPos);
++      const distance = this.camera.position.distanceTo(worldPos);
++      const proj = worldPos.clone().project(this.camera);
++      const behind = proj.z > 1;
++      const onScreen = !behind && proj.x > -0.98 && proj.x < 0.98 && proj.y > -0.98 && proj.y < 0.98;
++      const screenX = (proj.x * 0.5 + 0.5) * width;
++      const screenY = (1 - (proj.y * 0.5 + 0.5)) * height;
++      const data = obj.userData?.data;
++      const name: string = (data && data.name) || obj.name || obj.userData?.id || 'Objeto';
++
++      result.push({
++        id: obj.userData?.id || obj.uuid,
++        name,
++        type: obj.userData?.type || 'unknown',
++        distance,
++        screenX,
++        screenY,
++        onScreen,
++        behind,
++        selected: obj.userData?.id === this.selectedObjectId
++      });
++    }
++    return result;
++  }
++
+   public dispose(): void {
+     if (this.animationFrameId !== null) {
+       cancelAnimationFrame(this.animationFrameId);
+@@ -543,6 +789,8 @@
+     this.canvas.removeEventListener('touchstart', this.onTouchStart);
+     this.canvas.removeEventListener('touchmove', this.onTouchMove);
+     this.canvas.removeEventListener('touchend', this.onTouchEnd);
++    window.removeEventListener('keydown', this.onKeyDown);
++    window.removeEventListener('keyup', this.onKeyUp);
+     this.renderer.dispose();
+   }
+ }

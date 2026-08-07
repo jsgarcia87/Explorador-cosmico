@@ -80,7 +80,6 @@ export class CosmicEngine {
   // Interactividad
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private mouse: THREE.Vector2 = new THREE.Vector2();
-  private selectedObjectRadius: number = 2.5;
   private interactiveObjects: THREE.Object3D[] = [];
   private selectedObjectId: string | null = null;
 
@@ -107,7 +106,7 @@ export class CosmicEngine {
     });
     this.renderer.setSize(width, height);
     this.updateAdaptivePixelRatio(width);
-    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.25;
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -142,19 +141,9 @@ export class CosmicEngine {
     const effectPass = new EffectPass(this.camera, bloomEffect, vignetteEffect, toneMappingEffect);
     this.composer.addPass(effectPass);
 
-    // 1. Cielo Estrellado Fotorrealista (NASA Tycho 8K/4K adaptativo)
-    const isMobile = window.innerWidth <= 1024 || /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
-    const maxTexSize = this.renderer.capabilities.maxTextureSize;
-    const use8K = !isMobile && maxTexSize >= 8192;
-    const starmapUrl = use8K ? '/textures/starmap_8k.jpg' : '/textures/starmap_4k.jpg';
-
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(starmapUrl, (texture) => {
-      texture.mapping = THREE.EquirectangularReflectionMapping;
-      texture.colorSpace = THREE.SRGBColorSpace;
-      this.scene.background = texture;
-      this.scene.environment = texture;
-    });
+    // 1. Cielo Estrellado Harvard OBAFGKM & Vía Láctea Fotorrealista (Sin niebla)
+    this.createBackgroundStarfield();
+    this.createMilkyWayBand();
 
     // 2. Sub-escenas
     this.solarScene = new SolarSystemScene(this.scene);
@@ -184,15 +173,142 @@ export class CosmicEngine {
     this.setMode('solar');
   }
 
+  /**
+   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
+   * sin niebla (fog: false) y con sprites circulares luminosos.
+   */
+  /**
+   * Genera 14,000 estrellas cósmicas brillantes en el cielo nocturno
+   * sin niebla (fog: false) con capa dual de profundidad para visibilidad constante.
+   */
+  private createBackgroundStarfield(): void {
+    const starCount = 14000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(starCount * 3);
+    const colors = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 1200 + Math.random() * 8000;
+
+      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = r * Math.cos(phi);
+
+      // Clasificación Harvard OBAFGKM -> Color CIE sRGB
+      const tempKelvin = AstrophysicsUtils.sampleOBAFGKMTemperature();
+      const color = AstrophysicsUtils.kelvinToRGB(tempKelvin);
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const starTexture = ProceduralTextures.generateStarDot();
+    
+    // Capa principal con atenuación de tamaño (estrellas grandes y brillantes)
+    const material = new THREE.PointsMaterial({
+      map: starTexture,
+      size: 32.0,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.98,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      depthWrite: false
+    });
+
+    const starfield = new THREE.Points(geometry, material);
+    starfield.name = 'BACKGROUND_STARS_OBAFGKM';
+    this.scene.add(starfield);
+
+    // Segunda capa sin atenuación para garantizar un cielo estrellado nítido a cualquier distancia o zoom
+    const fixedMaterial = new THREE.PointsMaterial({
+      map: starTexture,
+      size: 2.2,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.88,
+      sizeAttenuation: false,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      depthWrite: false
+    });
+    const starfieldFixed = new THREE.Points(geometry, fixedMaterial);
+    starfieldFixed.name = 'BACKGROUND_STARS_FIXED';
+    this.scene.add(starfieldFixed);
+  }
+
+  /**
+   * Genera la banda galáctica volumétrica de la Vía Láctea
+   * inclinada respecto a la eclíptica con polvo interestelar y nebulosidad cian/violeta/ámbar.
+   */
+  private createMilkyWayBand(): void {
+    const particleCount = 18000;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const palette = [
+      new THREE.Color('#8b7bff'), // Violeta nebulosa
+      new THREE.Color('#5ce1d6'), // Cian ionizado
+      new THREE.Color('#fbbf24'), // Ámbar estelar
+      new THREE.Color('#f472b6'), // Rosa hidrógeno
+      new THREE.Color('#ffffff')  // Núcleo blanco
+    ];
+
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 1000 + Math.pow(Math.random(), 0.7) * 4500;
+      const spreadY = (Math.random() - 0.5) * (radius * 0.18);
+
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const y = spreadY;
+
+      // Inclinar el disco galáctico 60 grados respecto al plano del Sistema Solar
+      const tilt = (60 * Math.PI) / 180;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y * Math.cos(tilt) - z * Math.sin(tilt);
+      positions[i * 3 + 2] = y * Math.sin(tilt) + z * Math.cos(tilt);
+
+      const color = palette[Math.floor(Math.random() * palette.length)].clone();
+      const intensity = 0.65 + Math.random() * 0.35;
+      colors[i * 3] = color.r * intensity;
+      colors[i * 3 + 1] = color.g * intensity;
+      colors[i * 3 + 2] = color.b * intensity;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    const starTexture = ProceduralTextures.generateStarDot();
+    const material = new THREE.PointsMaterial({
+      map: starTexture,
+      size: 34.0,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.75,
+      sizeAttenuation: true,
+      blending: THREE.AdditiveBlending,
+      fog: false,
+      depthWrite: false
+    });
+
+    const milkyWay = new THREE.Points(geometry, material);
+    milkyWay.name = 'MILKY_WAY_GALACTIC_BAND';
+    this.scene.add(milkyWay);
+  }
+
   public setMode(mode: SceneMode): void {
     this.currentMode = mode;
     this.clearInteractive();
-
-    if (this.options.onObjectSelected) {
-      this.options.onObjectSelected(null);
-    }
-    this.selectedObjectId = null;
-    this.selectedObjectRadius = 0;
 
     this.solarScene.setVisible(mode === 'solar');
     this.earthScene.setVisible(mode === 'earth');
@@ -224,14 +340,7 @@ export class CosmicEngine {
     }
   }
 
-  public setGuidesVisible(visible: boolean): void {
-    if (this.currentMode === 'solar' && 'setGuidesVisible' in this.solarScene) {
-      (this.solarScene as any).setGuidesVisible(visible);
-    }
-  }
-
   public start(): void {
-    this.clock.start();
     this.lastFpsTime = performance.now();
     this.animate();
   }
@@ -260,18 +369,14 @@ export class CosmicEngine {
     this.interactiveObjects = [];
   }
 
-  public setCameraTarget(pos: THREE.Vector3, lookAt: THREE.Vector3, distance?: number): void {
+  public setCameraTarget(pos: THREE.Vector3, lookAt: THREE.Vector3, distance: number = 25): void {
     this.targetLookAt.copy(lookAt);
-    this.targetPosition.copy(pos);
-    
-    const offset = new THREE.Vector3().subVectors(this.targetPosition, this.targetLookAt);
-    this.activeTargetDistance = distance !== undefined ? distance : offset.length();
-    
-    if (offset.lengthSq() > 0.0001) {
-      this.orbitPhi = Math.acos(Math.max(-1, Math.min(1, offset.y / offset.length())));
-      this.orbitTheta = Math.atan2(offset.z, offset.x);
-    }
-    this.isOrbitingAroundTarget = true;
+    this.activeTargetDistance = distance;
+    this.targetPosition.set(
+      lookAt.x + Math.cos(this.cameraAngle) * distance,
+      lookAt.y + distance * 0.45,
+      lookAt.z + Math.sin(this.cameraAngle) * distance
+    );
   }
 
   private updateAdaptivePixelRatio(width: number): void {
@@ -321,16 +426,11 @@ export class CosmicEngine {
         const objPos = new THREE.Vector3();
         obj.getWorldPosition(objPos);
         const radius = (obj as any).geometry?.parameters?.radius || 4.0;
-        this.selectedObjectRadius = radius;
-        
-        // Calcular offset basado en la dirección del Sol (origen) para enfocar el lado iluminado
-        const sunDir = objPos.clone().normalize();
-        const camOffset = sunDir.multiplyScalar(-radius * 3.5).add(new THREE.Vector3(0, radius * 1.5, 0));
-        
+
         if (this.navigationMode === 'free') {
           this.flyToObjectFree(objPos, radius);
         } else {
-          this.setCameraTarget(objPos.clone().add(camOffset), objPos, radius * 4.5);
+          this.setCameraTarget(objPos.clone().add(new THREE.Vector3(0, radius * 1.5, radius * 3.5)), objPos, radius * 4.5);
         }
 
         if (this.options.onObjectSelected) {
@@ -344,7 +444,6 @@ export class CosmicEngine {
       }
     } else if (event.button === 0) {
       if (this.options.onObjectSelected) {
-        this.selectedObjectRadius = 2.5;
         this.options.onObjectSelected(null);
       }
     }
@@ -401,8 +500,7 @@ export class CosmicEngine {
       return;
     }
     const zoomDelta = event.deltaY * 0.045;
-    const minDist = this.selectedObjectRadius ? this.selectedObjectRadius * 1.8 : 2.5;
-    this.activeTargetDistance = Math.max(minDist, Math.min(1200, this.activeTargetDistance + zoomDelta));
+    this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + zoomDelta));
 
     const sinPhi = Math.sin(this.orbitPhi);
     this.targetPosition.set(
@@ -433,8 +531,7 @@ export class CosmicEngine {
         const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(this.camera.quaternion);
         this.camera.position.addScaledVector(forward, -delta * 0.12);
       } else {
-        const minDist = this.selectedObjectRadius ? this.selectedObjectRadius * 1.8 : 2.5;
-        this.activeTargetDistance = Math.max(minDist, Math.min(1200, this.activeTargetDistance + delta));
+        this.activeTargetDistance = Math.max(2.5, Math.min(1200, this.activeTargetDistance + delta));
       }
       this.pinchStartDistance = d;
     }
@@ -451,20 +548,10 @@ export class CosmicEngine {
 
     // 1. Reloj astronómico kepleriano
     if (!this.isPaused && this.timeSpeed !== 0) {
-      const msDelta = delta * 1000 * this.timeSpeed;
+      const msDelta = delta * 1000 * this.timeSpeed * 3600;
       this.currentDate = new Date(this.currentDate.getTime() + msDelta);
       if (this.options.onDateChange) {
         this.options.onDateChange(this.currentDate);
-      }
-    }
-
-    // Trackear continuamente al objeto seleccionado si se está moviendo
-    if (this.selectedObjectId) {
-      const obj = this.interactiveObjects.find(o => o.userData.id === this.selectedObjectId);
-      if (obj) {
-        const objPos = new THREE.Vector3();
-        obj.getWorldPosition(objPos);
-        this.targetLookAt.copy(objPos);
       }
     }
 

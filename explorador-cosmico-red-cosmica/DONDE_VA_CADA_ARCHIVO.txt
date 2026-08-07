@@ -1,0 +1,23 @@
+DONDE VA CADA ARCHIVO EN TU REPO
+==================================
+
+ARCHIVOS NUEVOS (copiar tal cual):
+  CosmicWebScene.ts        -> src/engine/CosmicWebScene.ts
+  vite-env.d.ts             -> src/vite-env.d.ts   (no existia, necesario para import.meta.env)
+  public-data-cosmic-web/*  -> public/data/cosmic-web/   (el .cweb pesa 13.5 MB, es normal)
+
+ARCHIVOS MODIFICADOS (sustituir enteros, o aplicar el .diff con `git apply`):
+  CosmicEngine.ts     -> src/engine/CosmicEngine.ts
+  TopNavigation.tsx   -> src/components/TopNavigation.tsx
+
+  (Nota: CosmicEngine.ts ya incluye TAMBIEN el parche anterior de
+   navegacion libre / piloto automatico / getLegendData. Si ya aplicaste
+   ese parche, este archivo lo reemplaza sin perder nada, solo añade el
+   modo 'cosmicweb' encima.)
+
+DESPUES DE COPIAR:
+  npm run build
+
+El nuevo modo aparece como boton "Red Cosmica" (icono Network, violeta)
+en la barra de navegacion superior, junto a Sistema Solar / La Tierra /
+Espacio Profundo / Observatorio Sky.
