@@ -39,7 +39,8 @@ const vertexShader = /* glsl */ `
   void main() {
     vDensity = aDensity;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    float baseSize = mix(1.0, 2.6, smoothstep(0.15, 0.9, aDensity));
+    // Non-linear size: filaments thin, nodes large and prominent
+    float baseSize = mix(0.6, 4.0, pow(smoothstep(0.1, 0.95, aDensity), 2.0));
     gl_PointSize = uPointScale * baseSize * (300.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
@@ -58,14 +59,24 @@ const fragmentShader = /* glsl */ `
     if (d > 0.5) discard;
     float falloff = smoothstep(0.5, 0.0, d);
 
+    // Three-zone color mapping with sharper transitions
     vec3 color;
-    if (vDensity < 0.5) {
-      color = mix(uColorVoid, uColorFilament, smoothstep(0.0, 0.5, vDensity));
+    if (vDensity < 0.3) {
+      // Void to filament: very faint
+      color = mix(uColorVoid, uColorFilament, smoothstep(0.05, 0.3, vDensity));
+    } else if (vDensity < 0.65) {
+      // Filament body: blue-purple
+      color = mix(uColorFilament, uColorNode, smoothstep(0.3, 0.65, vDensity) * 0.4);
     } else {
-      color = mix(uColorFilament, uColorNode, smoothstep(0.5, 1.0, vDensity));
+      // Galaxy cluster nodes: warm bright
+      color = mix(uColorFilament * 0.6 + uColorNode * 0.4, uColorNode, smoothstep(0.65, 1.0, vDensity));
+      // Subtle HDR push for bloom on only the densest nodes
+      color *= 1.0 + smoothstep(0.9, 1.0, vDensity) * 0.5;
     }
 
-    float alpha = falloff * uOpacity * mix(0.25, 1.0, vDensity);
+    // Non-linear alpha: suppress voids, show filaments, blaze nodes
+    float densityAlpha = pow(smoothstep(0.05, 0.7, vDensity), 1.5);
+    float alpha = falloff * uOpacity * mix(0.08, 1.0, densityAlpha);
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -134,11 +145,11 @@ export class CosmicWebScene {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uPointScale: { value: 1.3 },
-        uOpacity: { value: 0.85 },
-        uColorVoid: { value: new THREE.Color(0x0a0518) },
-        uColorFilament: { value: new THREE.Color(0x7b5bff) },
-        uColorNode: { value: new THREE.Color(0xbfe9ff) }
+        uPointScale: { value: 0.9 },
+        uOpacity: { value: 0.45 },
+        uColorVoid: { value: new THREE.Color(0x080418) },
+        uColorFilament: { value: new THREE.Color(0x3355aa) },
+        uColorNode: { value: new THREE.Color(0xddc888) }
       }
     });
 

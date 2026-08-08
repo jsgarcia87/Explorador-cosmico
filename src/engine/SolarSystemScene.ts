@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { PLANETS, PlanetData } from '../data/planets';
 import { KeplerianOrbitEngine } from './KeplerianOrbitEngine';
 import { AtmosphereScatteringShader } from './shaders/AtmosphereScatteringShader';
+import { SunShader } from './shaders/SunShader';
 import { ProceduralTextures, PlanetTextureOptions } from './textures/ProceduralTextures';
 
 export class SolarSystemScene {
@@ -11,6 +12,9 @@ export class SolarSystemScene {
   private orbitLines: THREE.Line[] = [];
   private sunLight!: THREE.PointLight;
   private ambientLight!: THREE.AmbientLight;
+  private sunSurfaceMat: THREE.ShaderMaterial | null = null;
+  private sunCoronaMat: THREE.ShaderMaterial | null = null;
+  private earthCloudMesh: THREE.Mesh | null = null;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -30,7 +34,7 @@ export class SolarSystemScene {
 
     // Sol ilumina todo el sistema solar sin decaimiento para una iluminación uniforme
     // Usamos una intensidad media (35.0) para que no queme los planetas cercanos ni deje negros a los lejanos.
-    this.sunLight = new THREE.PointLight(0xfff5e6, 35.0, 0, 0);
+    this.sunLight = new THREE.PointLight(0xfff5e6, 8.0, 0, 0);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
@@ -38,7 +42,7 @@ export class SolarSystemScene {
     this.sunLight.shadow.bias = -0.0002;
     this.rootGroup.add(this.sunLight);
 
-    const ambientLight = new THREE.AmbientLight(0x050a14, 0.4);
+    const ambientLight = new THREE.AmbientLight(0x0a1020, 0.6);
     this.rootGroup.add(ambientLight);
 
     // 2. Construir Sol y Planetas
@@ -154,10 +158,8 @@ export class SolarSystemScene {
     if (isSun) {
       const sunMap = textureLoader.load('/textures/sol.jpg');
       sunMap.colorSpace = THREE.SRGBColorSpace;
-      mat = new THREE.MeshBasicMaterial({
-        map: sunMap,
-        color: new THREE.Color(data.color).multiplyScalar(1.5) // Reduced from 8.0 to prevent bloom burn
-      });
+      this.sunSurfaceMat = SunShader.createSurfaceMaterial(sunMap);
+      mat = this.sunSurfaceMat;
     } else if (data.id === 'tierra') {
       const earthMap = textureLoader.load('/textures/tierra.jpg');
       earthMap.colorSpace = THREE.SRGBColorSpace;
@@ -203,8 +205,12 @@ export class SolarSystemScene {
     // Aplicar inclinación axial real del eje de rotación (rad)
     mesh.rotation.z = data.tilt;
 
-    // Corona Solar para el Sol (efecto halo difuso NASA)
-    // Glowing is now handled exclusively by HDR UnrealBloom on the postprocessing pipeline
+    if (isSun) {
+      const coronaGeo = new THREE.SphereGeometry(data.radius * 1.55, 64, 64);
+      this.sunCoronaMat = SunShader.createCoronaMaterial();
+      const coronaMesh = new THREE.Mesh(coronaGeo, this.sunCoronaMat);
+      mesh.add(coronaMesh);
+    }
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
@@ -242,17 +248,21 @@ export class SolarSystemScene {
       mesh.add(atmoMesh);
     }
 
-    // Si tiene nubes (Tierra)
+    // Si tiene nubes (Tierra) — capa con textura procedural realista
     if (data.hasClouds) {
-      const cloudGeo = new THREE.SphereGeometry(data.radius * 1.02, 32, 32);
+      const cloudTex = ProceduralTextures.generateEarthClouds();
+      const cloudGeo = new THREE.SphereGeometry(data.radius * 1.015, 48, 48);
       const cloudMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
+        map: cloudTex,
+        alphaMap: cloudTex,
         transparent: true,
-        opacity: 0.45,
-        roughness: 0.9
+        opacity: 0.85,
+        roughness: 1.0,
+        depthWrite: false,
       });
       const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
       mesh.add(cloudMesh);
+      this.earthCloudMesh = cloudMesh;
     }
 
     this.rootGroup.add(mesh);
@@ -300,6 +310,13 @@ export class SolarSystemScene {
   public update(delta: number, timeSpeed: number, currentDate: Date): void {
     if (!this.rootGroup.visible) return;
 
+    if (this.sunSurfaceMat) {
+      this.sunSurfaceMat.uniforms.time.value += delta * 0.5;
+    }
+    if (this.sunCoronaMat) {
+      this.sunCoronaMat.uniforms.time.value += delta * 0.3;
+    }
+
     this.celestialMeshes.forEach((mesh, id) => {
       const data = mesh.userData.data as PlanetData;
 
@@ -320,6 +337,11 @@ export class SolarSystemScene {
         mesh.userData.atmoMat.uniforms.uSunDirection.value.copy(sunDir);
       }
     });
+
+    // Rotación independiente de nubes terrestres (jet streams)
+    if (this.earthCloudMesh) {
+      this.earthCloudMesh.rotation.y += delta * 0.012 * Math.min(timeSpeed, 50);
+    }
 
     // Rotar cinturones de asteroides
     this.rootGroup.children.forEach(child => {

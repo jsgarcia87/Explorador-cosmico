@@ -51,15 +51,19 @@ export class DeepSpaceScene {
   }
 
   private createDeepObject(data: DeepSpaceObjectData): void {
-    // 1. Gargantua (Agujero Negro Relativista Nativo GRRT en 3D)
+    // 1. Gargantua (Agujero Negro con lensing gravitacional ray-traced en GPU)
     if (data.isGrrtBlackHole) {
-      const geo = new THREE.SphereGeometry(4.2, 64, 64);
+      const bhSphereRadius = 14.0;
+      const bhRs = 2.0;
+      const geo = new THREE.SphereGeometry(bhSphereRadius, 96, 96);
       this.gargantuaMaterial = RelativisticBlackHoleShader.createMaterial({
         spin: 0.9,
         accretionRate: 1.25,
         inclination: 1.15,
         innerHex: '#ffffff',
-        outerHex: '#ff5500'
+        outerHex: '#ff5500',
+        schwarzschildRadius: bhRs,
+        sphereRadius: bhSphereRadius
       });
 
       const mesh = new THREE.Mesh(geo, this.gargantuaMaterial);
@@ -71,90 +75,59 @@ export class DeepSpaceScene {
         data: data
       };
 
-      // Anillo de Einstein (Esfera fotónica por lente gravitacional)
-      const photonRingGeo = new THREE.TorusGeometry(4.35, 0.09, 16, 64);
-      const photonRingMat = new THREE.MeshBasicMaterial({
-        color: 0xfff6e0,
-        transparent: true,
-        opacity: 0.95,
-        blending: THREE.AdditiveBlending
-      });
-      const photonRing = new THREE.Mesh(photonRingGeo, photonRingMat);
-      photonRing.rotation.x = Math.PI / 2 - 0.35;
-      mesh.add(photonRing);
-
-      // Disco de Acreción exterior con gradiente térmico Doppler
-      const diskGeo = new THREE.RingGeometry(4.5, 12.5, 96);
-      // Crear textura de gradiente radial para el disco de acreción
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-      const context = canvas.getContext('2d');
-      if (context) {
-        // El innerRadius es 4.5, outerRadius 12.5. En UV (0-1), el inner es 4.5/12.5 = 0.36
-        const gradient = context.createRadialGradient(128, 128, 128 * 0.36, 128, 128, 128);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); // Blanco
-        gradient.addColorStop(0.2, 'rgba(100, 200, 255, 0.9)'); // Azul
-        gradient.addColorStop(0.5, 'rgba(255, 150, 50, 0.8)'); // Naranja
-        gradient.addColorStop(1, 'rgba(255, 50, 0, 0.0)'); // Rojo difuso a transparente
-        context.fillStyle = gradient;
-        context.fillRect(0, 0, 256, 256);
-      }
-      const diskTexture = new THREE.CanvasTexture(canvas);
-
-      const diskMat = new THREE.MeshBasicMaterial({
-        map: diskTexture,
-        color: 0xffffff, // El gradiente ya tiene los colores
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.85,
-        blending: THREE.AdditiveBlending
-      });
-      const diskMesh = new THREE.Mesh(diskGeo, diskMat);
-      diskMesh.rotation.x = Math.PI / 2 - 0.35;
-      mesh.add(diskMesh);
-
-      // Segundo disco secundario desplazado en fase para simular la asimetría del haz Doppler (relativista)
-      const disk2 = new THREE.Mesh(diskGeo.clone(), diskMat.clone());
-      disk2.rotation.x = Math.PI / 2 - 0.35;
-      disk2.rotation.z = Math.PI * 0.4;
-      disk2.material.opacity = 0.38;
-      mesh.add(disk2);
-
-      // Chorros relativistas de plasma (Jets polares con difuminado suave)
-      const jetGeo = new THREE.CylinderGeometry(0.4, 2.4, 26, 32, 1, true);
-      
+      // Chorros relativistas de plasma (Jets polares) — soft billboard sprites
       const jetCanvas = document.createElement('canvas');
-      jetCanvas.width = 64;
-      jetCanvas.height = 256;
-      const jetCtx = jetCanvas.getContext('2d');
-      if (jetCtx) {
-        const jetGrad = jetCtx.createLinearGradient(0, 0, 0, 256);
-        jetGrad.addColorStop(0, 'rgba(85, 208, 255, 0.0)'); // Punta invisible
-        jetGrad.addColorStop(1, 'rgba(85, 208, 255, 1.0)'); // Base opaca
-        jetCtx.fillStyle = jetGrad;
-        jetCtx.fillRect(0, 0, 64, 256);
+      jetCanvas.width = 128;
+      jetCanvas.height = 512;
+      const jCtx = jetCanvas.getContext('2d')!;
+      // Vertical gradient: bright base fading to nothing at tip
+      for (let y = 0; y < 512; y++) {
+        const vt = y / 512; // 0=top(tip), 1=bottom(base)
+        const vAlpha = Math.pow(vt, 0.6) * 0.7;
+        // Radial gradient per row for soft edges
+        const rowGrad = jCtx.createLinearGradient(0, y, 128, y);
+        const coreAlpha = vAlpha;
+        const edgeAlpha = 0;
+        rowGrad.addColorStop(0, `rgba(85,208,255,${edgeAlpha})`);
+        rowGrad.addColorStop(0.3, `rgba(85,208,255,${coreAlpha * 0.3})`);
+        rowGrad.addColorStop(0.5, `rgba(140,220,255,${coreAlpha})`);
+        rowGrad.addColorStop(0.7, `rgba(85,208,255,${coreAlpha * 0.3})`);
+        rowGrad.addColorStop(1, `rgba(85,208,255,${edgeAlpha})`);
+        jCtx.fillStyle = rowGrad;
+        jCtx.fillRect(0, y, 128, 1);
       }
-      const jetTexture = new THREE.CanvasTexture(jetCanvas);
+      const jetTex = new THREE.CanvasTexture(jetCanvas);
 
-      const jetMat = new THREE.MeshBasicMaterial({
-        map: jetTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-      const topJet = new THREE.Mesh(jetGeo, jetMat);
-      topJet.position.y = 13;
+      const makeJet = () => {
+        const group = new THREE.Group();
+        // Two crossing planes for volumetric look
+        for (let i = 0; i < 2; i++) {
+          const planeGeo = new THREE.PlaneGeometry(6, 28);
+          const planeMat = new THREE.MeshBasicMaterial({
+            map: jetTex,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            opacity: 0.5,
+          });
+          const plane = new THREE.Mesh(planeGeo, planeMat);
+          plane.rotation.y = (i * Math.PI) / 2;
+          group.add(plane);
+        }
+        return group;
+      };
+
+      const topJet = makeJet();
+      topJet.position.y = bhSphereRadius + 14;
       mesh.add(topJet);
 
-      const bottomJet = topJet.clone();
-      bottomJet.position.y = -13;
+      const bottomJet = makeJet();
+      bottomJet.position.y = -(bhSphereRadius + 14);
       bottomJet.rotation.z = Math.PI;
       mesh.add(bottomJet);
 
-      // Luz puntual emitida por el disco de acreción del agujero negro
-      const bhLight = new THREE.PointLight(0xffaa55, 6.0, 500, 1.5);
+      const bhLight = new THREE.PointLight(0xffaa55, 3.0, 500, 1.5);
       mesh.add(bhLight);
 
       this.rootGroup.add(mesh);
@@ -166,7 +139,7 @@ export class DeepSpaceScene {
     if (data.hasPulsarBeams) {
       const geo = new THREE.SphereGeometry(2.0, 64, 64);
       const mat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0xccffff).multiplyScalar(6.0)
+        color: new THREE.Color(0xccffff).multiplyScalar(2.0)
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = data.name;
@@ -188,8 +161,8 @@ export class DeepSpaceScene {
       const beamCtx = beamCanvas.getContext('2d');
       if (beamCtx) {
         const beamGrad = beamCtx.createLinearGradient(0, 0, 0, 256);
-        beamGrad.addColorStop(0, 'rgba(139, 233, 253, 0.0)'); // Punta invisible
-        beamGrad.addColorStop(1, 'rgba(139, 233, 253, 1.0)'); // Base opaca
+        beamGrad.addColorStop(0, 'rgba(139, 233, 253, 0.0)');
+        beamGrad.addColorStop(1, 'rgba(139, 233, 253, 0.55)');
         beamCtx.fillStyle = beamGrad;
         beamCtx.fillRect(0, 0, 64, 256);
       }
@@ -212,7 +185,7 @@ export class DeepSpaceScene {
       mesh.add(this.pulsarBeam2);
 
       // Luz puntual pulsante azul-cyan para el pulsar
-      const pulsarLight = new THREE.PointLight(0x88ddff, 8.0, 300, 2.0);
+      const pulsarLight = new THREE.PointLight(0x88ddff, 4.0, 300, 2.0);
       mesh.add(pulsarLight);
 
       this.rootGroup.add(mesh);
@@ -224,7 +197,7 @@ export class DeepSpaceScene {
     if (data.id === 'gigante_roja') {
       const geo = new THREE.SphereGeometry(4.5, 64, 64);
       const mat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0xff3311).multiplyScalar(6.0)
+        color: new THREE.Color(0xff3311).multiplyScalar(2.0)
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = data.name;
@@ -239,7 +212,7 @@ export class DeepSpaceScene {
       // Glowing is handled by HDR Bloom instead of fake sprites
 
       // Luz masiva roja emitida por la estrella supergigante
-      const betelgeuseLight = new THREE.PointLight(0xff3311, 10.0, 1000, 1.2);
+      const betelgeuseLight = new THREE.PointLight(0xff3311, 5.0, 1000, 1.2);
       mesh.add(betelgeuseLight);
 
       this.rootGroup.add(mesh);
@@ -284,7 +257,7 @@ export class DeepSpaceScene {
 
         // Bulbo central cálido (naranja/ámbar) -> Brazos exteriores jóvenes (blanco azulado)
         const mix = 1 - t;
-        const intensity = 1.0 + Math.pow(mix, 4.0) * 12.0; // Central stars trigger HDR bloom
+        const intensity = 1.0 + Math.pow(mix, 4.0) * 3.0;
         colArr[i * 3] = (0.58 + 0.42 * mix) * intensity;
         colArr[i * 3 + 1] = (0.62 + 0.28 * mix) * intensity;
         colArr[i * 3 + 2] = (1.0 - 0.3 * mix) * intensity;
@@ -332,85 +305,136 @@ export class DeepSpaceScene {
 
       // Glowing is handled by HDR Bloom instead of fake sprites
     } else {
-      // NEBULOSA VOLUMÉTRICA (Paleta H-alfa, OIII, Azufre-II y estrellas de guardería estelar)
-      const particleCount = 1400;
-      const posArr = new Float32Array(particleCount * 3);
-      const colArr = new Float32Array(particleCount * 3);
-      const palette = [
-        [0.85, 0.22, 0.38], // H-alfa (Rosa/Rojo intenso)
-        [0.18, 0.65, 0.62], // OIII (Cian astrofotográfico)
-        [0.65, 0.42, 0.88], // Ionización ultravioleta (Violeta)
-        [0.82, 0.58, 0.25]  // Polvo cálido (Ámbar)
+      // NEBULOSA VOLUMÉTRICA — billboards con texturas procedurales de ruido
+      // Emission-line palette: H-alfa, OIII, SII, polvo cálido
+      const nebulaColors = [
+        '#d93065', // H-alfa (rosa/rojo)
+        '#18a89e', // OIII (cian)
+        '#8855cc', // SII / UV ionizado (violeta)
+        '#cc8833', // Polvo cálido (ámbar)
       ];
 
-      for (let i = 0; i < particleCount; i++) {
-        posArr[i * 3] = (Math.random() - 0.5) * 18;
-        posArr[i * 3 + 1] = (Math.random() - 0.5) * 11;
-        posArr[i * 3 + 2] = (Math.random() - 0.5) * 18;
-        const c = palette[Math.floor(Math.random() * palette.length)];
-        colArr[i * 3] = c[0];
-        colArr[i * 3 + 1] = c[1];
-        colArr[i * 3 + 2] = c[2];
+      // Capas volumétricas grandes (outer diffuse shell)
+      const outerLayers = [
+        { color: '#d93065', seed: 0, x: 0, y: 0, z: 0, scale: 22, opacity: 0.12 },
+        { color: '#8855cc', seed: 1, x: 2, y: -1, z: 3, scale: 20, opacity: 0.10 },
+        { color: '#18a89e', seed: 2, x: -3, y: 1, z: -2, scale: 18, opacity: 0.10 },
+        { color: '#d93065', seed: 3, x: -1, y: 2, z: 1, scale: 24, opacity: 0.08 },
+      ];
+
+      for (const layer of outerLayers) {
+        const tex = ProceduralTextures.generateNebulaCloud(layer.color, layer.seed, 512);
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: layer.opacity,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        sprite.scale.set(layer.scale, layer.scale, 1);
+        sprite.position.set(layer.x, layer.y, layer.z);
+        mesh.add(sprite);
       }
 
-      const nebGeo = new THREE.BufferGeometry();
-      nebGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
-      nebGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
-      const nebMat = new THREE.PointsMaterial({
-        size: 2.2,
-        map: starDot,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.68,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-      });
-      const nebulaCloud = new THREE.Points(nebGeo, nebMat);
-      mesh.add(nebulaCloud);
+      // Capas medias (mid-density gas clouds with more structure)
+      for (let i = 0; i < 24; i++) {
+        const colorHex = nebulaColors[i % nebulaColors.length];
+        const tex = ProceduralTextures.generateNebulaCloud(colorHex, 10 + i, 256);
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.12 + Math.random() * 0.10,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        const baseScale = 6 + Math.random() * 10;
+        const aspectRatio = 0.6 + Math.random() * 0.8;
+        sprite.scale.set(baseScale * aspectRatio, baseScale, 1);
+        const r = Math.random() * 7;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.7;
+        sprite.position.set(
+          Math.cos(theta) * Math.cos(phi) * r,
+          Math.sin(phi) * r * 0.6,
+          Math.sin(theta) * Math.cos(phi) * r
+        );
+        sprite.material.rotation = Math.random() * Math.PI * 2;
+        mesh.add(sprite);
+      }
 
-      // Guardería de estrellas recién nacidas en el interior de la nebulosa
-      const starCount = 55;
+      // Dense inner core clouds (bright, smaller, more opaque)
+      for (let i = 0; i < 8; i++) {
+        const colorHex = i < 4 ? '#d93065' : '#18a89e';
+        const tex = ProceduralTextures.generateNebulaCloud(colorHex, 40 + i, 256);
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0.20 + Math.random() * 0.08,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        const scale = 4 + Math.random() * 5;
+        sprite.scale.set(scale, scale, 1);
+        sprite.position.set(
+          (Math.random() - 0.5) * 5,
+          (Math.random() - 0.5) * 3,
+          (Math.random() - 0.5) * 5
+        );
+        sprite.material.rotation = Math.random() * Math.PI * 2;
+        mesh.add(sprite);
+      }
+
+      // Guardería de estrellas recién nacidas (fewer, brighter, within the gas)
+      const starCount = 25;
       const sPosArr = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
-        sPosArr[i * 3] = (Math.random() - 0.5) * 15;
-        sPosArr[i * 3 + 1] = (Math.random() - 0.5) * 9;
-        sPosArr[i * 3 + 2] = (Math.random() - 0.5) * 15;
+        const r = Math.random() * 6;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = (Math.random() - 0.5) * Math.PI * 0.5;
+        sPosArr[i * 3] = Math.cos(theta) * Math.cos(phi) * r;
+        sPosArr[i * 3 + 1] = Math.sin(phi) * r * 0.5;
+        sPosArr[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * r;
       }
       const sGeo = new THREE.BufferGeometry();
       sGeo.setAttribute('position', new THREE.BufferAttribute(sPosArr, 3));
       const sMat = new THREE.PointsMaterial({
-        size: 0.85,
-        color: new THREE.Color(0xfff8ee).multiplyScalar(5.0),
+        size: 0.6,
+        color: new THREE.Color(0xfff8ee).multiplyScalar(1.6),
         map: starDot,
         transparent: true,
-        opacity: 0.95,
+        opacity: 0.9,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
       const babyStars = new THREE.Points(sGeo, sMat);
       mesh.add(babyStars);
 
-      // Capas volumétricas suaves de gas fosforescente (Sprites multi-capa)
-      const gasColors = ['#e11d48', '#06b6d4', '#8b5cf6', '#d97706'];
-      for (let i = 0; i < 14; i++) {
-        const hex = gasColors[i % gasColors.length];
-        const gasSprite = new THREE.Sprite(
+      // Dark dust lanes (non-additive, absorb light — gives depth)
+      for (let i = 0; i < 5; i++) {
+        const tex = ProceduralTextures.generateNebulaCloud('#110808', 60 + i, 256);
+        const sprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
-            map: ProceduralTextures.generateGlowSprite(hex),
-            color: new THREE.Color(0xffffff).multiplyScalar(3.0),
+            map: tex,
             transparent: true,
-            opacity: 0.18 + Math.random() * 0.12,
-            blending: THREE.AdditiveBlending
+            opacity: 0.15 + Math.random() * 0.1,
+            depthWrite: false,
           })
         );
-        const scale = 12 + Math.random() * 14;
-        gasSprite.scale.set(scale, scale, 1);
-        gasSprite.position.set(
-          (Math.random() - 0.5) * 14,
+        const scale = 5 + Math.random() * 8;
+        sprite.scale.set(scale, scale, 1);
+        sprite.position.set(
           (Math.random() - 0.5) * 8,
-          (Math.random() - 0.5) * 14
+          (Math.random() - 0.5) * 4,
+          (Math.random() - 0.5) * 8
         );
-        mesh.add(gasSprite);
+        sprite.material.rotation = Math.random() * Math.PI * 2;
+        mesh.add(sprite);
       }
     }
 
@@ -445,9 +469,13 @@ export class DeepSpaceScene {
   public update(delta: number, timeSpeed: number): void {
     if (!this.rootGroup.visible) return;
 
-    // 1. Actualizar el tiempo en el shader de Gargantua (doppler espiral)
+    // 1. Actualizar el tiempo en el shader de Gargantua y pasar env map para lensing
     if (this.gargantuaMaterial) {
       this.gargantuaMaterial.uniforms.time.value += delta * Math.min(timeSpeed, 10);
+      if (!this.gargantuaMaterial.uniforms.uEnvMap.value && this.scene.background instanceof THREE.Texture) {
+        this.gargantuaMaterial.uniforms.uEnvMap.value = this.scene.background;
+        this.gargantuaMaterial.uniforms.uHasEnvMap.value = 1.0;
+      }
     }
 
     // 2. Rotar Púlsar rápidamente

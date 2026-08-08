@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "explorador-cosmico",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8090"],
-      "port": 8090
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
     }
   ]
 }

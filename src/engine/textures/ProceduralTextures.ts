@@ -772,4 +772,161 @@ export class ProceduralTextures {
     this.milkyWayCache = tex;
     return tex;
   }
+
+  private static earthCloudsCache: THREE.CanvasTexture | null = null;
+
+  /**
+   * Generates a realistic Earth cloud texture with cyclonic swirls, ITCZ band,
+   * and proper alpha transparency for clear sky areas.
+   */
+  public static generateEarthClouds(): THREE.CanvasTexture {
+    if (this.earthCloudsCache) return this.earthCloudsCache;
+
+    const w = 1024;
+    const h = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    for (let y = 0; y < h; y++) {
+      const ny = y / h;
+      const lat = (ny - 0.5) * Math.PI;
+      for (let x = 0; x < w; x++) {
+        const nx = x / w;
+        const idx = (y * w + x) * 4;
+
+        // Multi-scale fractal noise for cloud structures
+        const n1 = this.fractalNoise(nx * 10 + 3.7, ny * 5 + 1.2, 6);
+        const n2 = this.fractalNoise(nx * 20 + 8.5, ny * 10 + 4.3, 5);
+        const n3 = this.fractalNoise(nx * 5 + 0.5, ny * 3 + 6.1, 4);
+
+        // ITCZ — equatorial convergence zone (more clouds near equator)
+        const itcz = Math.exp(-Math.pow((ny - 0.48) * 8, 2)) * 0.25;
+
+        // Mid-latitude storm bands (30-60 degrees N and S)
+        const midLatN = Math.exp(-Math.pow((ny - 0.28) * 6, 2)) * 0.3;
+        const midLatS = Math.exp(-Math.pow((ny - 0.72) * 6, 2)) * 0.3;
+
+        // Polar fronts
+        const polarN = Math.exp(-Math.pow((ny - 0.08) * 8, 2)) * 0.35;
+        const polarS = Math.exp(-Math.pow((ny - 0.92) * 8, 2)) * 0.35;
+
+        // Subtropical clear bands (Hadley cell descending - fewer clouds ~20-30 deg)
+        const subtropClear = Math.exp(-Math.pow((ny - 0.35) * 10, 2)) * 0.2
+                           + Math.exp(-Math.pow((ny - 0.65) * 10, 2)) * 0.2;
+
+        // Base cloud probability modulated by latitude bands
+        let cloudBase = itcz + midLatN + midLatS + polarN + polarS - subtropClear;
+        cloudBase = Math.max(0, cloudBase);
+
+        // Combine noise with latitude-dependent coverage
+        let density = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2) + cloudBase;
+        density = density - 0.58;
+        density = Math.max(0, Math.min(1, density * 2.0));
+
+        // Cyclonic swirl structures at mid-latitudes
+        const swirl = Math.sin(nx * 12 + ny * 8 + n1 * 4) * 0.1;
+        density += swirl * density;
+        density = Math.max(0, Math.min(1, density));
+
+        // Cloud color: white with slight blue tint in thin areas
+        const brightness = 0.92 + density * 0.08;
+        data[idx] = Math.round(255 * brightness);
+        data[idx + 1] = Math.round(255 * brightness);
+        data[idx + 2] = Math.round(255 * brightness);
+        data[idx + 3] = Math.round(density * 220);
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.needsUpdate = true;
+    this.earthCloudsCache = tex;
+    return tex;
+  }
+
+  /**
+   * Generates a volumetric nebula cloud billboard texture using fractal noise.
+   * Each call produces a unique cloud with the given tint color.
+   */
+  public static generateNebulaCloud(
+    hex: string | number,
+    seed: number = 0,
+    size: number = 512
+  ): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(canvas);
+
+    const imgData = ctx.getImageData(0, 0, size, size);
+    const data = imgData.data;
+    const color = new THREE.Color(hex);
+    const half = size / 2;
+
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const idx = (y * size + x) * 4;
+        const dx = (x - half) / half;
+        const dy = (y - half) / half;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > 1.0) {
+          data[idx] = data[idx + 1] = data[idx + 2] = data[idx + 3] = 0;
+          continue;
+        }
+
+        const nx = x / size * 6.0 + seed * 13.7;
+        const ny = y / size * 6.0 + seed * 7.3;
+
+        const n1 = this.fractalNoise(nx, ny, 6);
+        const n2 = this.fractalNoise(nx * 2.3 + 5.0, ny * 2.3 + 8.0, 5);
+        const n3 = this.fractalNoise(nx * 0.7 + 3.0, ny * 0.7 + 2.0, 4);
+
+        // Warped distance for irregular shape (not a perfect circle)
+        const warpX = dx + (n1 - 0.5) * 0.6;
+        const warpY = dy + (n2 - 0.5) * 0.6;
+        const warpDist = Math.sqrt(warpX * warpX + warpY * warpY);
+
+        // Wispy cloud-like structures
+        let density = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
+        density = Math.pow(density, 0.7);
+
+        // Irregular radial falloff using warped distance
+        const radialFalloff = Math.max(0, 1.0 - Math.pow(warpDist * 0.85, 1.8));
+        density *= radialFalloff;
+
+        // Filamentary tendrils
+        const filament = Math.pow(Math.abs(Math.sin(n1 * 10.0 + n2 * 5.0 + dx * 4.0)), 3.0) * 0.5;
+        density = Math.max(density, filament * radialFalloff * 0.5);
+
+        // Void pockets (dark areas within the nebula for depth)
+        const voids = this.fractalNoise(nx * 1.5 + 20.0, ny * 1.5 + 20.0, 3);
+        if (voids > 0.6) density *= 0.3;
+
+        density = Math.max(0, Math.min(1, density));
+
+        // Color variation: brighter toward center, tinted by the base color
+        const brightness = 0.7 + density * 0.3;
+        data[idx] = Math.round(color.r * 255 * brightness);
+        data[idx + 1] = Math.round(color.g * 255 * brightness);
+        data[idx + 2] = Math.round(color.b * 255 * brightness);
+        data[idx + 3] = Math.round(density * 200);
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+  }
 }

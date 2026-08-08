@@ -128,10 +128,10 @@ export class CosmicEngine {
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     const bloomEffect = new BloomEffect({
-      intensity: 1.5,
+      intensity: 0.8,
       mipmapBlur: true,
-      luminanceThreshold: 1.0,
-      luminanceSmoothing: 0.1
+      luminanceThreshold: 1.2,
+      luminanceSmoothing: 0.3
     });
     const vignetteEffect = new VignetteEffect({
       darkness: 0.55,

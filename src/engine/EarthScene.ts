@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { AtmosphereScatteringShader } from './shaders/AtmosphereScatteringShader';
+import { ProceduralTextures } from './textures/ProceduralTextures';
 
 /**
  * Escena de la Tierra - Fotorrealismo y Física Espacial
@@ -57,13 +58,16 @@ export class EarthScene {
     this.earthMesh.rotation.z = 23.44 * (Math.PI / 180.0);
     this.rootGroup.add(this.earthMesh);
 
-    // 3. Capa de Nubes dinámicas con sombra propia
-    const cloudsGeo = new THREE.SphereGeometry(3.03, 64, 64);
+    // 3. Capa de Nubes dinámicas con textura procedural realista
+    const cloudTex = ProceduralTextures.generateEarthClouds();
+    const cloudsGeo = new THREE.SphereGeometry(3.04, 64, 64);
     const cloudsMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
+      map: cloudTex,
+      alphaMap: cloudTex,
       transparent: true,
-      opacity: 0.25,
-      roughness: 0.95
+      opacity: 0.9,
+      roughness: 1.0,
+      depthWrite: false,
     });
     this.cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
     this.earthMesh.add(this.cloudsMesh);
