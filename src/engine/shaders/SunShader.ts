@@ -72,16 +72,16 @@ export class SunShader {
           float granule2 = fbm(granuleUV * 1.5 + vec2(3.7, 1.2));
           float cellPattern = smoothstep(0.35, 0.65, granule) * 0.15;
 
-          // Sunspot-like darker regions (slow-moving, large scale)
+          // Sunspot-like darker regions — rare, small
           vec2 spotUV = vUv * 3.0 + time * 0.003;
           float spots = fbm(spotUV + vec2(5.0, 8.0));
-          float spotMask = smoothstep(0.62, 0.72, spots) * 0.3;
+          float spotMask = smoothstep(0.72, 0.80, spots) * 0.2;
 
-          // Surface turbulence color variation
-          vec3 hotColor = vec3(1.0, 0.95, 0.8);
-          vec3 coolColor = vec3(1.0, 0.65, 0.3);
-          vec3 surfaceColor = mix(texColor, hotColor, cellPattern);
-          surfaceColor = mix(surfaceColor, coolColor * 0.6, spotMask);
+          // Surface turbulence color variation — warm yellow-orange base
+          vec3 hotColor = vec3(1.0, 0.92, 0.65);
+          vec3 coolColor = vec3(0.9, 0.55, 0.2);
+          vec3 surfaceColor = mix(texColor, hotColor, 0.25 + cellPattern);
+          surfaceColor = mix(surfaceColor, coolColor * 0.5, spotMask);
 
           // Limb color shift (edges are redder/cooler)
           vec3 limbColor = vec3(1.0, 0.45, 0.15);

@@ -71,7 +71,7 @@ const fragmentShader = /* glsl */ `
       // Galaxy cluster nodes: warm bright
       color = mix(uColorFilament * 0.6 + uColorNode * 0.4, uColorNode, smoothstep(0.65, 1.0, vDensity));
       // Subtle HDR push for bloom on only the densest nodes
-      color *= 1.0 + smoothstep(0.9, 1.0, vDensity) * 0.5;
+      color *= 1.0 + smoothstep(0.9, 1.0, vDensity) * 0.25;
     }
 
     // Non-linear alpha: suppress voids, show filaments, blaze nodes
@@ -145,11 +145,11 @@ export class CosmicWebScene {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       uniforms: {
-        uPointScale: { value: 0.9 },
-        uOpacity: { value: 0.45 },
+        uPointScale: { value: 0.7 },
+        uOpacity: { value: 0.18 },
         uColorVoid: { value: new THREE.Color(0x080418) },
         uColorFilament: { value: new THREE.Color(0x3355aa) },
-        uColorNode: { value: new THREE.Color(0xddc888) }
+        uColorNode: { value: new THREE.Color(0xbbaa66) }
       }
     });
 

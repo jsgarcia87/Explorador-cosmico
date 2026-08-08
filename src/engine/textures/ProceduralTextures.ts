@@ -301,9 +301,9 @@ export class ProceduralTextures {
         data[idx + 2] = 60;
         data[idx + 3] = 25;
       }
-      // Anillo A (exterior con la brecha fina de Encke en 0.88)
+      // Anillo A (exterior con la brecha fina de Encke en ~0.94)
       else {
-        if (u >= 0.87 && u <= 0.89) {
+        if (u >= 0.93 && u <= 0.95) {
           // Brecha de Encke
           data[idx] = 90;
           data[idx + 1] = 80;

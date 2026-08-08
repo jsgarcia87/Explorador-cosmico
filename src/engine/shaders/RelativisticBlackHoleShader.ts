@@ -151,28 +151,22 @@ export class RelativisticBlackHoleShader {
         vec3 pCA = ro + rd * tCA;
         float b = length(pCA);
 
-        // Fade at sphere boundary based on impact parameter
-        float edgeFade = 1.0 - smoothstep(uSphereRadius * 0.8, uSphereRadius * 0.98, b);
+        // Fade at sphere boundary — gradual to hide the geometry edge
+        float edgeFade = 1.0 - smoothstep(uSphereRadius * 0.65, uSphereRadius * 0.95, b);
 
         // === EVENT HORIZON SHADOW ===
         if (b < bCrit) {
-          vec3 color = vec3(0.0);
-
-          // Primary photon ring — narrow, warm glow at shadow boundary
-          float edge = smoothstep(bCrit * 0.88, bCrit, b);
-          float ringPower = edge * pow(1.0 - edge, 0.5) * 2.5;
+          // Very narrow photon ring at the shadow boundary
+          float edge = smoothstep(bCrit * 0.93, bCrit, b);
+          float ringPower = edge * pow(1.0 - edge, 0.6) * 1.4;
 
           // Asymmetric Doppler: approaching side brighter
           float phi = atan(pCA.z, pCA.x);
-          float dopplerRing = 1.0 + spin * 0.3 * sin(phi + time * 0.4);
-          ringPower *= pow(max(dopplerRing, 0.2), 2.0);
+          float dopplerRing = 1.0 + spin * 0.25 * sin(phi + time * 0.4);
+          ringPower *= pow(max(dopplerRing, 0.3), 1.5);
 
-          vec3 ringColor = mix(vec3(1.0, 0.75, 0.4), vec3(1.0, 0.55, 0.2), edge);
-          color += ringColor * ringPower;
-
-          // Secondary (inner) photon ring — very subtle
-          float inner = smoothstep(bCrit * 0.55, bCrit * 0.75, b);
-          color += ringColor * inner * 0.08;
+          vec3 ringColor = mix(vec3(1.0, 0.6, 0.25), vec3(0.9, 0.4, 0.1), edge);
+          vec3 color = ringColor * ringPower;
 
           gl_FragColor = vec4(color, edgeFade);
           return;
@@ -181,10 +175,10 @@ export class RelativisticBlackHoleShader {
         // === OUTSIDE SHADOW: DISK + LENSING ===
         vec4 result = vec4(0.0);
 
-        // Gravitational deflection angle
+        // Gravitational deflection angle — clamped to avoid extreme wrap near shadow
         float x = b / bCrit;
-        float deflAngle = (2.0 * Rs / b) * (1.0 + 1.2 / pow(x - 1.0 + 0.15, 0.6));
-        deflAngle = min(deflAngle, PI * 0.95);
+        float deflAngle = (2.0 * Rs / b) * (1.0 + 1.2 / pow(x - 1.0 + 0.2, 0.7));
+        deflAngle = min(deflAngle, PI * 0.6);
 
         // --- Direct disk intersection (y = 0 plane) ---
         if (abs(rd.y) > 0.0001) {

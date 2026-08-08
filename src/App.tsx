@@ -24,6 +24,10 @@ import './styles/animations.css';
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<CosmicEngine | null>(null);
+  const a11yRef = useRef<AccessibilitySettings | null>(null);
+
+  const [engineReady, setEngineReady] = useState(false);
+  const [webglError, setWebglError] = useState(false);
 
   // Estados del observatorio cósmico
   const [currentMode, setCurrentMode] = useState<SceneMode>('solar');
@@ -80,10 +84,19 @@ export const App: React.FC = () => {
     }
   }, [a11ySettings]);
 
+  // Keep a11y ref in sync for use inside engine callback
+  useEffect(() => { a11yRef.current = a11ySettings; }, [a11ySettings]);
+
   // Inicializar Motor 3D de Precisión NASA en el canvas
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
+
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+    if (!gl) {
+      setWebglError(true);
+      return;
+    }
 
     const engine = new CosmicEngine(canvas, {
       onObjectSelected: (objData: any) => {
@@ -92,24 +105,22 @@ export const App: React.FC = () => {
           return;
         }
 
+        const speak = (name: string) => {
+          if (a11yRef.current?.autoSpeech) cosmicAudio.speakNarration(name);
+        };
+
         if (objData.type === 'planet' && objData.data) {
           const planetData = objData.data as any;
           setSelectedObject({ kind: 'planet', data: planetData });
-          if (a11ySettings.autoSpeech) {
-            cosmicAudio.speakNarration(planetData.name);
-          }
+          speak(planetData.name);
         } else if (objData.type === 'deep_space' && objData.data) {
           const deepData = objData.data as any;
           setSelectedObject({ kind: 'deep_space', data: deepData });
-          if (a11ySettings.autoSpeech) {
-            cosmicAudio.speakNarration(deepData.name);
-          }
+          speak(deepData.name);
         } else if (objData.type === 'constellation' && objData.data) {
           const constData = objData.data as any;
           setSelectedObject({ kind: 'constellation', data: constData });
-          if (a11ySettings.autoSpeech) {
-            cosmicAudio.speakNarration(constData.name);
-          }
+          speak(constData.name);
         }
       },
       onFpsUpdate: (fpsVal: number) => {
@@ -119,6 +130,7 @@ export const App: React.FC = () => {
 
     engine.start();
     engineRef.current = engine;
+    setEngineReady(true);
 
     // Sincronizar fecha astronómica cada 500ms
     const timer = setInterval(() => {
@@ -290,10 +302,29 @@ export const App: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
-      {/* Lienzo 3D Three.js / WebGL / WebGPU */}
+      {/* WebGL error fallback */}
+      {webglError && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white px-8 text-center">
+          <div className="text-4xl mb-4">🚫</div>
+          <h2 className="text-xl font-bold mb-2">WebGL no disponible</h2>
+          <p className="text-slate-400 max-w-md">Tu navegador o dispositivo no soporta WebGL, necesario para renderizar el universo 3D. Intenta actualizar tu navegador o activar la aceleración por hardware en la configuración.</p>
+        </div>
+      )}
+
+      {/* Loading spinner */}
+      {!engineReady && !webglError && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950 text-white">
+          <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-sm text-slate-400 font-mono">Inicializando motor 3D...</p>
+        </div>
+      )}
+
+      {/* Lienzo 3D Three.js / WebGL */}
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full block cursor-grab active:cursor-grabbing"
+        role="img"
+        aria-label="Vista 3D interactiva del universo"
       />
 
       {/* Navegación HUD Superior */}

@@ -174,7 +174,7 @@ export const PLANETS: PlanetData[] = [
     realDistanceAU: 0.723,
     orbitalSpeed: 0.85,
     realOrbitalSpeedKmS: 35.02,
-    rotationPeriodHours: -5832.5, // Rotación retrógrada
+    rotationPeriodHours: 5832.5,
     tilt: 3.096,
     massKg: '4.867 × 10²⁴ kg',
     gravityMs2: 8.87,
@@ -492,7 +492,7 @@ export const PLANETS: PlanetData[] = [
     realDistanceAU: 19.201,
     orbitalSpeed: 0.18,
     realOrbitalSpeedKmS: 6.81,
-    rotationPeriodHours: -17.24, // Retrógrada inclinada
+    rotationPeriodHours: 17.24,
     tilt: 1.706, // 97.77° inclinado casi en su plano orbital
     massKg: '8.681 × 10²⁵ kg',
     gravityMs2: 8.87,
@@ -620,7 +620,7 @@ export const DWARF_PLANETS: PlanetData[] = [
     realDistanceAU: 39.482,
     orbitalSpeed: 0.1,
     realOrbitalSpeedKmS: 4.74,
-    rotationPeriodHours: -153.29,
+    rotationPeriodHours: 153.29,
     tilt: 2.138,
     massKg: '1.303 × 10²² kg',
     gravityMs2: 0.62,

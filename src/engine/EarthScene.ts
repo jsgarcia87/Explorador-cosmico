@@ -63,9 +63,7 @@ export class EarthScene {
     const cloudsGeo = new THREE.SphereGeometry(3.04, 64, 64);
     const cloudsMat = new THREE.MeshStandardMaterial({
       map: cloudTex,
-      alphaMap: cloudTex,
       transparent: true,
-      opacity: 0.9,
       roughness: 1.0,
       depthWrite: false,
     });

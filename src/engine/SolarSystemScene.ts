@@ -254,9 +254,7 @@ export class SolarSystemScene {
       const cloudGeo = new THREE.SphereGeometry(data.radius * 1.015, 48, 48);
       const cloudMat = new THREE.MeshStandardMaterial({
         map: cloudTex,
-        alphaMap: cloudTex,
         transparent: true,
-        opacity: 0.85,
         roughness: 1.0,
         depthWrite: false,
       });

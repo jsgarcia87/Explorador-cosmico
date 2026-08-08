@@ -59,7 +59,7 @@ export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
         facts: [
           'Su masa supera las 6,500 millones de masas solares en el centro de la galaxia elíptica M87.',
           'El efecto Doppler relativista hace que el lado del disco que avanza hacia el observador brille mucho más (beaming).',
-          'Su sombra interior corresponde al diámetro del horizonte de sucesos aumentado en 1.4x por la curvatura geodésica.'
+          'Su sombra interior corresponde al diámetro del horizonte de sucesos aumentado en ~2.6x por la curvatura geodésica (radio de sombra = √27 GM/c²).'
         ],
         experiment: 'Reto de Raytracing GRRT: Abre el Simulador GRRT y ajusta el espín del agujero negro (a/M) para observar cómo se deforma la sombra.'
       },
@@ -202,7 +202,7 @@ export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
     icon: '☁️',
     type: 'Región de Formación Estelar (Nebulosa de Emisión)',
     pos: [-18, -14, -38],
-    distanceLy: '6,500 años luz',
+    distanceLy: '~5,700 años luz (Gaia DR3)',
     constellation: 'Serpens Cauda',
     catalogId: 'M16 / NGC 6611 / Eagle Nebula',
     color: 0xff79c6,
