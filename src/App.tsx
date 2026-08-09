@@ -10,6 +10,7 @@ import { TimeController } from './components/TimeController';
 import { ObjectInspectorPanel, SelectedObjectData } from './components/ObjectInspectorPanel';
 import { ObservatoryHUD } from './components/ObservatoryHUD';
 import { ConstellationLegend } from './components/ConstellationLegend';
+import { DeepSpaceLegendHUD } from './components/DeepSpaceLegendHUD';
 import { PhysicsLabModal } from './components/PhysicsLabModal';
 import { AstroAssistantModal } from './components/AstroAssistantModal';
 import { TeacherClassroomModal } from './components/TeacherClassroomModal';
@@ -358,6 +359,10 @@ export const App: React.FC = () => {
       />
 
       {/* Panel Multiespectrum en Modo Observatorio */}
+      {currentMode === 'deep' && (
+        <DeepSpaceLegendHUD engine={engineRef.current} />
+      )}
+
       {currentMode === 'observatory' && (
         <>
           <ObservatoryHUD

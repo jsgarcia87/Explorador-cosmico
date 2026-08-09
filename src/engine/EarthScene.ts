@@ -28,7 +28,7 @@ export class EarthScene {
 
   private init(): void {
     // 1. Luz solar principal con irradiancia de vacío (sin luz difusa falsa en el lado nocturno)
-    const sunLight = new THREE.DirectionalLight(0xfff8ee, 2.5);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 5.0);
     sunLight.position.copy(this.sunDirection).multiplyScalar(100);
     sunLight.castShadow = true;
     this.rootGroup.add(sunLight);
@@ -44,8 +44,8 @@ export class EarthScene {
     earthMap.colorSpace = THREE.SRGBColorSpace;
     const earthMat = new THREE.MeshStandardMaterial({
       map: earthMap,
-      roughness: 0.85,
-      metalness: 0.1
+      roughness: 0.65,
+      metalness: 0.0
     });
     this.earthMesh = new THREE.Mesh(earthGeo, earthMat);
     this.earthMesh.name = 'La Tierra (Globo Habitable J2000)';

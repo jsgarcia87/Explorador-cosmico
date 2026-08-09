@@ -156,19 +156,10 @@ export class RelativisticBlackHoleShader {
 
         // === EVENT HORIZON SHADOW ===
         if (b < bCrit) {
-          // Very narrow photon ring at the shadow boundary
-          float edge = smoothstep(bCrit * 0.85, bCrit, b);
-          float ringPower = edge * pow(1.0 - edge, 1.2) * 0.9;
-
-          // Asymmetric Doppler: approaching side brighter
-          float phi = atan(pCA.z, pCA.x);
-          float dopplerRing = 1.0 + spin * 0.25 * sin(phi + time * 0.4);
-          ringPower *= pow(max(dopplerRing, 0.3), 1.5);
-
-          vec3 ringColor = mix(vec3(1.0, 0.6, 0.25), vec3(0.9, 0.4, 0.1), edge);
-          vec3 color = ringColor * ringPower;
-
-          gl_FragColor = vec4(color, edgeFade);
+          // Pure black shadow — no artificial photon ring
+          // The visible "ring" in real BH images comes from the lensed accretion disk,
+          // which the disk intersection code already handles
+          gl_FragColor = vec4(0.0, 0.0, 0.0, edgeFade);
           return;
         }
 

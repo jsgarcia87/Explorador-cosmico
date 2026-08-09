@@ -163,23 +163,18 @@ export class SolarSystemScene {
     } else if (data.id === 'tierra') {
       const earthMap = textureLoader.load('/textures/tierra.jpg');
       earthMap.colorSpace = THREE.SRGBColorSpace;
-      const { bumpMap, roughnessMap } = ProceduralTextures.generateEarthTexture(); // Keep procedural bump
       mat = new THREE.MeshStandardMaterial({
         map: earthMap,
-        bumpMap: bumpMap,
-        bumpScale: 0.05,
-        roughnessMap: roughnessMap,
-        metalness: 0.15,
-        wireframe: false
+        roughness: 0.7,
+        metalness: 0.0,
       });
     } else {
       const map = textureLoader.load(`/textures/${data.id}.jpg`);
       map.colorSpace = THREE.SRGBColorSpace;
       mat = new THREE.MeshStandardMaterial({
         map: map,
-        roughness: 0.75,
-        metalness: 0.1,
-        wireframe: false
+        roughness: 0.65,
+        metalness: 0.0,
       });
     }
 

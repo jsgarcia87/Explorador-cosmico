@@ -8,6 +8,7 @@ import { NightSkyScene } from './NightSkyScene';
 import { CosmicWebScene } from './CosmicWebScene';
 import { AstrophysicsUtils } from './AstrophysicsUtils';
 import { ProceduralTextures } from './textures/ProceduralTextures';
+import { DynamicStarfield } from './DynamicStarfield';
 
 export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory' | 'cosmicweb';
 
@@ -34,6 +35,7 @@ export class CosmicEngine {
   private deepScene!: DeepSpaceScene;
   private nightScene!: NightSkyScene;
   private cosmicWebScene!: CosmicWebScene;
+  private starfield!: DynamicStarfield;
 
   // Cámara cinemática y navegación orbital
   private targetPosition: THREE.Vector3 = new THREE.Vector3(0, 35, 75);
@@ -83,6 +85,10 @@ export class CosmicEngine {
   private selectedObjectRadius: number = 2.5;
   private interactiveObjects: THREE.Object3D[] = [];
   private selectedObjectId: string | null = null;
+
+  // Cinematic scene transitions
+  private transitionRafId: number | null = null;
+  private fadeOverlay: HTMLDivElement | null = null;
 
   // FPS tracking
   private frameCount: number = 0;
@@ -154,7 +160,11 @@ export class CosmicEngine {
       texture.colorSpace = THREE.SRGBColorSpace;
       this.scene.background = texture;
       this.scene.environment = texture;
+      this.scene.backgroundIntensity = 0.3;
     });
+
+    // Dynamic starfield (spectral colors + scintillation)
+    this.starfield = new DynamicStarfield(this.scene);
 
     // 2. Sub-escenas
     this.solarScene = new SolarSystemScene(this.scene);
@@ -181,47 +191,127 @@ export class CosmicEngine {
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
 
+    // Fade overlay for cinematic transitions
+    this.fadeOverlay = document.createElement('div');
+    this.fadeOverlay.style.cssText =
+      'position:fixed;inset:0;background:#010206;opacity:0;pointer-events:none;z-index:10;transition:none;';
+    document.body.appendChild(this.fadeOverlay);
+
     this.setMode('solar');
   }
 
-  public setMode(mode: SceneMode): void {
-    this.currentMode = mode;
-    this.clearInteractive();
+  private getModeCamera(mode: SceneMode): { pos: THREE.Vector3; lookAt: THREE.Vector3; dist: number } {
+    if (mode === 'solar') {
+      return { pos: new THREE.Vector3(0, 35, 75), lookAt: new THREE.Vector3(0, 0, 0), dist: 80 };
+    } else if (mode === 'earth') {
+      return { pos: new THREE.Vector3(0, 2, 7), lookAt: new THREE.Vector3(0, 0, 0), dist: 7 };
+    } else if (mode === 'deep') {
+      return { pos: new THREE.Vector3(42, 12, 25), lookAt: new THREE.Vector3(42, 6, -18), dist: 40 };
+    } else if (mode === 'observatory') {
+      return { pos: new THREE.Vector3(0, 1, 0), lookAt: new THREE.Vector3(0, 20, 0), dist: 1 };
+    } else {
+      const center = this.cosmicWebScene.getFieldCenter();
+      const radius = this.cosmicWebScene.getFieldRadius();
+      return {
+        pos: center.clone().add(new THREE.Vector3(0, radius * 0.3, radius * 1.1)),
+        lookAt: center,
+        dist: radius * 1.2
+      };
+    }
+  }
 
+  private getModeInteractiveObjects(mode: SceneMode): THREE.Object3D[] {
+    if (mode === 'solar') return this.solarScene.getAllInteractiveObjects();
+    if (mode === 'earth') return this.earthScene.getAllInteractiveObjects();
+    if (mode === 'deep') return this.deepScene.getAllInteractiveObjects();
+    if (mode === 'observatory') return this.nightScene.getAllInteractiveObjects();
+    return this.cosmicWebScene.getAllInteractiveObjects();
+  }
+
+  private applyModeVisibility(mode: SceneMode): void {
+    this.solarScene.setVisible(mode === 'solar');
+    this.earthScene.setVisible(mode === 'earth');
+    this.deepScene.setVisible(mode === 'deep');
+    this.nightScene.setVisible(mode === 'observatory');
+    this.cosmicWebScene.setVisible(mode === 'cosmicweb');
+  }
+
+  public setMode(mode: SceneMode): void {
     if (this.options.onObjectSelected) {
       this.options.onObjectSelected(null);
     }
     this.selectedObjectId = null;
     this.selectedObjectRadius = 0;
 
-    this.solarScene.setVisible(mode === 'solar');
-    this.earthScene.setVisible(mode === 'earth');
-    this.deepScene.setVisible(mode === 'deep');
-    this.nightScene.setVisible(mode === 'observatory');
-    this.cosmicWebScene.setVisible(mode === 'cosmicweb');
-
-    if (mode === 'solar') {
-      this.setCameraTarget(new THREE.Vector3(0, 35, 75), new THREE.Vector3(0, 0, 0), 80);
-      this.interactiveObjects = this.solarScene.getAllInteractiveObjects();
-    } else if (mode === 'earth') {
-      this.setCameraTarget(new THREE.Vector3(0, 2, 7), new THREE.Vector3(0, 0, 0), 7);
-      this.interactiveObjects = this.earthScene.getAllInteractiveObjects();
-    } else if (mode === 'deep') {
-      this.setCameraTarget(new THREE.Vector3(42, 12, 25), new THREE.Vector3(42, 6, -18), 40);
-      this.interactiveObjects = this.deepScene.getAllInteractiveObjects();
-    } else if (mode === 'observatory') {
-      this.setCameraTarget(new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 20, 0), 1);
-      this.interactiveObjects = this.nightScene.getAllInteractiveObjects();
-    } else if (mode === 'cosmicweb') {
-      const center = this.cosmicWebScene.getFieldCenter();
-      const radius = this.cosmicWebScene.getFieldRadius();
-      this.setCameraTarget(
-        center.clone().add(new THREE.Vector3(0, radius * 0.3, radius * 1.1)),
-        center,
-        radius * 1.2
-      );
-      this.interactiveObjects = this.cosmicWebScene.getAllInteractiveObjects();
+    // Cancel any running transition
+    if (this.transitionRafId !== null) {
+      cancelAnimationFrame(this.transitionRafId);
+      this.transitionRafId = null;
     }
+
+    const cam = this.getModeCamera(mode);
+
+    // First call or same mode — instant switch
+    if (!this.currentMode || this.currentMode === mode) {
+      this.currentMode = mode;
+      this.clearInteractive();
+      this.applyModeVisibility(mode);
+      this.setCameraTarget(cam.pos, cam.lookAt, cam.dist);
+      this.interactiveObjects = this.getModeInteractiveObjects(mode);
+      return;
+    }
+
+    // Cinematic transition — self-contained rAF loop
+    this.clearInteractive();
+    const startPos = this.camera.position.clone();
+    const startLookAt = this.currentLookAt.clone();
+    const endPos = cam.pos;
+    const endLookAt = cam.lookAt;
+    const duration = 1.6;
+    const startTime = performance.now();
+    let swapped = false;
+
+    const tick = () => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      const t = Math.min(elapsed / duration, 1);
+
+      // Smooth ease-in-out (cubic)
+      const ease = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      // Fade overlay: peak at midpoint
+      if (this.fadeOverlay) {
+        const fadeOpacity = 1 - Math.abs(ease * 2 - 1);
+        this.fadeOverlay.style.opacity = String(Math.pow(fadeOpacity, 0.8));
+      }
+
+      // Swap scene visibility at midpoint
+      if (ease >= 0.5 && !swapped) {
+        swapped = true;
+        this.currentMode = mode;
+        this.applyModeVisibility(mode);
+        this.interactiveObjects = this.getModeInteractiveObjects(mode);
+      }
+
+      // Interpolate camera
+      this.camera.position.lerpVectors(startPos, endPos, ease);
+      this.currentLookAt.lerpVectors(startLookAt, endLookAt, ease);
+      this.camera.lookAt(this.currentLookAt);
+
+      if (t < 1) {
+        this.transitionRafId = requestAnimationFrame(tick);
+      } else {
+        // Transition complete
+        this.setCameraTarget(endPos, endLookAt, cam.dist);
+        this.camera.position.copy(endPos);
+        this.currentLookAt.copy(endLookAt);
+        if (this.fadeOverlay) this.fadeOverlay.style.opacity = '0';
+        this.transitionRafId = null;
+      }
+    };
+
+    this.transitionRafId = requestAnimationFrame(tick);
   }
 
   public setGuidesVisible(visible: boolean): void {
@@ -502,7 +592,10 @@ export class CosmicEngine {
       this.cosmicWebScene.update(delta);
     }
 
-    // 5. Render HDR & Bloom
+    // 5. Update starfield scintillation
+    this.starfield.update(delta);
+
+    // 6. Render HDR & Bloom
     this.composer.render();
 
     // 6. Cálculo de FPS
@@ -704,6 +797,13 @@ export class CosmicEngine {
     this.canvas.removeEventListener('touchend', this.onTouchEnd);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    if (this.transitionRafId !== null) {
+      cancelAnimationFrame(this.transitionRafId);
+    }
     this.renderer.dispose();
+    if (this.fadeOverlay && this.fadeOverlay.parentNode) {
+      this.fadeOverlay.parentNode.removeChild(this.fadeOverlay);
+    }
+    this.starfield.dispose();
   }
 }
