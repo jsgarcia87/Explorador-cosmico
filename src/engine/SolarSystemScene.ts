@@ -34,7 +34,7 @@ export class SolarSystemScene {
 
     // Sol ilumina todo el sistema solar sin decaimiento para una iluminación uniforme
     // Usamos una intensidad media (35.0) para que no queme los planetas cercanos ni deje negros a los lejanos.
-    this.sunLight = new THREE.PointLight(0xfff5e6, 8.0, 0, 0);
+    this.sunLight = new THREE.PointLight(0xfff5e6, 18.0, 0, 0);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
@@ -206,7 +206,7 @@ export class SolarSystemScene {
     mesh.rotation.z = data.tilt;
 
     if (isSun) {
-      const coronaGeo = new THREE.SphereGeometry(data.radius * 1.55, 64, 64);
+      const coronaGeo = new THREE.SphereGeometry(data.radius * 1.25, 64, 64);
       this.sunCoronaMat = SunShader.createCoronaMaterial();
       const coronaMesh = new THREE.Mesh(coronaGeo, this.sunCoronaMat);
       mesh.add(coronaMesh);

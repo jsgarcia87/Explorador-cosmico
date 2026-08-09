@@ -114,7 +114,7 @@ export class RelativisticBlackHoleShader {
 
       vec3 computeDiskColor(float r, float phi, float Rs) {
         float innerR = Rs * 3.0;
-        float outerR = min(Rs * 8.0, uSphereRadius * 0.85);
+        float outerR = min(Rs * 7.0, uSphereRadius * 0.45);
 
         if (r < innerR || r > outerR) return vec3(0.0);
 
@@ -151,14 +151,14 @@ export class RelativisticBlackHoleShader {
         vec3 pCA = ro + rd * tCA;
         float b = length(pCA);
 
-        // Fade at sphere boundary — gradual to hide the geometry edge
-        float edgeFade = 1.0 - smoothstep(uSphereRadius * 0.65, uSphereRadius * 0.95, b);
+        // Fade at sphere boundary — disk ends before fade starts, geometry edge fully invisible
+        float edgeFade = 1.0 - smoothstep(uSphereRadius * 0.5, uSphereRadius * 0.8, b);
 
         // === EVENT HORIZON SHADOW ===
         if (b < bCrit) {
           // Very narrow photon ring at the shadow boundary
-          float edge = smoothstep(bCrit * 0.93, bCrit, b);
-          float ringPower = edge * pow(1.0 - edge, 0.6) * 1.4;
+          float edge = smoothstep(bCrit * 0.85, bCrit, b);
+          float ringPower = edge * pow(1.0 - edge, 1.2) * 0.9;
 
           // Asymmetric Doppler: approaching side brighter
           float phi = atan(pCA.z, pCA.x);

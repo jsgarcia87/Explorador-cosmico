@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { DEEP_SPACE_OBJECTS, DeepSpaceObjectData } from '../data/deepSpace';
 import { RelativisticBlackHoleShader } from './shaders/RelativisticBlackHoleShader';
 import { ProceduralTextures } from './textures/ProceduralTextures';
+import { SunShader } from './shaders/SunShader';
 
 export class DeepSpaceScene {
   private scene: THREE.Scene;
@@ -11,6 +12,7 @@ export class DeepSpaceScene {
   private pulsarBeam2!: THREE.Mesh;
   private gargantuaMaterial!: THREE.ShaderMaterial;
   private betelgeuseMesh!: THREE.Mesh;
+  private betelgeuseMaterial: THREE.ShaderMaterial | null = null;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -53,7 +55,7 @@ export class DeepSpaceScene {
   private createDeepObject(data: DeepSpaceObjectData): void {
     // 1. Gargantua (Agujero Negro con lensing gravitacional ray-traced en GPU)
     if (data.isGrrtBlackHole) {
-      const bhSphereRadius = 14.0;
+      const bhSphereRadius = 20.0;
       const bhRs = 2.0;
       const geo = new THREE.SphereGeometry(bhSphereRadius, 96, 96);
       this.gargantuaMaterial = RelativisticBlackHoleShader.createMaterial({
@@ -83,7 +85,7 @@ export class DeepSpaceScene {
       // Vertical gradient: bright base fading to nothing at tip
       for (let y = 0; y < 512; y++) {
         const vt = y / 512; // 0=top(tip), 1=bottom(base)
-        const vAlpha = Math.pow(vt, 0.6) * 0.7;
+        const vAlpha = Math.pow(vt, 0.8) * 0.5;
         // Radial gradient per row for soft edges
         const rowGrad = jCtx.createLinearGradient(0, y, 128, y);
         const coreAlpha = vAlpha;
@@ -109,7 +111,7 @@ export class DeepSpaceScene {
             blending: THREE.AdditiveBlending,
             side: THREE.DoubleSide,
             depthWrite: false,
-            opacity: 0.5,
+            opacity: 0.35,
           });
           const plane = new THREE.Mesh(planeGeo, planeMat);
           plane.rotation.y = (i * Math.PI) / 2;
@@ -119,11 +121,11 @@ export class DeepSpaceScene {
       };
 
       const topJet = makeJet();
-      topJet.position.y = bhSphereRadius + 14;
+      topJet.position.y = 28;
       mesh.add(topJet);
 
       const bottomJet = makeJet();
-      bottomJet.position.y = -(bhSphereRadius + 14);
+      bottomJet.position.y = -28;
       bottomJet.rotation.z = Math.PI;
       mesh.add(bottomJet);
 
@@ -135,11 +137,34 @@ export class DeepSpaceScene {
       return;
     }
 
-    // 2. Si es Púlsar (Estrella de Neutrones de alta densidad con magnetosfera suave)
+    // 2. Si es Púlsar (Estrella de Neutrones — tiny core + narrow diffuse radiation beams)
     if (data.hasPulsarBeams) {
-      const geo = new THREE.SphereGeometry(2.0, 64, 64);
-      const mat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0xccffff).multiplyScalar(2.0)
+      const coreRadius = 1.2;
+      const geo = new THREE.SphereGeometry(coreRadius, 48, 48);
+      const mat = new THREE.ShaderMaterial({
+        uniforms: { time: { value: 0 } },
+        vertexShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+            vViewDir = normalize(-mvPos.xyz);
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float time;
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            float mu = max(dot(vNormal, vViewDir), 0.0);
+            float pulse = 0.85 + 0.15 * sin(time * 30.0);
+            vec3 color = vec3(0.7, 0.92, 1.0) * (0.6 + 0.4 * mu) * pulse;
+            color *= 1.8;
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `,
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.name = data.name;
@@ -147,45 +172,91 @@ export class DeepSpaceScene {
       mesh.userData = {
         id: data.id,
         type: 'deep_space',
-        data: data
+        data: data,
+        pulsarCoreMat: mat,
       };
 
-      // Glowing is handled by HDR Bloom instead of fake sprites
+      // Magnetosphere glow (toroidal)
+      const magnetoGeo = new THREE.SphereGeometry(coreRadius * 2.5, 32, 32);
+      const magnetoMat = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+            vViewDir = normalize(-mvPos.xyz);
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            float rim = 1.0 - max(dot(vNormal, vViewDir), 0.0);
+            float glow = pow(rim, 4.0) * 0.3;
+            vec3 color = vec3(0.5, 0.8, 1.0) * glow;
+            gl_FragColor = vec4(color, glow * 0.5);
+          }
+        `,
+        transparent: true,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      mesh.add(new THREE.Mesh(magnetoGeo, magnetoMat));
 
-      // Haces de radiación rotatorios suaves
-      const beamGeo = new THREE.ConeGeometry(2.4, 20, 48, 1, true);
-      
+      // Narrow, diffuse radiation beams (billboard planes, not solid cones)
       const beamCanvas = document.createElement('canvas');
       beamCanvas.width = 64;
-      beamCanvas.height = 256;
+      beamCanvas.height = 512;
       const beamCtx = beamCanvas.getContext('2d');
       if (beamCtx) {
-        const beamGrad = beamCtx.createLinearGradient(0, 0, 0, 256);
-        beamGrad.addColorStop(0, 'rgba(139, 233, 253, 0.0)');
-        beamGrad.addColorStop(1, 'rgba(139, 233, 253, 0.55)');
-        beamCtx.fillStyle = beamGrad;
-        beamCtx.fillRect(0, 0, 64, 256);
+        for (let y = 0; y < 512; y++) {
+          const t = y / 512;
+          const alpha = Math.pow(1.0 - t, 1.5) * 0.35;
+          const rowGrad = beamCtx.createLinearGradient(0, y, 64, y);
+          rowGrad.addColorStop(0, `rgba(120,200,255,0)`);
+          rowGrad.addColorStop(0.35, `rgba(140,215,255,${alpha * 0.3})`);
+          rowGrad.addColorStop(0.5, `rgba(180,235,255,${alpha})`);
+          rowGrad.addColorStop(0.65, `rgba(140,215,255,${alpha * 0.3})`);
+          rowGrad.addColorStop(1, `rgba(120,200,255,0)`);
+          beamCtx.fillStyle = rowGrad;
+          beamCtx.fillRect(0, y, 64, 1);
+        }
       }
       const beamTexture = new THREE.CanvasTexture(beamCanvas);
 
-      const beamMat = new THREE.MeshBasicMaterial({
-        map: beamTexture,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-      this.pulsarBeam1 = new THREE.Mesh(beamGeo, beamMat);
-      this.pulsarBeam1.position.y = 10;
+      const makeBeam = () => {
+        const group = new THREE.Group();
+        for (let i = 0; i < 2; i++) {
+          const planeGeo = new THREE.PlaneGeometry(3.0, 22);
+          const planeMat = new THREE.MeshBasicMaterial({
+            map: beamTexture,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            opacity: 0.6,
+          });
+          const plane = new THREE.Mesh(planeGeo, planeMat);
+          plane.rotation.y = (i * Math.PI) / 2;
+          group.add(plane);
+        }
+        return group;
+      };
+
+      this.pulsarBeam1 = makeBeam() as any;
+      (this.pulsarBeam1 as any).position.y = 11;
       mesh.add(this.pulsarBeam1);
 
-      this.pulsarBeam2 = new THREE.Mesh(beamGeo, beamMat);
-      this.pulsarBeam2.position.y = -10;
-      this.pulsarBeam2.rotation.z = Math.PI;
+      this.pulsarBeam2 = makeBeam() as any;
+      (this.pulsarBeam2 as any).position.y = -11;
+      (this.pulsarBeam2 as any).rotation.z = Math.PI;
       mesh.add(this.pulsarBeam2);
 
-      // Luz puntual pulsante azul-cyan para el pulsar
-      const pulsarLight = new THREE.PointLight(0x88ddff, 4.0, 300, 2.0);
+      const pulsarLight = new THREE.PointLight(0x88ccff, 3.0, 250, 2.0);
       mesh.add(pulsarLight);
 
       this.rootGroup.add(mesh);
@@ -193,13 +264,11 @@ export class DeepSpaceScene {
       return;
     }
 
-    // 3. Si es Betelgeuse (Supergigante roja pulsante con corona plasmática)
+    // 3. Si es Betelgeuse (Supergigante roja pulsante — shader con limb darkening y convección)
     if (data.id === 'gigante_roja') {
       const geo = new THREE.SphereGeometry(4.5, 64, 64);
-      const mat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0xff3311).multiplyScalar(2.0)
-      });
-      const mesh = new THREE.Mesh(geo, mat);
+      this.betelgeuseMaterial = SunShader.createBetelgeuseMaterial();
+      const mesh = new THREE.Mesh(geo, this.betelgeuseMaterial);
       mesh.name = data.name;
       mesh.position.set(data.pos[0], data.pos[1], data.pos[2]);
       mesh.userData = {
@@ -209,10 +278,39 @@ export class DeepSpaceScene {
       };
       this.betelgeuseMesh = mesh;
 
-      // Glowing is handled by HDR Bloom instead of fake sprites
+      // Tenuous outer atmosphere glow (red supergiant extended envelope)
+      const envelopeGeo = new THREE.SphereGeometry(4.5 * 1.15, 48, 48);
+      const envelopeMat = new THREE.ShaderMaterial({
+        uniforms: {},
+        vertexShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+            vViewDir = normalize(-mvPos.xyz);
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vViewDir;
+          void main() {
+            float rim = 1.0 - max(dot(vNormal, vViewDir), 0.0);
+            float glow = pow(rim, 3.5) * 0.4;
+            vec3 color = vec3(1.0, 0.2, 0.03) * glow;
+            gl_FragColor = vec4(color, glow * 0.6);
+          }
+        `,
+        transparent: true,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const envelope = new THREE.Mesh(envelopeGeo, envelopeMat);
+      mesh.add(envelope);
 
-      // Luz masiva roja emitida por la estrella supergigante
-      const betelgeuseLight = new THREE.PointLight(0xff3311, 5.0, 1000, 1.2);
+      const betelgeuseLight = new THREE.PointLight(0xff2200, 4.0, 800, 1.5);
       mesh.add(betelgeuseLight);
 
       this.rootGroup.add(mesh);
@@ -305,21 +403,38 @@ export class DeepSpaceScene {
 
       // Glowing is handled by HDR Bloom instead of fake sprites
     } else {
-      // NEBULOSA VOLUMÉTRICA — billboards con texturas procedurales de ruido
-      // Emission-line palette: H-alfa, OIII, SII, polvo cálido
-      const nebulaColors = [
-        '#d93065', // H-alfa (rosa/rojo)
-        '#18a89e', // OIII (cian)
-        '#8855cc', // SII / UV ionizado (violeta)
-        '#cc8833', // Polvo cálido (ámbar)
+      // NEBULOSA — Pilares de la Creación: columnar structures with narrowband emission palette
+      // SHO palette (Hubble): SII=red, H-alpha=green-mapped, OIII=blue
+      // Visual palette: warm reds/oranges for SII+H-alpha, teal/blue for OIII, dark dust for depth
+
+      // Columnar pillar structures (tall, narrow sprites oriented vertically)
+      const pillarConfigs = [
+        { color: '#c03048', seed: 0, x: -2.5, y: 0, z: 0, w: 5, h: 16, opacity: 0.18 },
+        { color: '#b83838', seed: 1, x: 1.5, y: -1, z: 1, w: 4, h: 14, opacity: 0.16 },
+        { color: '#a04030', seed: 2, x: 4.5, y: -2, z: -1, w: 3.5, h: 11, opacity: 0.15 },
       ];
 
-      // Capas volumétricas grandes (outer diffuse shell)
+      for (const p of pillarConfigs) {
+        const tex = ProceduralTextures.generateNebulaCloud(p.color, p.seed, 512);
+        const sprite = new THREE.Sprite(
+          new THREE.SpriteMaterial({
+            map: tex,
+            transparent: true,
+            opacity: p.opacity,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          })
+        );
+        sprite.scale.set(p.w, p.h, 1);
+        sprite.position.set(p.x, p.y, p.z);
+        mesh.add(sprite);
+      }
+
+      // Outer diffuse H-alpha and OIII glow (large, faint shells)
       const outerLayers = [
-        { color: '#d93065', seed: 0, x: 0, y: 0, z: 0, scale: 22, opacity: 0.12 },
-        { color: '#8855cc', seed: 1, x: 2, y: -1, z: 3, scale: 20, opacity: 0.10 },
-        { color: '#18a89e', seed: 2, x: -3, y: 1, z: -2, scale: 18, opacity: 0.10 },
-        { color: '#d93065', seed: 3, x: -1, y: 2, z: 1, scale: 24, opacity: 0.08 },
+        { color: '#9e2838', seed: 10, x: 0, y: 2, z: 0, scale: 20, opacity: 0.06 },
+        { color: '#186878', seed: 11, x: -3, y: 3, z: -2, scale: 18, opacity: 0.05 },
+        { color: '#9e2838', seed: 12, x: 3, y: -2, z: 2, scale: 22, opacity: 0.05 },
       ];
 
       for (const layer of outerLayers) {
@@ -338,102 +453,96 @@ export class DeepSpaceScene {
         mesh.add(sprite);
       }
 
-      // Capas medias (mid-density gas clouds with more structure)
-      for (let i = 0; i < 24; i++) {
-        const colorHex = nebulaColors[i % nebulaColors.length];
-        const tex = ProceduralTextures.generateNebulaCloud(colorHex, 10 + i, 256);
+      // Mid-density gas with varied emission colors
+      const midColors = ['#b83040', '#a84028', '#186858', '#884428', '#b83040', '#186858'];
+      for (let i = 0; i < 12; i++) {
+        const colorHex = midColors[i % midColors.length];
+        const tex = ProceduralTextures.generateNebulaCloud(colorHex, 20 + i, 256);
         const sprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: tex,
             transparent: true,
-            opacity: 0.12 + Math.random() * 0.10,
+            opacity: 0.08 + Math.random() * 0.06,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
           })
         );
-        const baseScale = 6 + Math.random() * 10;
-        const aspectRatio = 0.6 + Math.random() * 0.8;
-        sprite.scale.set(baseScale * aspectRatio, baseScale, 1);
-        const r = Math.random() * 7;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = (Math.random() - 0.5) * Math.PI * 0.7;
+        const baseW = 3 + Math.random() * 5;
+        const baseH = 5 + Math.random() * 8;
+        sprite.scale.set(baseW, baseH, 1);
         sprite.position.set(
-          Math.cos(theta) * Math.cos(phi) * r,
-          Math.sin(phi) * r * 0.6,
-          Math.sin(theta) * Math.cos(phi) * r
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 6
         );
-        sprite.material.rotation = Math.random() * Math.PI * 2;
+        sprite.material.rotation = (Math.random() - 0.5) * 0.4;
         mesh.add(sprite);
       }
 
-      // Dense inner core clouds (bright, smaller, more opaque)
-      for (let i = 0; i < 8; i++) {
-        const colorHex = i < 4 ? '#d93065' : '#18a89e';
-        const tex = ProceduralTextures.generateNebulaCloud(colorHex, 40 + i, 256);
+      // Ionization fronts at pillar tips (brighter, warmer)
+      for (let i = 0; i < 4; i++) {
+        const tex = ProceduralTextures.generateNebulaCloud('#dd8844', 50 + i, 128);
         const sprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: tex,
             transparent: true,
-            opacity: 0.20 + Math.random() * 0.08,
+            opacity: 0.14,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
           })
         );
-        const scale = 4 + Math.random() * 5;
-        sprite.scale.set(scale, scale, 1);
+        sprite.scale.set(3, 3, 1);
         sprite.position.set(
-          (Math.random() - 0.5) * 5,
-          (Math.random() - 0.5) * 3,
-          (Math.random() - 0.5) * 5
+          pillarConfigs[Math.min(i, 2)].x + (Math.random() - 0.5) * 2,
+          pillarConfigs[Math.min(i, 2)].y + pillarConfigs[Math.min(i, 2)].h * 0.35,
+          pillarConfigs[Math.min(i, 2)].z
         );
-        sprite.material.rotation = Math.random() * Math.PI * 2;
         mesh.add(sprite);
       }
 
-      // Guardería de estrellas recién nacidas (fewer, brighter, within the gas)
-      const starCount = 25;
+      // Newborn stars embedded in the pillars
+      const starCount = 18;
       const sPosArr = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
-        const r = Math.random() * 6;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = (Math.random() - 0.5) * Math.PI * 0.5;
-        sPosArr[i * 3] = Math.cos(theta) * Math.cos(phi) * r;
-        sPosArr[i * 3 + 1] = Math.sin(phi) * r * 0.5;
-        sPosArr[i * 3 + 2] = Math.sin(theta) * Math.cos(phi) * r;
+        const pi = i % 3;
+        const cfg = pillarConfigs[pi];
+        sPosArr[i * 3] = cfg.x + (Math.random() - 0.5) * cfg.w * 0.4;
+        sPosArr[i * 3 + 1] = cfg.y + (Math.random() - 0.5) * cfg.h * 0.5;
+        sPosArr[i * 3 + 2] = cfg.z + (Math.random() - 0.5) * 2;
       }
       const sGeo = new THREE.BufferGeometry();
       sGeo.setAttribute('position', new THREE.BufferAttribute(sPosArr, 3));
       const sMat = new THREE.PointsMaterial({
-        size: 0.6,
-        color: new THREE.Color(0xfff8ee).multiplyScalar(1.6),
+        size: 0.5,
+        color: new THREE.Color(0xfff0dd).multiplyScalar(1.4),
         map: starDot,
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.85,
         blending: THREE.AdditiveBlending,
         depthWrite: false
       });
-      const babyStars = new THREE.Points(sGeo, sMat);
-      mesh.add(babyStars);
+      mesh.add(new THREE.Points(sGeo, sMat));
 
-      // Dark dust lanes (non-additive, absorb light — gives depth)
-      for (let i = 0; i < 5; i++) {
-        const tex = ProceduralTextures.generateNebulaCloud('#110808', 60 + i, 256);
+      // Dark dust lanes (non-additive — absorb light for depth)
+      for (let i = 0; i < 6; i++) {
+        const tex = ProceduralTextures.generateNebulaCloud('#0a0404', 60 + i, 256);
         const sprite = new THREE.Sprite(
           new THREE.SpriteMaterial({
             map: tex,
             transparent: true,
-            opacity: 0.15 + Math.random() * 0.1,
+            opacity: 0.18 + Math.random() * 0.08,
             depthWrite: false,
           })
         );
-        const scale = 5 + Math.random() * 8;
-        sprite.scale.set(scale, scale, 1);
+        const w = 3 + Math.random() * 5;
+        const h = 5 + Math.random() * 8;
+        sprite.scale.set(w, h, 1);
         sprite.position.set(
           (Math.random() - 0.5) * 8,
-          (Math.random() - 0.5) * 4,
-          (Math.random() - 0.5) * 8
+          (Math.random() - 0.5) * 6,
+          (Math.random() - 0.5) * 4 + 1
         );
-        sprite.material.rotation = Math.random() * Math.PI * 2;
+        sprite.material.rotation = (Math.random() - 0.5) * 0.3;
         mesh.add(sprite);
       }
     }
@@ -478,16 +587,21 @@ export class DeepSpaceScene {
       }
     }
 
-    // 2. Rotar Púlsar rápidamente
+    // 2. Animate Betelgeuse shader and pulsation
+    if (this.betelgeuseMaterial) {
+      this.betelgeuseMaterial.uniforms.time.value += delta * 0.5;
+    }
+    if (this.betelgeuseMesh) {
+      const scale = 1.0 + Math.sin(performance.now() * 0.003) * 0.06;
+      this.betelgeuseMesh.scale.set(scale, scale, scale);
+    }
+
+    // 3. Rotar Púlsar rápidamente + animate core
     if (this.pulsarBeam1 && this.pulsarBeam1.parent) {
       this.pulsarBeam1.parent.rotation.y += delta * 6.5;
       this.pulsarBeam1.parent.rotation.x += delta * 2.0;
-    }
-
-    // 3. Pulsación y turbulencia de Betelgeuse
-    if (this.betelgeuseMesh) {
-      const scale = 1.0 + Math.sin(performance.now() * 0.003) * 0.12;
-      this.betelgeuseMesh.scale.set(scale, scale, scale);
+      const coreMat = this.pulsarBeam1.parent.userData.pulsarCoreMat as THREE.ShaderMaterial | undefined;
+      if (coreMat) coreMat.uniforms.time.value += delta;
     }
   }
 
