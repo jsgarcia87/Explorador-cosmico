@@ -34,7 +34,7 @@ export class SolarSystemScene {
 
     // Sol ilumina todo el sistema solar sin decaimiento para una iluminación uniforme
     // Usamos una intensidad media (35.0) para que no queme los planetas cercanos ni deje negros a los lejanos.
-    this.sunLight = new THREE.PointLight(0xfff5e6, 18.0, 0, 0);
+    this.sunLight = new THREE.PointLight(0xfff5e6, 28.0, 0, 0);
     this.sunLight.position.set(0, 0, 0);
     this.sunLight.castShadow = true;
     this.sunLight.shadow.mapSize.width = 2048;
@@ -206,7 +206,7 @@ export class SolarSystemScene {
     mesh.rotation.z = data.tilt;
 
     if (isSun) {
-      const coronaGeo = new THREE.SphereGeometry(data.radius * 1.25, 64, 64);
+      const coronaGeo = new THREE.SphereGeometry(data.radius * 1.4, 64, 64);
       this.sunCoronaMat = SunShader.createCoronaMaterial();
       const coronaMesh = new THREE.Mesh(coronaGeo, this.sunCoronaMat);
       mesh.add(coronaMesh);
@@ -216,14 +216,28 @@ export class SolarSystemScene {
     if (data.hasRing) {
       const ringMap = new THREE.TextureLoader().load('/textures/saturno_anillo.png');
       ringMap.colorSpace = THREE.SRGBColorSpace;
-      const ringGeo = new THREE.RingGeometry(data.radius * 1.35, data.radius * 2.3, 96);
+      const innerR = data.radius * 1.35;
+      const outerR = data.radius * 2.3;
+      const ringGeo = new THREE.RingGeometry(innerR, outerR, 96);
+      // Fix UVs: map the horizontal strip texture radially (inner→outer)
+      const pos = ringGeo.attributes.position;
+      const uvAttr = ringGeo.attributes.uv;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const r = Math.sqrt(x * x + y * y);
+        const t = (r - innerR) / (outerR - innerR);
+        uvAttr.setXY(i, t, 0.5);
+      }
       const ringMat = new THREE.MeshStandardMaterial({
         map: ringMap,
-        color: 0xd8c69b,
         side: THREE.DoubleSide,
         transparent: true,
-        opacity: 0.92,
-        roughness: 0.4
+        opacity: 0.95,
+        roughness: 0.6,
+        metalness: 0.0,
+        emissive: new THREE.Color(0x443318),
+        emissiveIntensity: 0.4,
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = Math.PI / 2 + 0.35;
@@ -232,8 +246,10 @@ export class SolarSystemScene {
       mesh.add(ringMesh);
     }
 
-    // Si tiene atmósfera de dispersión (Rayleigh/Mie)
-    if (data.hasAtmosphere && !isSun) {
+    // Si tiene atmósfera de dispersión (Rayleigh/Mie) — solo planetas rocosos con atmósfera visible desde lejos
+    const showAtmosphere = !isSun && data.hasAtmosphere &&
+      ['venus', 'tierra', 'marte'].includes(data.id);
+    if (showAtmosphere) {
       const palette = AtmosphereScatteringShader.getPlanetAtmospherePalette(data.id);
       const atmoGeo = new THREE.SphereGeometry(data.radius * 1.07, 48, 48);
       const atmoMat = AtmosphereScatteringShader.createMaterial({

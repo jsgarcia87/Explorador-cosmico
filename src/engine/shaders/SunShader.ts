@@ -91,8 +91,8 @@ export class SunShader {
           // Apply limb darkening
           vec3 finalColor = surfaceColor * limbDarkening;
 
-          // HDR: push above 1.0 for bloom to catch the bright center
-          finalColor *= 1.3;
+          // HDR: push well above 1.0 for bloom to create prominent solar glow
+          finalColor *= 1.8;
 
           gl_FragColor = vec4(finalColor, 1.0);
         }
@@ -270,11 +270,13 @@ export class SunShader {
           vec3 outerCorona = vec3(1.0, 0.55, 0.2);
           vec3 coronaColor = mix(innerCorona, outerCorona, pow(rim, 0.7));
 
-          float alpha = corona * (0.1 + streamer * 0.12);
-          alpha *= smoothstep(0.0, 0.45, rim);
+          float alpha = corona * (0.15 + streamer * 0.15);
+          alpha *= smoothstep(0.0, 0.4, rim);
+          // Fade out at outer sphere boundary to avoid hard geometry edge
+          alpha *= 1.0 - smoothstep(0.7, 1.0, rim);
 
           // HDR brightness for bloom
-          coronaColor *= 1.1;
+          coronaColor *= 1.6;
 
           gl_FragColor = vec4(coronaColor, alpha);
         }
