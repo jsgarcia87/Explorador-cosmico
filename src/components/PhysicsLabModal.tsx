@@ -205,31 +205,31 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
 
   const experiments: { id: ExperimentId; name: string; icon: React.ReactNode; desc: string }[] = [
     { id: 'galaxies', name: 'Colisión de Galaxias (N-Cuerpos)', icon: <Sparkles className="w-4 h-4 text-pink-400" />, desc: 'Simula cómo la gravedad mutua fusiona cientos de estrellas cuando dos galaxias chocan.' },
-    { id: 'lensing', name: 'Lente Gravitacional (Einstein)', icon: <Orbit className="w-4 h-4 text-cyan-400" />, desc: 'Observa cómo un agujero negro o cúmulo curva el espacio-tiempo deforma la luz de un quásar.' },
-    { id: 'orbits', name: 'Órbitas Keplerianas Interactivas', icon: <Sun className="w-4 h-4 text-amber-400" />, desc: 'Modifica la excentricidad orbital para entender las leyes de Kepler y las órbitas elípticas.' },
+    { id: 'lensing', name: 'Lente Gravitacional (Einstein)', icon: <Orbit className="w-4 h-4 text-[#7aafc8]" />, desc: 'Observa cómo un agujero negro o cúmulo curva el espacio-tiempo deforma la luz de un quásar.' },
+    { id: 'orbits', name: 'Órbitas Keplerianas Interactivas', icon: <Sun className="w-4 h-4 text-[#c8964a]" />, desc: 'Modifica la excentricidad orbital para entender las leyes de Kepler y las órbitas elípticas.' },
     { id: 'supernova', name: 'Explosión de Supernova Tipo II', icon: <ShieldAlert className="w-4 h-4 text-orange-400" />, desc: 'Simula el colapso gravitacional de un núcleo de hierro y la onda de choque nucleosintética.' },
     { id: 'eclipse', name: 'Alineación y Eclipses', icon: <FlaskConical className="w-4 h-4 text-emerald-400" />, desc: 'Analiza los conos de sombra (umbra y penumbra) durante un eclipse solar o lunar total.' }
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="physics-lab-title">
-      <div className="w-full max-w-5xl h-[85vh] flex flex-col rounded-2xl bg-slate-900/95 border border-white/15 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-5xl h-[85vh] flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden">
         {/* Cabecera */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-950/60">
+        <div className="flex items-center justify-between p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)]">
           <div className="flex items-center space-x-3">
-            <FlaskConical className="w-6 h-6 text-cyan-400" />
+            <FlaskConical className="w-6 h-6 text-[#7aafc8]" />
             <div>
-              <h2 id="physics-lab-title" className="text-xl font-outfit font-bold text-white">
+              <h2 id="physics-lab-title" className="text-xl font-outfit font-bold text-[#ede9e4]">
                 Laboratorio de Simulaciones Físicas del Cosmos
               </h2>
-              <span className="text-xs font-mono text-cyan-400">
+              <span className="text-xs font-mono text-[#7aafc8]">
                 Mecánica Orbital • Gravedad Relativista • Astrofísica Dinámica
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
             aria-label="Cerrar laboratorio de física"
           >
             <X className="w-5 h-5" />
@@ -239,25 +239,25 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
         {/* Cuerpo principal (Izquierda lista, Derecha Canvas y controles) */}
         <div className="flex-1 flex overflow-hidden">
           {/* Panel lateral de experimentos */}
-          <div className="w-80 border-r border-white/10 bg-slate-950/40 p-4 space-y-2 overflow-y-auto">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 block mb-2">
+          <div className="w-80 border-r border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.40)] p-4 space-y-2 overflow-y-auto">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-[rgba(237,233,228,0.5)] block mb-2">
               SELECCIONA EXPERIMENTO
             </span>
             {experiments.map((exp) => (
               <button
                 key={exp.id}
                 onClick={() => setActiveExp(exp.id)}
-                className={`w-full flex flex-col text-left p-3 rounded-xl border transition-all ${
+                className={`w-full flex flex-col text-left p-3 rounded-[6px] border transition-all ${
                   activeExp === exp.id
-                    ? 'bg-cyan-500/15 border-cyan-400 text-white shadow-md'
-                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                    ? 'bg-[rgba(122,175,200,0.15)] border-[rgba(122,175,200,0.3)] text-[#ede9e4] shadow-md'
+                    : 'bg-[rgba(237,233,228,0.04)] border-[rgba(237,233,228,0.07)] text-[rgba(237,233,228,0.6)] hover:bg-[rgba(237,233,228,0.08)]'
                 }`}
               >
                 <div className="flex items-center space-x-2 font-outfit font-bold text-sm">
                   {exp.icon}
                   <span>{exp.name}</span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                <p className="text-xs text-[rgba(237,233,228,0.5)] mt-1 leading-relaxed">
                   {exp.desc}
                 </p>
               </button>
@@ -265,8 +265,8 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
           </div>
 
           {/* Área del Canvas y controles interactivos */}
-          <div className="flex-1 flex flex-col bg-slate-950/80 p-6">
-            <div className="flex-1 relative rounded-xl overflow-hidden border border-white/10 bg-black/60 flex items-center justify-center">
+          <div className="flex-1 flex flex-col bg-[rgba(3,3,5,0.80)] p-6">
+            <div className="flex-1 relative rounded-[6px] overflow-hidden border border-[rgba(237,233,228,0.07)] bg-black/60 flex items-center justify-center">
               <canvas
                 ref={canvasRef}
                 width={600}
@@ -276,10 +276,10 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
             </div>
 
             {/* Controles del experimento inferior */}
-            <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+            <div className="mt-4 p-4 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex items-center justify-between">
               <div className="flex items-center space-x-6">
                 <div>
-                  <label className="block text-xs font-mono text-slate-400 mb-1">
+                  <label className="block text-xs font-mono text-[rgba(237,233,228,0.5)] mb-1">
                     {activeExp === 'orbits' ? 'EXCENTRICIDAD ORBITAL' : 'MASA GRAVITACIONAL'} ({massParam}%)
                   </label>
                   <input
@@ -288,12 +288,12 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
                     max="100"
                     value={massParam}
                     onChange={(e) => setMassParam(Number(e.target.value))}
-                    className="w-36 accent-cyan-400 cursor-pointer"
+                    className="w-36 accent-[#7aafc8] cursor-pointer"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-slate-400 mb-1">
+                  <label className="block text-xs font-mono text-[rgba(237,233,228,0.5)] mb-1">
                     VELOCIDAD SIMULACIÓN ({speedParam}%)
                   </label>
                   <input
@@ -302,13 +302,13 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
                     max="100"
                     value={speedParam}
                     onChange={(e) => setSpeedParam(Number(e.target.value))}
-                    className="w-36 accent-cyan-400 cursor-pointer"
+                    className="w-36 accent-[#7aafc8] cursor-pointer"
                   />
                 </div>
 
                 {activeExp === 'lensing' && (
                   <div>
-                    <label className="block text-xs font-mono text-slate-400 mb-1">
+                    <label className="block text-xs font-mono text-[rgba(237,233,228,0.5)] mb-1">
                       DESPLAZAMIENTO LENTE
                     </label>
                     <input
@@ -326,7 +326,7 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setIsRunning(!isRunning)}
-                  className="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-outfit font-bold text-xs flex items-center space-x-1 transition-colors"
+                  className="px-4 py-2 rounded-[4px] bg-[#7aafc8] hover:bg-[#8ec5dc] text-black font-outfit font-bold text-xs flex items-center space-x-1 transition-colors"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>{isRunning ? 'Pausar' : 'Reanudar'}</span>
@@ -337,7 +337,7 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
                     setSpeedParam(50);
                     setLensOffset(50);
                   }}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.08)] hover:bg-[rgba(237,233,228,0.12)] text-[#ede9e4] transition-colors"
                   title="Restablecer parámetros"
                 >
                   <RefreshCw className="w-4 h-4" />

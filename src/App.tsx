@@ -52,6 +52,40 @@ export const App: React.FC = () => {
   const [isQuickHelpOpen, setIsQuickHelpOpen] = useState<boolean>(false);
   const [isGuidesVisible, setIsGuidesVisible] = useState<boolean>(true);
 
+  // Auto-hide chrome (header + time controller) after inactivity
+  const [isChromeVisible, setIsChromeVisible] = useState(true);
+  const chromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chromeHoveredRef = useRef(false);
+
+  const anyModalOpen = isProfileOpen || isLabOpen || isAssistantOpen || isTeacherOpen || isQuizOpen || isGrrtOpen || isA11yOpen || isQuickHelpOpen;
+
+  const resetChromeTimer = useCallback(() => {
+    setIsChromeVisible(true);
+    if (chromeTimerRef.current) clearTimeout(chromeTimerRef.current);
+    chromeTimerRef.current = setTimeout(() => {
+      if (!chromeHoveredRef.current) setIsChromeVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (anyModalOpen) {
+      setIsChromeVisible(true);
+      if (chromeTimerRef.current) clearTimeout(chromeTimerRef.current);
+      return;
+    }
+    resetChromeTimer();
+    const onActivity = () => resetChromeTimer();
+    window.addEventListener('pointermove', onActivity);
+    window.addEventListener('pointerdown', onActivity);
+    window.addEventListener('keydown', onActivity);
+    return () => {
+      window.removeEventListener('pointermove', onActivity);
+      window.removeEventListener('pointerdown', onActivity);
+      window.removeEventListener('keydown', onActivity);
+      if (chromeTimerRef.current) clearTimeout(chromeTimerRef.current);
+    };
+  }, [anyModalOpen, resetChromeTimer]);
+
   // Mostrar Guía de Misión NASA al primer usuario
   useEffect(() => {
     const hasSeenHelp = localStorage.getItem('nasa_onboarding_shown');
@@ -305,18 +339,18 @@ export const App: React.FC = () => {
     <div className="relative w-screen h-screen overflow-hidden bg-black select-none">
       {/* WebGL error fallback */}
       {webglError && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white px-8 text-center">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[rgba(3,3,5,1)] text-[#ede9e4] px-8 text-center">
           <div className="text-4xl mb-4">🚫</div>
           <h2 className="text-xl font-bold mb-2">WebGL no disponible</h2>
-          <p className="text-slate-400 max-w-md">Tu navegador o dispositivo no soporta WebGL, necesario para renderizar el universo 3D. Intenta actualizar tu navegador o activar la aceleración por hardware en la configuración.</p>
+          <p className="text-[rgba(237,233,228,0.5)] max-w-md">Tu navegador o dispositivo no soporta WebGL, necesario para renderizar el universo 3D. Intenta actualizar tu navegador o activar la aceleración por hardware en la configuración.</p>
         </div>
       )}
 
       {/* Loading spinner */}
       {!engineReady && !webglError && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950 text-white">
-          <div className="w-10 h-10 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-sm text-slate-400 font-mono">Inicializando motor 3D...</p>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[rgba(3,3,5,1)] text-[#ede9e4]">
+          <div className="w-10 h-10 border-2 border-[#7aafc8] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-sm text-[rgba(237,233,228,0.5)] font-mono">Inicializando motor 3D...</p>
         </div>
       )}
 
@@ -329,34 +363,56 @@ export const App: React.FC = () => {
       />
 
       {/* Navegación HUD Superior */}
-      <TopNavigation
-        currentMode={currentMode}
-        onModeChange={handleModeChange}
-        activeProfile={activeProfile}
-        onOpenProfileSelector={() => setIsProfileOpen(true)}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-        isGuidesVisible={isGuidesVisible}
-        onToggleGuides={handleToggleGuides}
-        onOpenPhysicsLab={() => setIsLabOpen(true)}
-        onOpenAssistant={() => setIsAssistantOpen(true)}
-        onOpenTeacherModal={() => setIsTeacherOpen(true)}
-        onOpenQuiz={() => setIsQuizOpen(true)}
-        onOpenAccessibility={() => setIsA11yOpen(true)}
-        onOpenGrrt={() => setIsGrrtOpen(true)}
-        onOpenQuickHelp={() => setIsQuickHelpOpen(true)}
-        fps={fps}
-      />
+      <div
+        className="transition-all duration-500 ease-in-out"
+        style={{
+          opacity: isChromeVisible ? 1 : 0,
+          transform: isChromeVisible ? 'translateY(0)' : 'translateY(-8px)',
+          pointerEvents: isChromeVisible ? 'auto' : 'none',
+        }}
+        onPointerEnter={() => { chromeHoveredRef.current = true; setIsChromeVisible(true); }}
+        onPointerLeave={() => { chromeHoveredRef.current = false; resetChromeTimer(); }}
+      >
+        <TopNavigation
+          currentMode={currentMode}
+          onModeChange={handleModeChange}
+          activeProfile={activeProfile}
+          onOpenProfileSelector={() => setIsProfileOpen(true)}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
+          isGuidesVisible={isGuidesVisible}
+          onToggleGuides={handleToggleGuides}
+          onOpenPhysicsLab={() => setIsLabOpen(true)}
+          onOpenAssistant={() => setIsAssistantOpen(true)}
+          onOpenTeacherModal={() => setIsTeacherOpen(true)}
+          onOpenQuiz={() => setIsQuizOpen(true)}
+          onOpenAccessibility={() => setIsA11yOpen(true)}
+          onOpenGrrt={() => setIsGrrtOpen(true)}
+          onOpenQuickHelp={() => setIsQuickHelpOpen(true)}
+          fps={fps}
+        />
+      </div>
 
       {/* Controles Astronómicos Inferiores (Reloj Orbital y Velocidad) */}
-      <TimeController
-        currentDate={currentDate}
-        timeSpeed={timeSpeed}
-        isPaused={isPaused}
-        onSpeedChange={handleSpeedChange}
-        onTogglePause={handleTogglePause}
-        onResetTime={handleResetTime}
-      />
+      <div
+        className="transition-all duration-500 ease-in-out"
+        style={{
+          opacity: isChromeVisible ? 1 : 0,
+          transform: isChromeVisible ? 'translateY(0)' : 'translateY(8px)',
+          pointerEvents: isChromeVisible ? 'auto' : 'none',
+        }}
+        onPointerEnter={() => { chromeHoveredRef.current = true; setIsChromeVisible(true); }}
+        onPointerLeave={() => { chromeHoveredRef.current = false; resetChromeTimer(); }}
+      >
+        <TimeController
+          currentDate={currentDate}
+          timeSpeed={timeSpeed}
+          isPaused={isPaused}
+          onSpeedChange={handleSpeedChange}
+          onTogglePause={handleTogglePause}
+          onResetTime={handleResetTime}
+        />
+      </div>
 
       {/* Panel Multiespectrum en Modo Observatorio */}
       {currentMode === 'deep' && (

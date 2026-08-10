@@ -21,7 +21,7 @@ const EDU_SECTIONS: EduSection[] = [
     id: 'kerr',
     title: '1. Métrica de Kerr & Horizonte de Sucesos',
     subtitle: 'La distorsión del espaciotiempo en rotación',
-    icon: <Atom className="w-5 h-5 text-cyan-400" />,
+    icon: <Atom className="w-5 h-5 text-[#7aafc8]" />,
     content: [
       'A diferencia de los agujeros negros estáticos (Schwarzschild), los agujeros negros astrofísicos reales como Gargantua o M87* poseen un momento angular extremadamente elevado (espín a/M).',
       'Este giro arrastra el tejido del espaciotiempo a su alrededor en un fenómeno conocido como "arrastre del sistema de referencia" (Frame Dragging o efecto Lense-Thirring).',
@@ -47,7 +47,7 @@ const EDU_SECTIONS: EduSection[] = [
     id: 'doppler',
     title: '3. Asimetría Doppler Relativista',
     subtitle: 'El brillo del frente de avance',
-    icon: <Flame className="w-5 h-5 text-amber-400" />,
+    icon: <Flame className="w-5 h-5 text-[#c8964a]" />,
     content: [
       'El plasma en el disco interior orbita a fracciones significativas de la velocidad de la luz. Esto provoca dos efectos ópticos masivos del relativismo especial y general:',
       '• Beaming (Impulso Doppler): El lado del disco que gira hacia nosotros concentra sus fotones y aumenta su frecuencia (desplazamiento al azul y brillo extremo).',
@@ -81,20 +81,20 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
       {/* Marco principal inmersivo */}
-      <div className="relative w-full h-full flex flex-col bg-[#05060f] text-slate-100 overflow-hidden">
+      <div className="relative w-full h-full flex flex-col bg-[#05060f] text-[#ede9e4] overflow-hidden">
         
         {/* Barra superior NASA/ESA */}
-        <header className="flex items-center justify-between px-6 py-4 bg-[#0a0c18]/90 border-b border-cyan-500/25 z-20 backdrop-blur-lg">
+        <header className="flex items-center justify-between px-6 py-4 bg-[#0a0c18]/90 border-b border-[rgba(122,175,200,0.2)] z-20 backdrop-blur-lg">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#22d3ee]" />
+            <div className="w-3 h-3 rounded-full bg-[#7aafc8] animate-pulse shadow-[0_0_12px_rgba(122,175,200,0.5)]" />
             <div>
-              <h2 className="text-base font-bold tracking-widest uppercase text-white font-mono flex items-center gap-2">
+              <h2 className="text-base font-bold tracking-widest uppercase text-[#ede9e4] font-mono flex items-center gap-2">
                 Observatorio Geodésico Relativista GPU
-                <span className="text-xs px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                <span className="text-xs px-2 py-0.5 rounded bg-[rgba(122,175,200,0.2)] text-[#8ec5dc] border border-[rgba(122,175,200,0.2)]">
                   Simulación Científica GRRT
                 </span>
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-[rgba(237,233,228,0.5)]">
                 Resolución nativa en tiempo real de la ecuación de Binet, métrica de Kerr-Schwarzschild y radiación Doppler
               </p>
             </div>
@@ -103,19 +103,19 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowEduPanel(!showEduPanel)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all border ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-[4px] text-xs font-semibold uppercase tracking-wider transition-all border ${
                 showEduPanel
-                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
-                  : 'bg-slate-800/60 text-slate-300 border-slate-700 hover:bg-slate-800'
+                  ? 'bg-[rgba(122,175,200,0.2)] text-[#8ec5dc] border-[rgba(122,175,200,0.4)] shadow-[0_0_15px_rgba(122,175,200,0.2)]'
+                  : 'bg-[rgba(15,15,25,0.6)] text-[rgba(237,233,228,0.6)] border-[rgba(237,233,228,0.1)] hover:bg-[rgba(15,15,25,0.8)]'
               }`}
             >
-              <BookOpen className="w-4 h-4 text-cyan-400" />
+              <BookOpen className="w-4 h-4 text-[#7aafc8]" />
               {showEduPanel ? 'Ocultar Guía Astronómica' : 'Guía del Científico Astronómico'}
             </button>
 
             <button
               onClick={onClose}
-              className="p-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
+              className="p-2 rounded-[4px] bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 transition-colors"
               title="Cerrar Simulador"
             >
               <X className="w-6 h-6" />
@@ -138,40 +138,40 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
 
           {/* PANEL ASISTENTE DEL CIENTÍFICO ASTRONÓMICO (DESPLEGABLE) */}
           {showEduPanel && (
-            <aside className="w-96 max-w-[90vw] h-full bg-[#0a0d1e]/95 border-l border-cyan-500/20 flex flex-col z-20 backdrop-blur-xl animate-in slide-in-from-right duration-300">
+            <aside className="w-96 max-w-[90vw] h-full bg-[#0a0d1e]/95 border-l border-[rgba(122,175,200,0.15)] flex flex-col z-20 backdrop-blur-xl animate-in slide-in-from-right duration-300">
               
               {/* Cabecera del Astrónomo */}
-              <div className="p-5 border-b border-white/10 bg-gradient-to-r from-cyan-950/40 to-violet-950/30">
+              <div className="p-5 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(30,15,40,0.3)]">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-400">
+                  <div className="p-2 rounded-[4px] bg-[rgba(122,175,200,0.2)] border border-[rgba(122,175,200,0.3)] text-[#7aafc8]">
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-xs uppercase font-mono tracking-widest text-cyan-400 font-bold block">
+                    <span className="text-xs uppercase font-mono tracking-widest text-[#7aafc8] font-bold block">
                       Astrofísica Relativista
                     </span>
-                    <h3 className="text-sm font-bold text-white">
+                    <h3 className="text-sm font-bold text-[#ede9e4]">
                       Guía Científica del Agujero Negro
                     </h3>
                   </div>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
+                <p className="text-xs text-[rgba(237,233,228,0.6)] leading-relaxed">
                   Interactúa con los controles de la derecha en el visor 3D para modificar el espín y la acreción mientras exploras los principios fundamentales:
                 </p>
               </div>
 
               {/* Pestañas de conceptos */}
-              <div className="grid grid-cols-2 gap-1 p-3 border-b border-white/10 bg-black/30">
+              <div className="grid grid-cols-2 gap-1 p-3 border-b border-[rgba(237,233,228,0.07)] bg-black/30">
                 {EDU_SECTIONS.map((section) => {
                   const isActive = section.id === activeTab;
                   return (
                     <button
                       key={section.id}
                       onClick={() => setActiveTab(section.id)}
-                      className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all text-left ${
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-[4px] text-xs font-medium transition-all text-left ${
                         isActive
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          ? 'bg-[rgba(122,175,200,0.2)] text-[#8ec5dc] border border-[rgba(122,175,200,0.3)] shadow-sm'
+                          : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.04)]'
                       }`}
                     >
                       {section.icon}
@@ -184,10 +184,10 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
               {/* Contenido de la sección seleccionada */}
               <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm">
                 <div>
-                  <span className="text-xs font-mono text-cyan-400 font-bold block uppercase mb-1">
+                  <span className="text-xs font-mono text-[#7aafc8] font-bold block uppercase mb-1">
                     Concepto Fundamental
                   </span>
-                  <h4 className="text-base font-bold text-white mb-1">
+                  <h4 className="text-base font-bold text-[#ede9e4] mb-1">
                     {currentSection.title}
                   </h4>
                   <p className="text-xs text-violet-300 font-medium">
@@ -198,7 +198,7 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
                 {/* Explicación en párrafos */}
                 <div className="space-y-3">
                   {currentSection.content.map((paragraph, index) => (
-                    <p key={index} className="text-slate-300 text-xs leading-relaxed">
+                    <p key={index} className="text-[rgba(237,233,228,0.6)] text-xs leading-relaxed">
                       {paragraph}
                     </p>
                   ))}
@@ -206,32 +206,32 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
 
                 {/* Fórmula científica */}
                 {currentSection.formula && (
-                  <div className="p-3.5 rounded-xl bg-black/60 border border-cyan-500/30 text-center">
-                    <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">
+                  <div className="p-3.5 rounded-[6px] bg-black/60 border border-[rgba(122,175,200,0.2)] text-center">
+                    <span className="text-[10px] uppercase font-mono text-[rgba(237,233,228,0.5)] block mb-1">
                       Fórmula Físico-Matemática
                     </span>
-                    <code className="text-xs font-mono text-cyan-300 font-bold tracking-wider">
+                    <code className="text-xs font-mono text-[#8ec5dc] font-bold tracking-wider">
                       {currentSection.formula}
                     </code>
                   </div>
                 )}
 
                 {/* Dato Curioso del Astrónomo */}
-                <div className="p-4 rounded-xl bg-gradient-to-br from-violet-900/30 to-cyan-900/20 border border-violet-500/30">
+                <div className="p-4 rounded-[6px] bg-gradient-to-br from-[rgba(50,20,80,0.3)] to-[rgba(20,40,60,0.2)] border border-[rgba(152,120,184,0.25)]">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    <Sparkles className="w-4 h-4 text-[#c8964a]" />
+                    <span className="text-xs font-bold text-[#d4a65a] uppercase tracking-wider">
                       Dato Astronómico
                     </span>
                   </div>
-                  <p className="text-xs text-slate-200 leading-relaxed italic">
+                  <p className="text-xs text-[#ede9e4] leading-relaxed italic">
                     "{currentSection.funFact}"
                   </p>
                 </div>
               </div>
 
               {/* Pie de guía */}
-              <div className="p-4 border-t border-white/10 bg-black/40 text-[11px] text-slate-400 text-center font-mono">
+              <div className="p-4 border-t border-[rgba(237,233,228,0.07)] bg-black/40 text-[11px] text-[rgba(237,233,228,0.5)] text-center font-mono">
                 Usa el ratón para rotar (clic izquierdo) y hacer zoom (rueda) sobre la métrica gravitacional.
               </div>
             </aside>

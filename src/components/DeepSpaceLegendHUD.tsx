@@ -64,7 +64,7 @@ export const DeepSpaceLegendHUD: React.FC<DeepSpaceLegendHUDProps> = ({ engine }
 
 const OnScreenLabel: React.FC<{ item: LegendItem }> = ({ item }) => {
   const opacity = Math.max(0.35, 1 - item.distance / 200);
-  const dotColor = item.selected ? '#bd93f9' : '#8be9fd';
+  const dotColor = item.selected ? '#c8964a' : '#7aafc8';
 
   return (
     <div
@@ -94,16 +94,16 @@ const OnScreenLabel: React.FC<{ item: LegendItem }> = ({ item }) => {
       {/* Name */}
       <span
         style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontWeight: 600,
-          fontSize: 10,
-          letterSpacing: '0.8px',
-          textTransform: 'uppercase',
-          color: '#eef1fb',
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontWeight: 400,
+          fontSize: 11,
+          letterSpacing: '0.5px',
+          color: '#ede9e4',
           textShadow: '0 1px 4px rgba(0,0,0,.8)',
           whiteSpace: 'nowrap',
-          background: 'rgba(2,6,23,0.6)',
-          padding: '2px 6px',
+          background: 'rgba(3,3,3,0.6)',
+          padding: '2px 8px',
+          borderRadius: '2px',
           marginTop: 2,
         }}
       >
@@ -112,10 +112,10 @@ const OnScreenLabel: React.FC<{ item: LegendItem }> = ({ item }) => {
       {/* Distance */}
       <span
         style={{
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: "'Space Mono', monospace",
           fontWeight: 400,
           fontSize: 9,
-          color: '#8b93b8',
+          color: 'rgba(237,233,228,0.4)',
           textShadow: '0 1px 3px rgba(0,0,0,.7)',
           whiteSpace: 'nowrap',
         }}
@@ -178,23 +178,24 @@ const OffScreenArrow: React.FC<{ item: LegendItem }> = ({ item }) => {
       >
         <polygon
           points="18,9 4,2 6,9 4,16"
-          fill="#8be9fd"
+          fill="#7aafc8"
           opacity="0.85"
         />
       </svg>
       {/* Label */}
       <span
         style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontWeight: 600,
+          fontFamily: "'Space Mono', monospace",
+          fontWeight: 400,
           fontSize: 9,
           letterSpacing: '0.6px',
           textTransform: 'uppercase',
-          color: '#8b93b8',
+          color: 'rgba(237,233,228,0.4)',
           textShadow: '0 1px 3px rgba(0,0,0,.8)',
           whiteSpace: 'nowrap',
-          background: 'rgba(2,6,23,0.6)',
+          background: 'rgba(3,3,3,0.6)',
           padding: '1px 5px',
+          borderRadius: '2px',
         }}
       >
         {abbrev}

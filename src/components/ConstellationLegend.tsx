@@ -31,9 +31,9 @@ export const ConstellationLegend: React.FC<ConstellationLegendProps> = ({
   };
 
   return (
-    <div className="absolute top-24 right-6 w-72 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl z-40 flex flex-col max-h-[60vh]">
-      <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
-        <h3 className="text-white font-medium flex items-center gap-2">
+    <div className="absolute top-24 right-6 w-72 bg-black/80 backdrop-blur-md border border-[rgba(237,233,228,0.07)] rounded-[6px] overflow-hidden shadow-2xl z-40 flex flex-col max-h-[60vh]">
+      <div className="p-4 border-b border-[rgba(237,233,228,0.07)] flex justify-between items-center bg-[rgba(237,233,228,0.04)]">
+        <h3 className="text-[#ede9e4] font-medium flex items-center gap-2">
           <Star className="w-4 h-4 text-blue-400" />
           Constelaciones
         </h3>
@@ -55,10 +55,10 @@ export const ConstellationLegend: React.FC<ConstellationLegendProps> = ({
               <button
                 key={c.id}
                 onClick={() => handleToggle(c.id)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                className={`flex items-center justify-between px-3 py-2 rounded-[4px] text-sm transition-all duration-200 ${
                   isActive 
                     ? 'bg-blue-500/20 text-blue-100 border border-blue-500/30' 
-                    : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'
+                    : 'text-gray-400 hover:bg-[rgba(237,233,228,0.04)] hover:text-gray-200 border border-transparent'
                 }`}
               >
                 <div className="flex flex-col items-start">

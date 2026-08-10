@@ -33,23 +33,23 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="a11y-title">
-      <div className="w-full max-w-xl p-6 rounded-2xl bg-slate-900/95 border border-white/15 shadow-2xl space-y-6">
+      <div className="w-full max-w-xl p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl space-y-6">
         {/* Cabecera */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div className="flex items-center space-x-3">
-            <Eye className="w-6 h-6 text-cyan-400" />
+            <Eye className="w-6 h-6 text-[#7aafc8]" />
             <div>
-              <h2 id="a11y-title" className="text-lg font-outfit font-bold text-white">
+              <h2 id="a11y-title" className="text-lg font-outfit font-bold text-[#ede9e4]">
                 Centro de Accesibilidad Universal
               </h2>
-              <span className="text-xs font-mono text-slate-400">
+              <span className="text-xs font-mono text-[rgba(237,233,228,0.5)]">
                 Diseño para todos • Estándares WCAG 2.1 AA
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
             aria-label="Cerrar ventana de accesibilidad"
           >
             <X className="w-5 h-5" />
@@ -59,15 +59,15 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
         {/* Lista de opciones de accesibilidad */}
         <div className="space-y-4">
           {/* 1. Alto Contraste */}
-          <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between p-3.5 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)]">
             <div>
-              <span className="text-sm font-outfit font-bold text-white block">Alto Contraste Visual</span>
-              <span className="text-xs text-slate-400">Aumenta el resplandor de los textos e íconos sobre el fondo estelar.</span>
+              <span className="text-sm font-outfit font-bold text-[#ede9e4] block">Alto Contraste Visual</span>
+              <span className="text-xs text-[rgba(237,233,228,0.5)]">Aumenta el resplandor de los textos e íconos sobre el fondo estelar.</span>
             </div>
             <button
               onClick={() => handleToggle('highContrast', !settings.highContrast)}
               className={`w-12 h-6 rounded-full transition-colors relative ${
-                settings.highContrast ? 'bg-cyan-500' : 'bg-white/20'
+                settings.highContrast ? 'bg-[#7aafc8]' : 'bg-white/20'
               }`}
               aria-label="Alternar alto contraste"
             >
@@ -80,17 +80,17 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
           </div>
 
           {/* 2. Filtros para Daltonismo */}
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
-            <span className="text-sm font-outfit font-bold text-white block">Filtro de Color / Daltonismo</span>
+          <div className="p-3.5 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] space-y-2">
+            <span className="text-sm font-outfit font-bold text-[#ede9e4] block">Filtro de Color / Daltonismo</span>
             <div className="grid grid-cols-2 gap-2">
               {(['none', 'protanopia', 'deuteranopia', 'tritanopia'] as const).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => handleToggle('colorBlindMode', mode)}
-                  className={`py-2 px-3 rounded-lg text-xs font-medium capitalize transition-all ${
+                  className={`py-2 px-3 rounded-[4px] text-xs font-medium capitalize transition-all ${
                     settings.colorBlindMode === mode
-                      ? 'bg-cyan-500 text-black font-bold shadow-md'
-                      : 'bg-black/40 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+                      ? 'bg-[#7aafc8] text-black font-bold shadow-md'
+                      : 'bg-black/40 text-[rgba(237,233,228,0.6)] hover:bg-[rgba(237,233,228,0.08)] hover:text-[#ede9e4] border border-[rgba(237,233,228,0.07)]'
                   }`}
                 >
                   {mode === 'none' ? 'Sin filtro' : mode}
@@ -100,9 +100,9 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
           </div>
 
           {/* 3. Tamaño de Texto */}
-          <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-2">
-            <span className="text-sm font-outfit font-bold text-white flex items-center space-x-1">
-              <Type className="w-4 h-4 text-cyan-400" />
+          <div className="p-3.5 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] space-y-2">
+            <span className="text-sm font-outfit font-bold text-[#ede9e4] flex items-center space-x-1">
+              <Type className="w-4 h-4 text-[#7aafc8]" />
               <span>Tamaño de Letras y Fichas</span>
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -110,10 +110,10 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
                 <button
                   key={size}
                   onClick={() => handleToggle('fontSize', size)}
-                  className={`py-2 rounded-lg text-xs font-medium capitalize transition-all ${
+                  className={`py-2 rounded-[4px] text-xs font-medium capitalize transition-all ${
                     settings.fontSize === size
-                      ? 'bg-cyan-500 text-black font-bold shadow-md'
-                      : 'bg-black/40 text-slate-300 hover:bg-white/10 border border-white/10'
+                      ? 'bg-[#7aafc8] text-black font-bold shadow-md'
+                      : 'bg-black/40 text-[rgba(237,233,228,0.6)] hover:bg-[rgba(237,233,228,0.08)] border border-[rgba(237,233,228,0.07)]'
                   }`}
                 >
                   {size === 'xlarge' ? 'Extra Grande' : size}
@@ -123,15 +123,15 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
           </div>
 
           {/* 4. Reducción de movimiento */}
-          <div className="flex items-center justify-between p-3.5 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center justify-between p-3.5 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)]">
             <div>
-              <span className="text-sm font-outfit font-bold text-white block">Reducir Movimiento / Cinematismo</span>
-              <span className="text-xs text-slate-400">Reduce transiciones orbitales rápidas si eres sensible al movimiento.</span>
+              <span className="text-sm font-outfit font-bold text-[#ede9e4] block">Reducir Movimiento / Cinematismo</span>
+              <span className="text-xs text-[rgba(237,233,228,0.5)]">Reduce transiciones orbitales rápidas si eres sensible al movimiento.</span>
             </div>
             <button
               onClick={() => handleToggle('reduceMotion', !settings.reduceMotion)}
               className={`w-12 h-6 rounded-full transition-colors relative ${
-                settings.reduceMotion ? 'bg-cyan-500' : 'bg-white/20'
+                settings.reduceMotion ? 'bg-[#7aafc8]' : 'bg-white/20'
               }`}
               aria-label="Alternar reducción de movimiento"
             >
@@ -145,14 +145,14 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
         </div>
 
         {/* Pie */}
-        <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+        <div className="pt-4 border-t border-[rgba(237,233,228,0.07)] flex items-center justify-between text-xs text-[rgba(237,233,228,0.5)]">
           <span className="flex items-center space-x-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Accesible por teclado y lectores de pantalla.</span>
           </span>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-outfit font-bold transition-colors"
+            className="px-5 py-2 rounded-[4px] bg-[#7aafc8] hover:bg-[#8ec5dc] text-black font-outfit font-bold transition-colors"
           >
             Aplicar y Cerrar
           </button>

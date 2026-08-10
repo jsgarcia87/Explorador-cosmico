@@ -85,18 +85,18 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="astro-assistant-title">
-      <div className="w-full max-w-2xl h-[75vh] flex flex-col rounded-2xl bg-slate-900/95 border border-white/15 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-2xl h-[75vh] flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden">
         {/* Cabecera */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-slate-950/70">
+        <div className="flex items-center justify-between p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,1)]/70">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-400/40 text-purple-300">
+            <div className="p-2 rounded-[6px] bg-purple-500/20 border border-[rgba(152,120,184,0.3)]/40 text-[#a88cc8]">
               <Bot className="w-6 h-6" />
             </div>
             <div>
-              <h2 id="astro-assistant-title" className="text-lg font-outfit font-bold text-white">
+              <h2 id="astro-assistant-title" className="text-lg font-outfit font-bold text-[#ede9e4]">
                 Astro-IA • Tutor Astronómico Inteligente
               </h2>
-              <span className="text-xs font-mono text-cyan-400">
+              <span className="text-xs font-mono text-[#7aafc8]">
                 Perfil Activo: {profile.name}
               </span>
             </div>
@@ -107,7 +107,7 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               cosmicAudio.stopSpeech();
               onClose();
             }}
-            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
             aria-label="Cerrar asistente inteligente"
           >
             <X className="w-5 h-5" />
@@ -122,26 +122,26 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               className={`flex items-start space-x-3 ${msg.sender === 'user' ? 'justify-end' : ''}`}
             >
               {msg.sender === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-300 border border-purple-400/30 flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-[#a88cc8] border border-[rgba(152,120,184,0.3)]/30 flex-shrink-0">
                   <Sparkles className="w-4 h-4" />
                 </div>
               )}
 
               <div
-                className={`max-w-md p-4 rounded-2xl text-xs leading-relaxed ${
+                className={`max-w-md p-4 rounded-[8px] text-xs leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-cyan-500 text-black font-medium rounded-tr-none'
-                    : 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-none'
+                    ? 'bg-[#7aafc8] text-black font-medium rounded-tr-none'
+                    : 'bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] text-[#ede9e4] rounded-tl-none'
                 }`}
               >
                 <p>{msg.text}</p>
                 {msg.sender === 'assistant' && (
-                  <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+                  <div className="mt-2 pt-2 border-t border-[rgba(237,233,228,0.07)] flex items-center justify-between text-[10px] text-[rgba(237,233,228,0.5)]">
                     <span>Voz Inteligente NASA</span>
                     <button
                       onClick={() => cosmicAudio.speakNarration(msg.text)}
                       title="Repetir narración"
-                      className="text-cyan-300 hover:text-white flex items-center space-x-1"
+                      className="text-[#8ec5dc] hover:text-[#ede9e4] flex items-center space-x-1"
                     >
                       <Volume2 className="w-3 h-3" />
                       <span>Escuchar</span>
@@ -151,7 +151,7 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               </div>
 
               {msg.sender === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center text-black font-bold flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#7aafc8] flex items-center justify-center text-black font-bold flex-shrink-0">
                   <User className="w-4 h-4" />
                 </div>
               )}
@@ -160,9 +160,9 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
         </div>
 
         {/* Preguntas sugeridas y barra de envío */}
-        <div className="p-4 border-t border-white/10 bg-slate-950/60 space-y-3">
+        <div className="p-4 border-t border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)] space-y-3">
           <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center mr-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[rgba(237,233,228,0.5)] flex items-center mr-1">
               <HelpCircle className="w-3 h-3 mr-1" />
               <span>Sugerencias:</span>
             </span>
@@ -170,7 +170,7 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               <button
                 key={idx}
                 onClick={() => handleSend(q)}
-                className="whitespace-nowrap px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-cyan-300 transition-colors"
+                className="whitespace-nowrap px-3 py-1 rounded-full bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] border border-[rgba(237,233,228,0.07)] text-xs text-[#8ec5dc] transition-colors"
               >
                 {q}
               </button>
@@ -189,11 +189,11 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Pregunta a Astro-IA sobre estrellas, agujeros negros o física..."
-              className="flex-1 px-4 py-2.5 rounded-xl bg-black/60 border border-white/15 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-all"
+              className="flex-1 px-4 py-2.5 rounded-[6px] bg-black/60 border border-[rgba(237,233,228,0.10)] text-[#ede9e4] text-xs placeholder-slate-500 focus:outline-none focus:border-[rgba(122,175,200,0.3)] transition-all"
             />
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-outfit font-bold text-xs flex items-center space-x-1.5 transition-all shadow-lg shadow-purple-500/25"
+              className="px-5 py-2.5 rounded-[6px] bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-[#ede9e4] font-outfit font-bold text-xs flex items-center space-x-1.5 transition-all shadow-lg shadow-purple-500/25"
             >
               <span>Preguntar</span>
               <Send className="w-3.5 h-3.5" />

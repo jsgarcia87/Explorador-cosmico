@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { SceneMode } from '../engine/CosmicEngine';
 import { ProfileId, USER_PROFILES } from '../data/profiles';
-import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network } from 'lucide-react';
+import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network, MoreHorizontal, Gamepad2 } from 'lucide-react';
 
 interface TopNavigationProps {
   currentMode: SceneMode;
@@ -41,39 +41,49 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   fps
 }) => {
   const profile = USER_PROFILES[activeProfile];
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isToolsOpen) return;
+    const close = (e: PointerEvent) => {
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
+        setIsToolsOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [isToolsOpen]);
+
+  const toolMenuItems = [
+    { icon: User, label: `Perfil: ${profile.name}`, onClick: onOpenProfileSelector, show: true, accent: false },
+    { icon: FlaskConical, label: 'Laboratorio de Física', onClick: onOpenPhysicsLab, show: true },
+    { icon: Bot, label: 'Asistente Astro-IA', onClick: onOpenAssistant, show: true },
+    { icon: Gamepad2, label: 'Misiones y Retos', onClick: onOpenQuiz, show: profile.uiSettings.enableGamification },
+    { icon: School, label: 'Panel del Profesor', onClick: onOpenTeacherModal, show: profile.id === 'profesor', accent: true },
+    { icon: Eye, label: 'Accesibilidad', onClick: onOpenAccessibility, show: true },
+    { icon: isGuidesVisible ? Eye : EyeOff, label: isGuidesVisible ? 'Ocultar guías (G)' : 'Mostrar guías (G)', onClick: onToggleGuides, show: true },
+  ].filter(item => item.show);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 md:px-6 py-2 md:py-3 bg-slate-950/70 backdrop-blur-2xl border-b border-white/15 shadow-2xl">
-      {/* Izquierda: Logotipo y Telemetría DSN */}
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_12px_#22d3ee]" />
-          <span className="font-outfit font-bold text-base md:text-lg tracking-wider text-white">
-            <span className="hidden md:inline">EXPLORADOR </span>
-            <span className="text-cyan-400">CÓSMICO</span>
-          </span>
-          <span className="hidden sm:inline text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-            NASA / ESA GRADE
-          </span>
-        </div>
-
-        {profile.uiSettings.showComplexTelemetry && (
-          <div className="hidden md:flex items-center space-x-3 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-slate-300">
-            <span>DSN: <strong className="text-emerald-400">ENLACE ACTIVO</strong></span>
-            <span className="text-slate-500">|</span>
-            <span>FPS: <strong className={fps > 55 ? 'text-emerald-400' : 'text-amber-400'}>{fps}</strong></span>
-          </div>
-        )}
+    <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 bg-[rgba(8,8,12,0.80)] backdrop-blur-xl border-b border-[rgba(237,233,228,0.07)] shadow-2xl">
+      {/* Left: Logo */}
+      <div className="flex items-center space-x-2 flex-shrink-0">
+        <div className="w-2 h-2 rounded-full bg-[#7aafc8] animate-pulse shadow-[0_0_8px_rgba(122,175,200,0.5)]" />
+        <span className="font-display font-bold text-base md:text-lg tracking-wider text-[#ede9e4]">
+          <span className="hidden md:inline">EXPLORADOR </span>
+          <span className="text-[#c8964a]">CÓSMICO</span>
+        </span>
       </div>
 
-      {/* Centro: Selector de Observatorios / Modos */}
-      <nav className="flex items-center space-x-1 bg-black/40 p-1 rounded-full border border-white/10 overflow-x-auto hide-scrollbar flex-shrink-0 mx-2" aria-label="Navegación principal del observatorio">
+      {/* Center: Scene modes */}
+      <nav className="flex items-center space-x-1 bg-[rgba(3,3,3,0.5)] p-1 rounded-[6px] border border-[rgba(237,233,228,0.07)] overflow-x-auto hide-scrollbar flex-shrink-0 mx-2" aria-label="Navegación principal del observatorio">
         <button
           onClick={() => onModeChange('solar')}
-          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-[4px] text-xs font-medium transition-all duration-300 ${
             currentMode === 'solar'
-              ? 'bg-gradient-to-r from-amber-500/80 to-amber-600 text-white shadow-lg shadow-amber-500/25'
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[rgba(200,150,74,0.2)] text-[#c8964a] border border-[rgba(200,150,74,0.3)]'
+              : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.05)] border border-transparent'
           }`}
           title="Sistema Solar"
         >
@@ -83,10 +93,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
         <button
           onClick={() => onModeChange('earth')}
-          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-[4px] text-xs font-medium transition-all duration-300 ${
             currentMode === 'earth'
-              ? 'bg-gradient-to-r from-blue-500/80 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[rgba(122,175,200,0.2)] text-[#7aafc8] border border-[rgba(122,175,200,0.3)]'
+              : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.05)] border border-transparent'
           }`}
           title="La Tierra"
         >
@@ -96,10 +106,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
         <button
           onClick={() => onModeChange('deep')}
-          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-[4px] text-xs font-medium transition-all duration-300 ${
             currentMode === 'deep'
-              ? 'bg-gradient-to-r from-purple-500/80 to-purple-600 text-white shadow-lg shadow-purple-500/25'
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[rgba(152,120,184,0.2)] text-[#9878b8] border border-[rgba(152,120,184,0.3)]'
+              : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.05)] border border-transparent'
           }`}
           title="Espacio Profundo"
         >
@@ -109,23 +119,23 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
         <button
           onClick={() => onModeChange('observatory')}
-          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-[4px] text-xs font-medium transition-all duration-300 ${
             currentMode === 'observatory'
-              ? 'bg-gradient-to-r from-cyan-500/80 to-cyan-600 text-white shadow-lg shadow-cyan-500/25'
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[rgba(122,175,200,0.2)] text-[#8ec5dc] border border-[rgba(122,175,200,0.3)]'
+              : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.05)] border border-transparent'
           }`}
           title="Observatorio Sky"
         >
           <Telescope className="w-4 h-4 md:w-3.5 md:h-3.5" />
-          <span className="hidden lg:inline">Observatorio Sky</span>
+          <span className="hidden lg:inline">Observatorio</span>
         </button>
 
         <button
           onClick={() => onModeChange('cosmicweb')}
-          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
+          className={`flex items-center space-x-2 px-3 md:px-4 py-2 md:py-1.5 rounded-[4px] text-xs font-medium transition-all duration-300 ${
             currentMode === 'cosmicweb'
-              ? 'bg-gradient-to-r from-violet-500/80 to-violet-600 text-white shadow-lg shadow-violet-500/25'
-              : 'text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[rgba(152,120,184,0.2)] text-[#9878b8] border border-[rgba(152,120,184,0.3)]'
+              : 'text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.05)] border border-transparent'
           }`}
           title="Red Cósmica (Estructura a Gran Escala)"
         >
@@ -134,110 +144,71 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
         </button>
       </nav>
 
-      {/* Derecha: Herramientas, Laboratorio, Asistente y Perfil */}
-      <div className="flex items-center space-x-1.5 md:space-x-2 overflow-x-auto hide-scrollbar flex-shrink-0">
-        {/* Guía Rápida NASA */}
+      {/* Right: Primary actions + tools dropdown */}
+      <div className="flex items-center space-x-1.5 flex-shrink-0">
         <button
           onClick={onOpenQuickHelp}
           title="Guía Rápida de Misión y Controles"
-          className="flex items-center space-x-1.5 p-2 md:px-3 md:py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-medium transition-all flex-shrink-0"
+          className="flex items-center space-x-1.5 p-2 md:px-3 md:py-1.5 rounded-[4px] bg-[rgba(122,175,200,0.1)] hover:bg-[rgba(122,175,200,0.18)] text-[#7aafc8] border border-[rgba(122,175,200,0.2)] text-xs font-medium transition-all flex-shrink-0"
         >
-          <HelpCircle className="w-4 h-4 md:w-3.5 md:h-3.5 text-cyan-400" />
-          <span className="hidden md:inline">Guía NASA</span>
+          <HelpCircle className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          <span className="hidden lg:inline">Guía</span>
         </button>
 
-        {/* Agujero Negro GRRT */}
         <button
           onClick={onOpenGrrt}
           title="Simulador de Agujero Negro Relativista GRRT"
-          className="flex items-center space-x-1.5 p-2 md:px-3 md:py-1.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 text-xs font-medium transition-all flex-shrink-0"
+          className="flex items-center space-x-1.5 p-2 md:px-3 md:py-1.5 rounded-[4px] bg-[rgba(200,150,74,0.1)] hover:bg-[rgba(200,150,74,0.18)] text-[#c8964a] border border-[rgba(200,150,74,0.2)] text-xs font-medium transition-all flex-shrink-0"
         >
-          <span className="w-2 h-2 md:w-2 md:h-2 rounded-full bg-orange-500 animate-ping" />
-          <span className="hidden md:inline">Gargantua GRRT</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#c8964a] animate-pulse" />
+          <span className="hidden lg:inline">Gargantua</span>
         </button>
 
-        {/* Laboratorio de Física */}
-        <button
-          onClick={onOpenPhysicsLab}
-          title="Laboratorio de Simulaciones Físicas"
-          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
-          aria-label="Abrir Laboratorio de Simulaciones"
-        >
-          <FlaskConical className="w-4 h-4 md:w-4 md:h-4 text-cyan-400" />
-        </button>
-
-        {/* Asistente IA */}
-        <button
-          onClick={onOpenAssistant}
-          title="Asistente Astronómico Inteligente"
-          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
-          aria-label="Abrir Asistente Astro-IA"
-        >
-          <Bot className="w-4 h-4 md:w-4 md:h-4 text-purple-400" />
-        </button>
-
-        {/* Cuestionarios / Retos */}
-        {profile.uiSettings.enableGamification && (
-          <button
-            onClick={onOpenQuiz}
-            title="Misiones y Retos del Cosmos"
-            className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
-            aria-label="Abrir Cuestionario Astronómico"
-          >
-            <HelpCircle className="w-4 h-4 md:w-4 md:h-4 text-amber-400" />
-          </button>
-        )}
-
-        {/* Modo Aula / Profesor */}
-        {profile.id === 'profesor' && (
-          <button
-            onClick={onOpenTeacherModal}
-            title="Panel de Control del Profesor"
-            className="p-2 md:p-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition-colors flex-shrink-0"
-          >
-            <School className="w-4 h-4 md:w-4 md:h-4" />
-          </button>
-        )}
-
-        {/* Accesibilidad */}
-        <button
-          onClick={onOpenAccessibility}
-          title="Opciones de Accesibilidad"
-          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
-          aria-label="Configuración de Accesibilidad"
-        >
-          <Eye className="w-4 h-4 md:w-4 md:h-4" />
-        </button>
-
-        {/* Alternar Guías (Modo Inmersión) */}
-        <button
-          onClick={onToggleGuides}
-          title={isGuidesVisible ? 'Ocultar órbitas y guías (G)' : 'Mostrar órbitas y guías (G)'}
-          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
-          aria-label="Alternar Inmersión"
-        >
-          {isGuidesVisible ? <Eye className="w-4 h-4 md:w-4 md:h-4" /> : <EyeOff className="w-4 h-4 md:w-4 md:h-4 text-slate-500" />}
-        </button>
-
-        {/* Silenciar Audio */}
         <button
           onClick={onToggleMute}
           title={isMuted ? 'Activar Sonido Cósmico' : 'Silenciar'}
-          className="p-2 md:p-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 transition-colors flex-shrink-0"
+          className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] border border-[rgba(237,233,228,0.07)] transition-colors flex-shrink-0"
           aria-label={isMuted ? 'Activar sonido' : 'Silenciar sonido'}
         >
-          {isMuted ? <VolumeX className="w-4 h-4 md:w-4 md:h-4 text-red-400" /> : <Volume2 className="w-4 h-4 md:w-4 md:h-4 text-emerald-400" />}
+          {isMuted ? <VolumeX className="w-4 h-4 text-[#c8964a]" /> : <Volume2 className="w-4 h-4" />}
         </button>
 
-        {/* Selector de Perfil Adaptativo */}
-        <button
-          onClick={onOpenProfileSelector}
-          title={`Perfil activo: ${profile.name}`}
-          className="flex items-center space-x-2 p-2 md:px-3 md:py-1.5 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition-all shadow-md flex-shrink-0"
-        >
-          <User className="w-4 h-4 md:w-3.5 md:h-3.5" />
-          <span className="hidden md:inline">{profile.name}</span>
-        </button>
+        {/* Tools dropdown */}
+        <div ref={toolsRef} className="relative flex-shrink-0">
+          <button
+            onClick={() => setIsToolsOpen(prev => !prev)}
+            title="Herramientas y ajustes"
+            className={`p-2 rounded-[4px] transition-colors ${
+              isToolsOpen
+                ? 'bg-[rgba(237,233,228,0.12)] text-[#ede9e4] border border-[rgba(237,233,228,0.15)]'
+                : 'bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] border border-[rgba(237,233,228,0.07)]'
+            }`}
+            aria-label="Abrir menú de herramientas"
+            aria-expanded={isToolsOpen}
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+
+          {isToolsOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-[6px] bg-[rgba(8,8,12,0.95)] backdrop-blur-xl border border-[rgba(237,233,228,0.10)] shadow-2xl py-1 animate-slide-up">
+              {toolMenuItems.map((item, i) => (
+                <button
+                  key={i}
+                  onClick={() => { item.onClick(); setIsToolsOpen(false); }}
+                  className={`w-full flex items-center space-x-3 px-4 py-2.5 text-xs transition-colors ${
+                    item.accent
+                      ? 'text-[#c8964a] hover:bg-[rgba(200,150,74,0.1)]'
+                      : 'text-[rgba(237,233,228,0.7)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.06)]'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </header>
   );
