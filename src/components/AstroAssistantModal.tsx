@@ -56,7 +56,7 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
     // Respuesta inteligente astrofísica adaptada según consulta
     let responseText = 'El universo está lleno de misterios fascinantes. ';
     const lower = query.toLowerCase();
-    if (lower.includes('agujero') || lower.includes('negro') || lower.includes('gargantua')) {
+    if (lower.includes('agujero') || lower.includes('negro') || lower.includes('gargantua') || lower.includes('sagitario')) {
       responseText = 'Un agujero negro es una región del espacio-tiempo donde la gravedad es tan extrema que ni los fotones de luz pueden escapar de su horizonte de sucesos. Su centro alberga una singularidad matemática.';
     } else if (lower.includes('sistema') || lower.includes('solar') || lower.includes('planetas')) {
       responseText = 'El Sistema Solar nació hace 4.6 mil millones de años del colapso gravitatorio de una nube molecular gigante. El 99.86% de la masa formó el Sol y el disco restante dio origen a los 8 planetas.';

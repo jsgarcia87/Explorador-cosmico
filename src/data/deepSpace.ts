@@ -3,14 +3,14 @@ export interface DeepSpaceObjectData {
   name: string;
   icon: string;
   type: string;
-  pos: [number, number, number];
+  galacticPos: [number, number, number];
   distanceLy: string;
   constellation: string;
   catalogId: string;
   isGrrtBlackHole?: boolean;
   hasPulsarBeams?: boolean;
   hasAccretionDisk?: boolean;
-  isDarkMatterWeb?: boolean;
+  isExternalGalaxy?: boolean;
   color: number;
   edu: {
     infantil: {
@@ -31,55 +31,64 @@ export interface DeepSpaceObjectData {
   };
 }
 
+// Galactic coordinate system:
+// Center of Milky Way at (0, 0, 0)
+// Sun at (SUN_X, 0, 0) in the Orion Spur
+// Galaxy disk in XZ plane, Y = perpendicular to disk
+// Scale: 1 unit ≈ 325 ly, galaxy radius ≈ 150 units
+export const SUN_GALACTIC_POS: [number, number, number] = [80, 0, 0];
+export const GALAXY_RADIUS = 150;
+
 export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
   {
-    id: 'gargantua',
-    name: 'Gargantua / M87* (Agujero Negro Relativista)',
+    id: 'sgr_a_star',
+    name: 'Sagitario A* (Agujero Negro Central)',
     icon: '⚫',
-    type: 'Agujero Negro Supermasivo (Singularidad de Kerr)',
-    pos: [42, 6, -18],
-    distanceLy: '53.5 millones de años luz (M87*)',
-    constellation: 'Virgo',
-    catalogId: 'NGC 4486 / EHT-2019',
+    type: 'Agujero Negro Supermasivo (4M masas solares)',
+    galacticPos: [0, 0, 0],
+    distanceLy: '26,000 años luz',
+    constellation: 'Sagitario',
+    catalogId: 'Sgr A* / EHT-2022',
     isGrrtBlackHole: true,
     hasAccretionDisk: true,
     color: 0xff6b35,
     edu: {
       infantil: {
-        summary: 'Un agujero negro gigante con tanta fuerza de gravedad que ni siquiera la luz puede escapar de él.',
+        summary: 'El agujero negro gigante que vive en el centro exacto de nuestra galaxia, la Vía Láctea.',
         facts: [
-          'Aunque el centro es oscuro, el gas que gira alrededor brilla como un anillo de fuego cósmico.',
-          'Si un reloj cayera cerca de él, lo verías moverse más despacio por culpa de la gravedad.',
-          '¡El Telescopio del Horizonte de Sucesos (EHT) logró tomarle una fotografía en 2019!'
+          'Es tan pesado como 4 millones de soles juntos, pero su sombra es más pequeña que la órbita de Mercurio.',
+          'Las estrellas a su alrededor giran a velocidades de miles de km/s, atrapadas por su gravedad.',
+          'El Telescopio del Horizonte de Sucesos (EHT) fotografió su sombra en 2022.'
         ],
-        funFact: 'La gravedad curva los rayos de luz alrededor del agujero negro, ¡permitiéndote ver la parte de atrás de su anillo!'
+        funFact: 'La estrella S2 orbita Sgr A* en solo 16 años a velocidades del 3% de la luz.'
       },
       jovenes: {
-        summary: 'Singularidad rotacional gobernada por la métrica de Kerr con disco de acreción caliente y jets relativistas.',
+        summary: 'Agujero negro supermasivo en reposo relativo en el centro de la Vía Láctea, rodeado de un cúmulo estelar denso.',
         facts: [
-          'Su masa supera las 6,500 millones de masas solares en el centro de la galaxia elíptica M87.',
-          'El efecto Doppler relativista hace que el lado del disco que avanza hacia el observador brille mucho más (beaming).',
-          'Su sombra interior corresponde al diámetro del horizonte de sucesos aumentado en ~2.6x por la curvatura geodésica (radio de sombra = √27 GM/c²).'
+          'Masa: ~4.15 millones de masas solares, medida por las órbitas de estrellas S cercanas (especialmente S2).',
+          'Andrea Ghez y Reinhard Genzel recibieron el Nobel de Física 2020 por demostrar su existencia con seguimiento orbital.',
+          'A diferencia de M87*, Sgr A* tiene un disco de acreción tenue porque acumula materia muy lentamente.'
         ],
-        experiment: 'Reto de Raytracing GRRT: Abre el Simulador GRRT y ajusta el espín del agujero negro (a/M) para observar cómo se deforma la sombra.'
+        experiment: 'Reto orbital: Si la estrella S2 orbita a 26,000 ly del Sol, ¿cómo podemos medir su órbita con tanta precisión?'
       },
       adultos: {
-        summary: 'Solución exacta de las ecuaciones de campo de Einstein (Métrica de Kerr-Newman) con transporte radiativo general relativista (GRRT).',
+        summary: 'Fuente de radio compacta en Sgr A coincidente con un agujero negro de Kerr cuyo horizonte cabe dentro de la órbita de Mercurio.',
         facts: [
-          'Radio del Horizonte de Sucesos de Schwarzschild: r_s = 2GM/c² ~ 19.5 billones de km para M87*.',
-          'Los fotones siguen trayectorias geodésicas nulas resolubles numéricamente con la Ecuación de Binet.',
-          'El proceso Blandford–Znajek extrae energía rotacional de la ergosfera generando chorros relativistas magnetizados.'
+          'Radio de Schwarzschild: r_s = 2GM/c² ≈ 12.4 millones de km (0.08 UA).',
+          'Luminosidad bolométrica ~10³⁶ erg/s, muy por debajo de Eddington: acrecimiento en modo RIAF (flujo de acreción ineficiente).',
+          'Los flares en infrarrojo y rayos X sugieren reconexión magnética episódica en el disco caliente.'
         ],
-        physicsLaw: 'Métrica Geodésica de Kerr y Desplazamiento al Rojo Gravitacional: z = (1 - 2GM/rc²)⁻¹/² - 1.'
+        physicsLaw: 'Métrica de Kerr y Geodésicas de estrellas S: precesión de Schwarzschild medida en S2 (2020).'
       }
     }
   },
   {
     id: 'gigante_roja',
-    name: 'Betelgeuse (Gigante Roja)',
+    name: 'Betelgeuse (Supergigante Roja)',
     icon: '🔴',
     type: 'Supergigante Roja (M1-2Ia-Iab)',
-    pos: [-40, 10, -22],
+    // ~640 ly from Sun, l≈200°, b≈-9° → exaggerated to 15 units for visibility
+    galacticPos: [94, -2, -5],
     distanceLy: '642.5 años luz',
     constellation: 'Orión',
     catalogId: 'α Orionis / HIP 27989',
@@ -119,7 +128,8 @@ export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
     name: 'Púlsar del Cangrejo (PSR B0531+21)',
     icon: '💫',
     type: 'Estrella de Neutrones Magnetizada Rotatoria',
-    pos: [26, 14, -36],
+    // ~6,500 ly from Sun, l≈184°, b≈-6° → toward anticenter, Perseus arm
+    galacticPos: [110, -3, -2],
     distanceLy: '6,500 años luz',
     constellation: 'Tauro',
     catalogId: 'M1 / NGC 1952 / SN 1054',
@@ -156,52 +166,12 @@ export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
     }
   },
   {
-    id: 'materia_oscura',
-    name: 'Red Cósmica & Materia Oscura',
-    icon: '🕸️',
-    type: 'Estructura a Gran Escala del Universo',
-    pos: [0, -18, -48],
-    distanceLy: 'Escala Universal (>1,000 millones años luz)',
-    constellation: 'Cosmos Universal',
-    catalogId: 'ΛCDM Cosmic Web',
-    isDarkMatterWeb: true,
-    color: 0xbd93f9,
-    edu: {
-      infantil: {
-        summary: 'El esqueleto invisible del universo que mantiene unidas a las galaxias como una telaraña mágica gigante.',
-        facts: [
-          'La materia oscura no se puede ver con ojos ni telescopios normales, pero sabemos que está ahí por su gravedad.',
-          'Sin su fuerza invisible, las galaxias girarían tan rápido que saldrían disparadas por el espacio.',
-          'Las galaxias brillan en los nodos donde los hilos de esta telaraña invisible se cruzan.'
-        ],
-        funFact: 'El 85% de toda la materia en el universo es materia oscura, ¡la materia normal es solo una pequeña minoría!'
-      },
-      jovenes: {
-        summary: 'Entramado de filamentos de materia oscura fría sobre los que colapsa la materia bariónica formando supercúmulos.',
-        facts: [
-          'Se detecta empíricamente mediante curvas de rotación galáctica planas y lentes gravitacionales débiles.',
-          'La Energía Oscura actúa en dirección opuesta, acelerando la expansión del espacio vacío entre galaxias.',
-          'Las supercomputadoras han simulado esta red cósmica coincidiendo perfectamente con censos del Hubble y James Webb.'
-        ],
-        experiment: 'Reto Gravitacional: Explica cómo la curva de rotación orbital de una galaxia demuestra que hay masa que no brilla.'
-      },
-      adultos: {
-        summary: 'Modelo Cosmológico de Consenso ΛCDM (Lambda Cold Dark Matter) regido por fluctuaciones primordiales de densidad.',
-        facts: [
-          'Composición del Universo: 68.3% Energía Oscura (Λ), 26.8% Materia Oscura Fría (CDM), 4.9% Materia Bariónica ordinaria.',
-          'Lentes gravitacionales fuertes en cúmulos (como Abell 370) permiten cartografiar la densidad superficial de masa invisible.',
-          'El Fondo Cósmico de Microondas (CMB) medido por Planck muestra anisotropías espectrales concordantes con ΛCDM.'
-        ],
-        physicsLaw: 'Ecuación de Friedmann y Tensor de Esfuerzo-Energía en Cosmología Relativista.'
-      }
-    }
-  },
-  {
     id: 'nebulosa',
     name: 'Pilares de la Creación (M16)',
     icon: '☁️',
     type: 'Región de Formación Estelar (Nebulosa de Emisión)',
-    pos: [-18, -14, -38],
+    // ~5,700 ly from Sun, l≈17°, b≈1° → toward center, Sagittarius arm
+    galacticPos: [53, 1, 8],
     distanceLy: '~5,700 años luz (Gaia DR3)',
     constellation: 'Serpens Cauda',
     catalogId: 'M16 / NGC 6611 / Eagle Nebula',
@@ -233,6 +203,48 @@ export const DEEP_SPACE_OBJECTS: DeepSpaceObjectData[] = [
           'Las simulaciones hidrodinámicas sugieren que los pilares se erosionarán por completo en unos 3 millones de años.'
         ],
         physicsLaw: 'Inestabilidad de Jeans e Ionización de Strömgren en Nubes Moleculares.'
+      }
+    }
+  },
+  {
+    id: 'andromeda',
+    name: 'Galaxia de Andrómeda (M31)',
+    icon: '🌀',
+    type: 'Galaxia Espiral Barrada (SA(s)b)',
+    // ~2.5 million ly from Sun, l≈121°, b≈-22° → far away
+    galacticPos: [260, -80, 340],
+    distanceLy: '2.537 millones de años luz',
+    constellation: 'Andrómeda',
+    catalogId: 'M31 / NGC 224',
+    isExternalGalaxy: true,
+    color: 0xaabbff,
+    edu: {
+      infantil: {
+        summary: 'La galaxia grande más cercana a la nuestra, visible a simple vista en noches oscuras como una manchita borrosa.',
+        facts: [
+          'Tiene un billón de estrellas — ¡el doble que nuestra Vía Láctea!',
+          'Se acerca a nosotros a 110 km/s y chocará con la Vía Láctea dentro de 4,500 millones de años.',
+          'Es lo más lejano que puedes ver sin telescopio: su luz tarda 2.5 millones de años en llegar.'
+        ],
+        funFact: 'Cuando la luz que ves de Andrómeda salió de allí, en la Tierra aún no existían los humanos.'
+      },
+      jovenes: {
+        summary: 'Galaxia espiral masiva del Grupo Local que se aproxima a la Vía Láctea con velocidad radial de -301 km/s.',
+        facts: [
+          'Contiene ~1 billón de estrellas con un agujero negro central de ~140 millones de masas solares.',
+          'Su diámetro es de 220,000 años luz, más del doble que la Vía Láctea.',
+          'La fusión con la Vía Láctea (~4,500 Ma) formará una galaxia elíptica llamada "Milkomeda".'
+        ],
+        experiment: 'Reto cosmológico: ¿Cómo midió Edwin Hubble la distancia a Andrómeda usando estrellas Cefeidas variables?'
+      },
+      adultos: {
+        summary: 'Galaxia dominante del Grupo Local con subestructura de mareas y corrientes estelares que evidencian acreción de satélites.',
+        facts: [
+          'SMBH central (P2): M ≈ 1.4 × 10⁸ M_☉ derivada de cinemática estelar con HST/STIS.',
+          'El halo galáctico contiene corrientes estelares fósiles (Giant Stellar Stream) de una galaxia enana destruida hace ~1 Ga.',
+          'Presenta un doble núcleo óptico (P1+P2) explicado por un disco excéntrico de estrellas orbitando el SMBH.'
+        ],
+        physicsLaw: 'Relación de Tully-Fisher, Cefeidas como candelas estándar y fusión galáctica por fricción dinámica.'
       }
     }
   }

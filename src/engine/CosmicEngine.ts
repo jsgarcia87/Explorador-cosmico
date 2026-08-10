@@ -206,7 +206,7 @@ export class CosmicEngine {
     } else if (mode === 'earth') {
       return { pos: new THREE.Vector3(0, 2, 7), lookAt: new THREE.Vector3(0, 0, 0), dist: 7 };
     } else if (mode === 'deep') {
-      return { pos: new THREE.Vector3(42, 12, 25), lookAt: new THREE.Vector3(42, 6, -18), dist: 40 };
+      return { pos: new THREE.Vector3(60, 110, 100), lookAt: new THREE.Vector3(20, 0, 0), dist: 150 };
     } else if (mode === 'observatory') {
       return { pos: new THREE.Vector3(0, 1, 0), lookAt: new THREE.Vector3(0, 20, 0), dist: 1 };
     } else {

@@ -38,11 +38,11 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
     },
     {
       id: 'l3',
-      title: 'Unidad 3: Agujeros Negros y Relatividad (M87*)',
+      title: 'Unidad 3: Agujeros Negros y Relatividad (Sgr A*)',
       grade: 'Bachillerato / Universidad',
-      desc: 'Exploración de Gargantua (M87*), el horizonte de sucesos, curvatura del espacio-tiempo y transporte radiativo relativista GRRT.',
+      desc: 'Exploración de Sagitario A*, el agujero negro supermasivo en el centro de la Vía Láctea, horizonte de sucesos, curvatura del espacio-tiempo y GRRT.',
       mode: 'deep',
-      targetId: 'gargantua'
+      targetId: 'sgr_a_star'
     },
     {
       id: 'l4',

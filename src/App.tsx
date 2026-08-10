@@ -328,7 +328,7 @@ export const App: React.FC = () => {
   // Iniciar lección pedagógica desde modo Profesor
   const handleStartLesson = (mode: SceneMode, targetId?: string) => {
     handleModeChange(mode);
-    if (targetId === 'gargantua') {
+    if (targetId === 'gargantua' || targetId === 'sgr_a_star') {
       setTimeout(() => {
         setIsGrrtOpen(true);
       }, 500);
