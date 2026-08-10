@@ -18,6 +18,7 @@ import { QuizModal } from './components/QuizModal';
 import { GrrtModal } from './components/GrrtModal';
 import { QuickHelpModal } from './components/QuickHelpModal';
 import { AccessibilityController, AccessibilitySettings } from './components/AccessibilityController';
+import { SimulationHUD } from './components/SimulationHUD';
 
 import './styles/index.css';
 import './styles/animations.css';
@@ -360,6 +361,16 @@ export const App: React.FC = () => {
         className="absolute inset-0 w-full h-full block cursor-grab active:cursor-grabbing"
         role="img"
         aria-label="Vista 3D interactiva del universo"
+      />
+
+      {/* HUD corners — datos técnicos en esquinas (estilo COSMOS.EDU) */}
+      <SimulationHUD
+        currentMode={currentMode}
+        currentDate={currentDate}
+        fps={fps}
+        timeSpeed={timeSpeed}
+        isPaused={isPaused}
+        onModeChange={handleModeChange}
       />
 
       {/* Navegación HUD Superior */}
