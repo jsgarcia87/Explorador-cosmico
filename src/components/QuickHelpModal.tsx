@@ -10,8 +10,8 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-[8px] bg-[rgba(3,3,5,0.95)] border border-[rgba(122,175,200,0.2)] shadow-2xl text-[#ede9e4]">
+    <div className="fixed inset-y-0 left-0 z-40 w-[450px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="quick-help-title">
+      <div className="flex-1 w-full rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 text-[#ede9e4]">
         {/* Cabecera NASA Mission Control */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(8,15,30,0.4)]">
           <div className="flex items-center space-x-3">
@@ -19,11 +19,11 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
               <Compass className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-outfit font-bold text-[#ede9e4] tracking-wide">
-                GUÍA RÁPIDA DE MISIÓN — OBSERVATORIO NASA / ESA
+              <h2 id="quick-help-title" className="text-lg font-outfit font-bold text-[#ede9e4] tracking-wide">
+                GUÍA RÁPIDA DE MISIÓN
               </h2>
               <p className="text-xs font-mono text-[#8ec5dc]">
-                MANUAL DEL ASTRÓNOMO Y CONTROLES MÓVILES / PC
+                MANUAL DEL ASTRÓNOMO
               </p>
             </div>
           </div>
@@ -37,14 +37,14 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Contenido en cuadrícula inmersiva */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
           {/* Sección 1: Controles Táctiles y de Ratón */}
           <div className="space-y-3">
             <h3 className="text-sm font-outfit font-semibold uppercase tracking-wider text-[#7aafc8] flex items-center space-x-2">
               <Touchpad className="w-4 h-4" />
-              <span>Controles de Navegación Espacial (Móvil & PC)</span>
+              <span>Controles de Navegación</span>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <div className="p-3 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex items-start space-x-3">
                 <div className="p-2 rounded bg-[rgba(122,175,200,0.1)] text-[#8ec5dc] font-mono text-sm">👆 / 🖱️</div>
                 <div>
@@ -70,17 +70,7 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
                 <div>
                   <h4 className="text-xs font-bold text-[#ede9e4]">Telemetría y Selección</h4>
                   <p className="text-xs text-[rgba(237,233,228,0.5)] mt-0.5">
-                    Pulsa sobre cualquier planeta, estrella o agujero negro para desplegar su ficha científica en vivo.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex items-start space-x-3">
-                <div className="p-2 rounded bg-[rgba(122,175,200,0.1)] text-[#8ec5dc] font-mono text-sm">⏳ / 🌌</div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#ede9e4]">Control del Reloj Orbital</h4>
-                  <p className="text-xs text-[rgba(237,233,228,0.5)] mt-0.5">
-                    Acelera o pausa el tiempo kepleriano en la consola inferior para ver órbitas y eclipses en tiempo real.
+                    Pulsa sobre cualquier planeta para desplegar su ficha científica en vivo.
                   </p>
                 </div>
               </div>
@@ -91,12 +81,12 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
           <div className="space-y-3">
             <h3 className="text-sm font-outfit font-semibold uppercase tracking-wider text-[#c8964a] flex items-center space-x-2">
               <HelpCircle className="w-4 h-4" />
-              <span>Atajos de Teclado (Consola Avanzada)</span>
+              <span>Atajos de Teclado</span>
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-2 gap-2 text-center">
               <div className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)]">
                 <kbd className="px-2 py-0.5 text-xs font-mono bg-[rgba(237,233,228,0.08)] rounded text-[#d4a65a]">1 - 4</kbd>
-                <p className="text-[11px] text-[rgba(237,233,228,0.5)] mt-1">Cambiar de Escena</p>
+                <p className="text-[11px] text-[rgba(237,233,228,0.5)] mt-1">Escenas</p>
               </div>
               <div className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)]">
                 <kbd className="px-2 py-0.5 text-xs font-mono bg-[rgba(237,233,228,0.08)] rounded text-[#d4a65a]">Espacio</kbd>

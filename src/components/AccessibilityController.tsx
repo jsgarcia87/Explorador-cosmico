@@ -32,8 +32,8 @@ export const AccessibilityController: React.FC<AccessibilityControllerProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="a11y-title">
-      <div className="w-full max-w-xl p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl space-y-6">
+    <div className="fixed inset-y-0 left-0 z-40 w-[450px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="a11y-title">
+      <div className="flex-1 w-full p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div className="flex items-center space-x-3">

@@ -79,9 +79,9 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
   const currentSection = EDU_SECTIONS.find(s => s.id === activeTab) || EDU_SECTIONS[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent pointer-events-none">
       {/* Marco principal inmersivo */}
-      <div className="relative w-full h-full flex flex-col bg-[#05060f] text-[#ede9e4] overflow-hidden">
+      <div className="relative w-full h-full flex flex-col pointer-events-auto">
         
         {/* Barra superior NASA/ESA */}
         <header className="flex items-center justify-between px-6 py-4 bg-[#0a0c18]/90 border-b border-[rgba(122,175,200,0.2)] z-20 backdrop-blur-lg">
@@ -127,13 +127,8 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
         <div className="relative flex-1 flex overflow-hidden">
           
           {/* VISOR DE TRAZADO DE RAYOS GRRT EN TIEMPO REAL */}
-          <div className="relative flex-1 h-full bg-black">
-            <iframe
-              src="./simulador-grrt/index.html"
-              title="Simulador Raytracer GRRT"
-              className="w-full h-full border-0"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            />
+          <div className="relative flex-1 h-full bg-transparent pointer-events-none">
+            {/* El iframe fue eliminado en favor del renderizado nativo en CosmicEngine */}
           </div>
 
           {/* PANEL ASISTENTE DEL CIENTÍFICO ASTRONÓMICO (DESPLEGABLE) */}

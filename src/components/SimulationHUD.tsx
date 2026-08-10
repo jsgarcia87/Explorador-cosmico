@@ -12,14 +12,15 @@ interface SimulationHUDProps {
 }
 
 const MODE_META: Record<SceneMode, { label: string; context: string }> = {
-  solar: { label: 'SISTEMA SOLAR', context: '4.6 × 10⁹ años · 8 planetas · 1 estrella G2V' },
-  earth: { label: 'LA TIERRA', context: '1 UA · 5.97 × 10²⁴ kg · 1 satélite natural' },
-  deep: { label: 'VÍA LÁCTEA', context: '10⁵ ly diámetro · 2 × 10¹¹ estrellas · 4 brazos espirales' },
-  observatory: { label: 'CIELO NOCTURNO', context: '88 constelaciones IAU · magnitud visual · J2000.0' },
-  cosmicweb: { label: 'RED CÓSMICA', context: '13.8 × 10⁹ años · 93 Gly observable · 10⁸⁰ partículas' },
+  solar: { label: 'Sistema Solar', context: 'Datos astronómicos en vivo de exoplanetas y dinámica estelar local.' },
+  earth: { label: 'Sistema Tierra-Luna', context: 'Geofísica, topografía y meteorología en tiempo real.' },
+  deep: { label: 'Espacio Profundo', context: 'Exploración del catálogo Messier, NGC y cinemática de cuerpos lejanos.' },
+  observatory: { label: 'Observatorio Óptico', context: 'Datos espectroscópicos simulados del telescopio JWST y Hubble.' },
+  cosmicweb: { label: 'Red Cósmica y Materia Oscura', context: 'Estructura a gran escala del Universo (SDSS/IllustrisTNG).' },
+  black_hole: { label: 'Simulador GRRT', context: 'Trazado de rayos relativista: Agujeros negros y métrica de Kerr.' }
 };
 
-const MODE_ORDER: SceneMode[] = ['solar', 'earth', 'deep', 'observatory', 'cosmicweb'];
+const MODE_ORDER: SceneMode[] = ['solar', 'earth', 'deep', 'observatory', 'cosmicweb', 'black_hole'];
 
 function formatSimDate(d: Date): string {
   const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];

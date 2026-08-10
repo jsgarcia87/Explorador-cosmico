@@ -54,8 +54,8 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="teacher-modal-title">
-      <div className="w-full max-w-3xl p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl">
+    <div className="fixed inset-y-0 left-0 z-40 w-[450px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="teacher-modal-title">
+      <div className="flex-1 w-full p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div className="flex items-center space-x-3">
@@ -79,7 +79,7 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
         </div>
 
         {/* Resumen del aula */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="p-3.5 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex items-center space-x-3">
             <Users className="w-5 h-5 text-[#7aafc8]" />
             <div>
@@ -103,17 +103,16 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
           </div>
         </div>
 
-        {/* Lista de Unidades y Lecciones */}
-        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           <span className="text-xs font-mono uppercase tracking-wider text-[#c8964a] block mb-1">
             SELECCIONA LECCIÓN PARA PROYECTAR
           </span>
           {lessons.map((lesson) => (
             <div
               key={lesson.id}
-              className="flex items-center justify-between p-4 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] hover:border-[rgba(200,150,74,0.3)] transition-all"
+              className="flex flex-col gap-3 p-4 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] hover:border-[rgba(200,150,74,0.3)] transition-all"
             >
-              <div className="max-w-lg">
+              <div className="w-full">
                 <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded bg-[rgba(200,150,74,0.1)] text-[#d4a65a] border border-amber-400/20">
                   {lesson.grade}
                 </span>
@@ -130,7 +129,7 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
                   onStartLesson(lesson.mode, lesson.targetId);
                   onClose();
                 }}
-                className="flex items-center space-x-2 px-4 py-2.5 rounded-[6px] bg-gradient-to-r from-[#c8964a] to-[#d4864a] hover:from-[#d4a65a] hover:to-[#c8964a] text-black font-outfit font-bold text-xs shadow-lg shadow-[rgba(200,150,74,0.15)] transition-all"
+                className="flex items-center justify-center space-x-2 w-full py-2.5 rounded-[6px] bg-gradient-to-r from-[#c8964a] to-[#d4864a] hover:from-[#d4a65a] hover:to-[#c8964a] text-black font-outfit font-bold text-xs shadow-lg shadow-[rgba(200,150,74,0.15)] transition-all mt-2"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>Iniciar Lección</span>

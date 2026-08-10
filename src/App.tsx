@@ -51,6 +51,7 @@ export const App: React.FC = () => {
   const [isGrrtOpen, setIsGrrtOpen] = useState<boolean>(false);
   const [isA11yOpen, setIsA11yOpen] = useState<boolean>(false);
   const [isQuickHelpOpen, setIsQuickHelpOpen] = useState<boolean>(false);
+  const [isUiHidden, setIsUiHidden] = useState<boolean>(false);
   const [isGuidesVisible, setIsGuidesVisible] = useState<boolean>(true);
 
   // Auto-hide chrome (header + time controller) after inactivity
@@ -308,7 +309,9 @@ export const App: React.FC = () => {
         handleModeChange('deep');
       } else if (e.key === '4') {
         handleModeChange('observatory');
-      } else if (e.key === '?' || e.key === 'h' || e.key === 'H') {
+      } else if (e.key === 'h' || e.key === 'H') {
+        setIsUiHidden(prev => !prev);
+      } else if (e.key === '?') {
         setIsQuickHelpOpen(prev => !prev);
       } else if (e.key === 'Escape') {
         setSelectedObject(null);
@@ -328,11 +331,13 @@ export const App: React.FC = () => {
 
   // Iniciar lección pedagógica desde modo Profesor
   const handleStartLesson = (mode: SceneMode, targetId?: string) => {
-    handleModeChange(mode);
     if (targetId === 'gargantua' || targetId === 'sgr_a_star') {
+      handleModeChange('black_hole');
       setTimeout(() => {
         setIsGrrtOpen(true);
       }, 500);
+    } else {
+      handleModeChange(mode);
     }
   };
 
@@ -363,17 +368,22 @@ export const App: React.FC = () => {
         aria-label="Vista 3D interactiva del universo"
       />
 
-      {/* HUD corners — datos técnicos en esquinas (estilo COSMOS.EDU) */}
-      <SimulationHUD
-        currentMode={currentMode}
-        currentDate={currentDate}
-        fps={fps}
-        timeSpeed={timeSpeed}
-        isPaused={isPaused}
-        onModeChange={handleModeChange}
-      />
+      {/* Contenedor Global de UI (Modo Ocultar Interfaz) */}
+      <div 
+        className={`absolute inset-0 transition-opacity duration-500 pointer-events-none ${isUiHidden ? 'opacity-0' : 'opacity-100'}`}
+        {...({ inert: isUiHidden ? "" : undefined } as any)}
+      >
+        {/* HUD corners — datos técnicos en esquinas (estilo COSMOS.EDU) */}
+        <SimulationHUD
+          currentMode={currentMode}
+          currentDate={currentDate}
+          fps={fps}
+          timeSpeed={timeSpeed}
+          isPaused={isPaused}
+          onModeChange={handleModeChange}
+        />
 
-      {/* Navegación HUD Superior */}
+        {/* Navegación HUD Superior */}
       <div
         className="transition-all duration-500 ease-in-out"
         style={{
@@ -398,7 +408,7 @@ export const App: React.FC = () => {
           onOpenTeacherModal={() => setIsTeacherOpen(true)}
           onOpenQuiz={() => setIsQuizOpen(true)}
           onOpenAccessibility={() => setIsA11yOpen(true)}
-          onOpenGrrt={() => setIsGrrtOpen(true)}
+          onOpenGrrt={() => { setIsGrrtOpen(true); handleModeChange('black_hole'); }}
           onOpenQuickHelp={() => setIsQuickHelpOpen(true)}
           fps={fps}
         />
@@ -448,7 +458,7 @@ export const App: React.FC = () => {
         selected={selectedObject}
         onClose={() => setSelectedObject(null)}
         activeProfile={activeProfile}
-        onOpenGrrt={() => setIsGrrtOpen(true)}
+        onOpenGrrt={() => { setIsGrrtOpen(true); handleModeChange('black_hole'); }}
       />
 
       {/* Modales y Laboratorios Interactivos */}
@@ -487,7 +497,7 @@ export const App: React.FC = () => {
 
       <GrrtModal
         isOpen={isGrrtOpen}
-        onClose={() => setIsGrrtOpen(false)}
+        onClose={() => { setIsGrrtOpen(false); handleModeChange('solar'); }}
       />
 
       <QuickHelpModal
@@ -495,12 +505,13 @@ export const App: React.FC = () => {
         onClose={() => setIsQuickHelpOpen(false)}
       />
 
-      <AccessibilityController
-        isOpen={isA11yOpen}
-        onClose={() => setIsA11yOpen(false)}
-        settings={a11ySettings}
-        onUpdateSettings={setA11ySettings}
-      />
+        <AccessibilityController
+          isOpen={isA11yOpen}
+          onClose={() => setIsA11yOpen(false)}
+          settings={a11ySettings}
+          onUpdateSettings={setA11ySettings}
+        />
+      </div>
 
       {/* Overlay SVG para filtros de daltonismo FeColorMatrix */}
       <svg className="hidden">

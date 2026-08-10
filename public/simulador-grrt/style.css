@@ -1,12 +1,12 @@
 body {
-    background-color: #000;
+    background-color: #010206;
     margin: 0px;
     overflow: hidden;
 
     color: #fff;
-    font-family: Monospace;
+    font-family: 'Inter', sans-serif;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: normal;
 }
 
 .info {
@@ -2673,4 +2673,125 @@ body.has-timeline-panel #tl-open-btn {
 @media screen and (max-width: 640px) {
     .tl-tracks { display: none; }
     .tl-inspector { display: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Figma HUD Overlay Styles                                                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.hud-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.hud-corner {
+    position: absolute;
+    padding: 32px 40px;
+    pointer-events: auto;
+}
+
+.hud-top-left {
+    top: 0;
+    left: 0;
+}
+
+.hud-top-right {
+    top: 0;
+    right: 0;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.hud-bottom-left {
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.hud-bottom-right {
+    bottom: 0;
+    right: 0;
+}
+
+/* Typography elements */
+.hud-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+}
+
+.hud-subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+
+.hud-data {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1.2px;
+}
+
+.hud-data-right {
+    margin-top: 24px;
+    line-height: 1.8;
+}
+
+.hud-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+}
+
+.hud-hint {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.15);
+    letter-spacing: 1.2px;
+}
+
+.hud-crosshair {
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* Buttons */
+.hud-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 1.5px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.hud-btn:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 800px) {
+    .hud-corner {
+        padding: 16px 20px;
+    }
 }

@@ -84,8 +84,8 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="astro-assistant-title">
-      <div className="w-full max-w-2xl h-[75vh] flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden">
+    <div className="fixed inset-y-0 right-0 z-40 w-[400px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="astro-assistant-title">
+      <div className="w-full h-full flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Cabecera */}
         <div className="flex items-center justify-between p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,1)]/70">
           <div className="flex items-center space-x-3">

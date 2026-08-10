@@ -9,8 +9,9 @@ import { CosmicWebScene } from './CosmicWebScene';
 import { AstrophysicsUtils } from './AstrophysicsUtils';
 import { ProceduralTextures } from './textures/ProceduralTextures';
 import { DynamicStarfield } from './DynamicStarfield';
+import { GrrtScene } from './GrrtScene';
 
-export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory' | 'cosmicweb';
+export type SceneMode = 'solar' | 'earth' | 'deep' | 'observatory' | 'cosmicweb' | 'black_hole';
 
 export interface CosmicEngineOptions {
   onFpsUpdate?: (fps: number) => void;
@@ -35,6 +36,7 @@ export class CosmicEngine {
   private deepScene!: DeepSpaceScene;
   private nightScene!: NightSkyScene;
   private cosmicWebScene!: CosmicWebScene;
+  private grrtScene!: GrrtScene;
   private starfield!: DynamicStarfield;
 
   // Cámara cinemática y navegación orbital
@@ -109,7 +111,8 @@ export class CosmicEngine {
       canvas: this.canvas,
       antialias: true,
       powerPreference: 'high-performance',
-      alpha: false
+      alpha: false,
+      logarithmicDepthBuffer: true
     });
     this.renderer.setSize(width, height);
     this.updateAdaptivePixelRatio(width);
@@ -172,6 +175,7 @@ export class CosmicEngine {
     this.deepScene = new DeepSpaceScene(this.scene);
     this.nightScene = new NightSkyScene(this.scene);
     this.cosmicWebScene = new CosmicWebScene(this.scene);
+    this.grrtScene = new GrrtScene(this.scene);
 
     // Umbral de raycasting para THREE.Points (por defecto es casi imposible
     // impactar una nube de puntos con un rayo); necesario para poder
@@ -209,6 +213,8 @@ export class CosmicEngine {
       return { pos: new THREE.Vector3(60, 110, 100), lookAt: new THREE.Vector3(20, 0, 0), dist: 150 };
     } else if (mode === 'observatory') {
       return { pos: new THREE.Vector3(0, 1, 0), lookAt: new THREE.Vector3(0, 20, 0), dist: 1 };
+    } else if (mode === 'black_hole') {
+      return { pos: new THREE.Vector3(0, 0, 11), lookAt: new THREE.Vector3(0, 0, 0), dist: 11 };
     } else {
       const center = this.cosmicWebScene.getFieldCenter();
       const radius = this.cosmicWebScene.getFieldRadius();
@@ -225,6 +231,7 @@ export class CosmicEngine {
     if (mode === 'earth') return this.earthScene.getAllInteractiveObjects();
     if (mode === 'deep') return this.deepScene.getAllInteractiveObjects();
     if (mode === 'observatory') return this.nightScene.getAllInteractiveObjects();
+    if (mode === 'black_hole') return this.grrtScene.getAllInteractiveObjects();
     return this.cosmicWebScene.getAllInteractiveObjects();
   }
 
@@ -234,6 +241,7 @@ export class CosmicEngine {
     this.deepScene.setVisible(mode === 'deep');
     this.nightScene.setVisible(mode === 'observatory');
     this.cosmicWebScene.setVisible(mode === 'cosmicweb');
+    this.grrtScene.setVisible(mode === 'black_hole');
   }
 
   public setMode(mode: SceneMode): void {
@@ -590,6 +598,8 @@ export class CosmicEngine {
       this.nightScene.update(delta, this.timeSpeed);
     } else if (this.currentMode === 'cosmicweb') {
       this.cosmicWebScene.update(delta);
+    } else if (this.currentMode === 'black_hole') {
+      this.grrtScene.update();
     }
 
     // 5. Update starfield scintillation

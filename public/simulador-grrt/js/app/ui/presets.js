@@ -6,19 +6,23 @@
 /*global BH_PRESETS:true */
 var BH_PRESETS = {
     'Default': {
-        // Simulation defaults — use this to restore the starting configuration.
+        // Updated Default: Illustrative M87*-inspired preset
+        // high-spin, jet-producing, MAD-like thick torus motivated by EHT-era
+        // GRMHD studies. The exact spin and plasma parameters remain model dependent.
         spin_enabled: true, spin: 0.90, spin_strength: 1.0,
-        accretion_disk: true, accretion_mode: 'thin_disk', disk_self_irradiation: true,
-        disk_temperature: 5000,
-        torus: { r0: 4.0, h_ratio: 0.45, radial_falloff: 2.5, opacity: 0.015, outer_radius: 3.5 },
+        accretion_disk: true, accretion_mode: 'thick_torus', disk_self_irradiation: true,
+        disk_temperature: 20000,
+        torus: { r0: 4.0, h_ratio: 0.45, radial_falloff: 2.5, opacity: 0.02, outer_radius: 3.5 },
         slim: { h_ratio: 0.15, opacity: 0.6, puff_factor: 2.5 },
-        jet: { enabled: false, mode: 'simple', half_angle: 5.0,
-               lorentz_factor: 3.0, brightness: 1.2, length: 30.0,
-               magnetization: 10.0, knot_spacing: 6.0, corona_brightness: 1.5,
-               base_width: 0.4, corona_extent: 0.5 },
-        grmhd: { enabled: true, r_high: 40.0, magnetic_beta: 10.0, mad_flux: 0.0,
-                 density_scale: 1.0, turbulence_amp: 1.0, electron_kappa: 5.0,
-                 magnetic_field_str: 1.0 },
+        jet: { enabled: true, mode: 'physical', half_angle: 4.0,
+               lorentz_factor: 5.0, brightness: 1.2, length: 35.0,
+               magnetization: 15.0, knot_spacing: 7.0, corona_brightness: 1.5,
+               base_width: 0.35, corona_extent: 0.6 },
+        // EHT Paper V-style MAD-like morphology: high R_high, strong magnetic flux,
+        // bright crescent, and an active jet.
+        grmhd: { enabled: true, r_high: 80.0, magnetic_beta: 5.0, mad_flux: 0.8,
+                 density_scale: 1.2, turbulence_amp: 1.5, electron_kappa: 4.5,
+                 magnetic_field_str: 1.5 },
         observer: { distance: 11.0 },
         beaming: true,
         physical_beaming: true,
@@ -26,7 +30,7 @@ var BH_PRESETS = {
         disk_gain: 1.0,
         glow: 0.0,
         tonemap_mode: 1,
-        bloom: { enabled: true, strength: 0.35, threshold: 0.65, radius: 0.85 }
+        bloom: { enabled: true, strength: 0.40, threshold: 0.55, radius: 0.90 }
     },
     'M87*': {
         // Illustrative M87*-inspired preset:

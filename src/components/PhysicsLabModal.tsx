@@ -212,8 +212,8 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="physics-lab-title">
-      <div className="w-full max-w-5xl h-[85vh] flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-40 w-[700px] max-w-[90vw] h-[450px] flex pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="physics-lab-title">
+      <div className="w-full h-full flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
         {/* Cabecera */}
         <div className="flex items-center justify-between p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)]">
           <div className="flex items-center space-x-3">
@@ -239,7 +239,7 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
         {/* Cuerpo principal (Izquierda lista, Derecha Canvas y controles) */}
         <div className="flex-1 flex overflow-hidden">
           {/* Panel lateral de experimentos */}
-          <div className="w-80 border-r border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.40)] p-4 space-y-2 overflow-y-auto">
+          <div className="w-64 border-r border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.40)] p-4 space-y-2 overflow-y-auto">
             <span className="text-[11px] font-mono uppercase tracking-wider text-[rgba(237,233,228,0.5)] block mb-2">
               SELECCIONA EXPERIMENTO
             </span>
@@ -276,7 +276,7 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
             </div>
 
             {/* Controles del experimento inferior */}
-            <div className="mt-4 p-4 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex items-center justify-between">
+            <div className="mt-4 p-4 rounded-[6px] bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] flex flex-wrap gap-4 items-center justify-between">
               <div className="flex items-center space-x-6">
                 <div>
                   <label className="block text-xs font-mono text-[rgba(237,233,228,0.5)] mb-1">
