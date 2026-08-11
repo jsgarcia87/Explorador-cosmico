@@ -62,8 +62,12 @@ export class KeplerianOrbitEngine {
    * @param rAU Distancia en UA (AU)
    * @returns Radio en unidades de escena
    */
-  public static mapDistanceAUToScene(rAU: number): number {
+  public static mapDistanceAUToScene(rAU: number, scaleMode: 'educational' | 'realistic' = 'educational'): number {
     if (rAU <= 0) return 0;
+    if (scaleMode === 'realistic') {
+      // Escala Real lineal (1 AU = 100 unidades de escena, ajustable)
+      return rAU * 100.0;
+    }
     // Escala astronómica visual optimizada: Tierra (1 AU) -> 26 unidades
     // r_scene = 26 * (r_AU)^0.42
     return 26.0 * Math.pow(rAU, 0.42);
@@ -112,7 +116,7 @@ export class KeplerianOrbitEngine {
    * @param elements Elementos orbitales J2000
    * @returns Objeto OrbitPositionResult con posición cartesianas 3D y telemetría
    */
-  public static getPositionAtDate(date: Date, elements: KeplerianElements): OrbitPositionResult {
+  public static getPositionAtDate(date: Date, elements: KeplerianElements, scaleMode: 'educational' | 'realistic' = 'educational'): OrbitPositionResult {
     // 1. Días solares transcurridos desde la época J2000.0
     const daysSinceJ2000 = (date.getTime() - J2000_EPOCH_MS) / (1000.0 * 60.0 * 60.0 * 24.0);
 
@@ -161,7 +165,7 @@ export class KeplerianOrbitEngine {
     // 6. Conversión de Eclíptica Astronómica (Z norte eclíptico) a coordenadas Three.js
     // En Three.js: X es derecha, Y es arriba (Norte), Z es profundidad
     // Mapeo: Three.X = x_ecl, Three.Y = z_ecl (Norte eclíptico), Three.Z = -y_ecl
-    const r_scene = this.mapDistanceAUToScene(rAU);
+    const r_scene = this.mapDistanceAUToScene(rAU, scaleMode);
     const scaleFactor = rAU > 0 ? r_scene / rAU : 0;
 
     const position = new THREE.Vector3(
@@ -190,7 +194,8 @@ export class KeplerianOrbitEngine {
    */
   public static generateOrbitCurve3D(
     elements: KeplerianElements,
-    numPoints: number = 256
+    numPoints: number = 256,
+    scaleMode: 'educational' | 'realistic' = 'educational'
   ): THREE.Vector3[] {
     const points: THREE.Vector3[] = [];
     const i_rad = elements.iDeg * DEG_TO_RAD;
@@ -221,7 +226,7 @@ export class KeplerianOrbitEngine {
       const y_ecl_AU = rAU * (sinOmega * cosU + cosOmega * sinU * cosI);
       const z_ecl_AU = rAU * (sinU * sinI);
 
-      const r_scene = this.mapDistanceAUToScene(rAU);
+      const r_scene = this.mapDistanceAUToScene(rAU, scaleMode);
       const scaleFactor = rAU > 0 ? r_scene / rAU : 0;
 
       points.push(

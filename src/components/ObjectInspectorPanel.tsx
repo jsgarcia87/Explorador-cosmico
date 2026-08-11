@@ -17,13 +17,15 @@ interface ObjectInspectorPanelProps {
   onClose: () => void;
   activeProfile: ProfileId;
   onOpenGrrt?: () => void;
+  onOpenCompare?: (id: string) => void;
 }
 
 export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
   selected,
   onClose,
   activeProfile,
-  onOpenGrrt
+  onOpenGrrt,
+  onOpenCompare
 }) => {
   if (!selected) return null;
 
@@ -124,6 +126,16 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
         </div>
 
         <div className="flex items-center space-x-1 md:space-x-2">
+          {selected.kind === 'planet' && onOpenCompare && (
+            <button
+              onClick={() => onOpenCompare(selected.data.id)}
+              title="Comparar con otro cuerpo celeste"
+              className="p-2.5 md:p-2 rounded-[4px] bg-[rgba(200,150,74,0.1)] hover:bg-[rgba(200,150,74,0.2)] text-[#c8964a] transition-colors"
+              aria-label="Comparar"
+            >
+              <Scale className="w-5 h-5 md:w-4 md:h-4" />
+            </button>
+          )}
           <button
             onClick={handleSpeak}
             title="Narrar con Voz Guía"

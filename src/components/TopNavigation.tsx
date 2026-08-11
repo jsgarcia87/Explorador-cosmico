@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SceneMode } from '../engine/CosmicEngine';
 import { ProfileId, USER_PROFILES } from '../data/profiles';
-import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network, MoreHorizontal, Gamepad2 } from 'lucide-react';
+import { CosmicState, ScaleMode } from '../core/CosmicState';
+import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network, MoreHorizontal, Gamepad2, Ruler } from 'lucide-react';
 
 interface TopNavigationProps {
   currentMode: SceneMode;
@@ -43,6 +44,13 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
   const profile = USER_PROFILES[activeProfile];
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const [scaleMode, setScaleMode] = useState<ScaleMode>(CosmicState.getState().scaleMode);
+
+  useEffect(() => {
+    return CosmicState.subscribe((state) => {
+      setScaleMode(state.scaleMode);
+    });
+  }, []);
 
   useEffect(() => {
     if (!isToolsOpen) return;
@@ -146,6 +154,15 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
 
       {/* Right: Primary actions + tools dropdown */}
       <div className="flex items-center space-x-1.5 flex-shrink-0">
+        <button
+          onClick={() => CosmicState.setState({ scaleMode: scaleMode === 'educational' ? 'realistic' : 'educational' })}
+          title={scaleMode === 'educational' ? "Cambiar a Escala Real" : "Cambiar a Escala Educativa"}
+          className="flex items-center space-x-1.5 p-2 md:px-3 md:py-1.5 rounded-[4px] bg-[rgba(152,120,184,0.1)] hover:bg-[rgba(152,120,184,0.18)] text-[#9878b8] border border-[rgba(152,120,184,0.2)] text-xs font-medium transition-all flex-shrink-0"
+        >
+          <Ruler className="w-4 h-4 md:w-3.5 md:h-3.5" />
+          <span className="hidden lg:inline">{scaleMode === 'educational' ? 'Escala Educ.' : 'Escala Real'}</span>
+        </button>
+
         <button
           onClick={onOpenQuickHelp}
           title="Guía Rápida de Misión y Controles"

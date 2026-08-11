@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PLANETS, PlanetData } from '../data/planets';
 import { KeplerianOrbitEngine } from './KeplerianOrbitEngine';
+import { CosmicState, ScaleMode } from '../core/CosmicState';
 import { AtmosphereScatteringShader } from './shaders/AtmosphereScatteringShader';
 import { SunShader } from './shaders/SunShader';
 import { ProceduralTextures, PlanetTextureOptions } from './textures/ProceduralTextures';
@@ -15,6 +16,7 @@ export class SolarSystemScene {
   private sunSurfaceMat: THREE.ShaderMaterial | null = null;
   private sunCoronaMat: THREE.ShaderMaterial | null = null;
   private earthCloudMesh: THREE.Mesh | null = null;
+  private scaleMode: ScaleMode = 'educational';
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -22,6 +24,11 @@ export class SolarSystemScene {
   }
 
   private init(): void {
+    this.scaleMode = CosmicState.getState().scaleMode;
+    CosmicState.subscribe((state) => {
+      this.updateScaleMode(state.scaleMode);
+    });
+
     // 1. Iluminación (Fotorrealista: bajo ambiente para alto contraste día/noche)
     // Aumentamos ligeramente la luz ambiental base
     this.ambientLight = new THREE.AmbientLight(0x222238, 0.08); 
@@ -87,7 +94,7 @@ export class SolarSystemScene {
       if (t > 0.6 && t < 0.63) t -= 0.03;
       
       const rAU = minAU + (maxAU - minAU) * t;
-      const rScene = KeplerianOrbitEngine.mapDistanceAUToScene(rAU);
+      const rScene = KeplerianOrbitEngine.mapDistanceAUToScene(rAU, this.scaleMode);
       
       const angle = Math.random() * Math.PI * 2;
       const x = Math.cos(angle) * rScene;
@@ -285,7 +292,8 @@ export class SolarSystemScene {
       const segments = 128;
       for (let i = 0; i <= segments; i++) {
         const theta = (i / segments) * Math.PI * 2;
-        points.push(new THREE.Vector3(Math.cos(theta) * data.distance, 0, Math.sin(theta) * data.distance));
+        const distScene = KeplerianOrbitEngine.mapDistanceAUToScene(data.realDistanceAU, this.scaleMode);
+        points.push(new THREE.Vector3(Math.cos(theta) * distScene, 0, Math.sin(theta) * distScene));
       }
       const geo = new THREE.BufferGeometry().setFromPoints(points);
       const mat = new THREE.LineBasicMaterial({
@@ -302,7 +310,7 @@ export class SolarSystemScene {
     }
 
     // Órbita kepleriana elíptica real basada en astrometría
-    const orbitPoints = KeplerianOrbitEngine.generateOrbitCurve3D(data.orbitalElements, 180);
+    const orbitPoints = KeplerianOrbitEngine.generateOrbitCurve3D(data.orbitalElements, 180, this.scaleMode);
     const geo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
     const mat = new THREE.LineBasicMaterial({
       color: (data as any).orbitColor || 0x444466,
@@ -335,7 +343,7 @@ export class SolarSystemScene {
 
       // Posicionamiento Orbital Kepleriano
       if (id !== 'sol' && data.orbitalElements) {
-        const astrometry = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements);
+        const astrometry = KeplerianOrbitEngine.getPositionAtDate(currentDate, data.orbitalElements, this.scaleMode);
         mesh.position.copy(astrometry.position);
         mesh.userData.astrometry = astrometry;
       }
@@ -358,6 +366,52 @@ export class SolarSystemScene {
         child.rotation.y += delta * child.userData.orbitSpeed * Math.min(timeSpeed, 50) * 0.01;
       }
     });
+  }
+
+  public updateScaleMode(mode: ScaleMode): void {
+    if (this.scaleMode === mode) return;
+    this.scaleMode = mode;
+    
+    // 1. Escalar planetas
+    this.celestialMeshes.forEach((mesh, id) => {
+      const data = mesh.userData.data as PlanetData;
+      if (mode === 'realistic') {
+        // En realistic mode, 1 AU = 100 unidades
+        // 1 unidad = 1 AU / 100 = 1,495,978.7 km
+        const realRadiusInSceneUnits = data.realRadiusKm / 1495978.7;
+        
+        // Evitamos que sean absolutamente invisibles (mínimo visual 0.08)
+        const visualRadius = Math.max(0.08, realRadiusInSceneUnits);
+        const scaleFactor = visualRadius / data.radius;
+        mesh.scale.setScalar(scaleFactor);
+      } else {
+        mesh.scale.setScalar(1.0);
+      }
+    });
+
+    // 2. Reconstruir órbitas
+    this.orbitLines.forEach(line => {
+      this.rootGroup.remove(line);
+      line.geometry.dispose();
+      if (line.material instanceof THREE.Material) line.material.dispose();
+    });
+    this.orbitLines = [];
+    PLANETS.forEach((body: any) => {
+      if (body.id !== 'sol') {
+        this.createOrbitLine(body);
+      }
+    });
+
+    // 3. Reconstruir asteroides
+    const beltsToRemove: THREE.Object3D[] = [];
+    this.rootGroup.children.forEach(child => {
+      if (child.userData.isBelt) beltsToRemove.push(child);
+    });
+    beltsToRemove.forEach(belt => {
+      this.rootGroup.remove(belt);
+      if ((belt as any).geometry) (belt as any).geometry.dispose();
+    });
+    this.createAsteroidBelts();
   }
 
   public getAllInteractiveObjects(): THREE.Object3D[] {

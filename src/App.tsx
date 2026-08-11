@@ -13,6 +13,7 @@ import { ConstellationLegend } from './components/ConstellationLegend';
 import { DeepSpaceLegendHUD } from './components/DeepSpaceLegendHUD';
 import { PhysicsLabModal } from './components/PhysicsLabModal';
 import { AstroAssistantModal } from './components/AstroAssistantModal';
+import { CompareModal } from './components/CompareModal';
 import { TeacherClassroomModal } from './components/TeacherClassroomModal';
 import { QuizModal } from './components/QuizModal';
 import { GrrtModal } from './components/GrrtModal';
@@ -44,6 +45,8 @@ export const App: React.FC = () => {
 
   // Estados de Modales y Cajones
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+  const [isCompareOpen, setIsCompareOpen] = useState<boolean>(false);
+  const [compareInitialId, setCompareInitialId] = useState<string | undefined>(undefined);
   const [isLabOpen, setIsLabOpen] = useState<boolean>(false);
   const [isAssistantOpen, setIsAssistantOpen] = useState<boolean>(false);
   const [isTeacherOpen, setIsTeacherOpen] = useState<boolean>(false);
@@ -59,7 +62,7 @@ export const App: React.FC = () => {
   const chromeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const chromeHoveredRef = useRef(false);
 
-  const anyModalOpen = isProfileOpen || isLabOpen || isAssistantOpen || isTeacherOpen || isQuizOpen || isGrrtOpen || isA11yOpen || isQuickHelpOpen;
+  const anyModalOpen = isProfileOpen || isLabOpen || isAssistantOpen || isTeacherOpen || isQuizOpen || isGrrtOpen || isA11yOpen || isQuickHelpOpen || isCompareOpen;
 
   const resetChromeTimer = useCallback(() => {
     setIsChromeVisible(true);
@@ -459,9 +462,15 @@ export const App: React.FC = () => {
         onClose={() => setSelectedObject(null)}
         activeProfile={activeProfile}
         onOpenGrrt={() => { setIsGrrtOpen(true); handleModeChange('black_hole'); }}
+        onOpenCompare={(id) => { setCompareInitialId(id); setIsCompareOpen(true); }}
       />
 
       {/* Modales y Laboratorios Interactivos */}
+      <CompareModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        initialPlanetId={compareInitialId}
+      />
       <ProfileSelector
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
