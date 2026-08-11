@@ -411,7 +411,7 @@ export const App: React.FC = () => {
           onOpenTeacherModal={() => setIsTeacherOpen(true)}
           onOpenQuiz={() => setIsQuizOpen(true)}
           onOpenAccessibility={() => setIsA11yOpen(true)}
-          onOpenGrrt={() => { setIsGrrtOpen(true); handleModeChange('black_hole'); }}
+          onOpenGrrt={() => window.open('./simulador-grrt/index.html', '_blank')}
           onOpenQuickHelp={() => setIsQuickHelpOpen(true)}
           fps={fps}
         />
@@ -461,7 +461,7 @@ export const App: React.FC = () => {
         selected={selectedObject}
         onClose={() => setSelectedObject(null)}
         activeProfile={activeProfile}
-        onOpenGrrt={() => { setIsGrrtOpen(true); handleModeChange('black_hole'); }}
+        onOpenGrrt={() => window.open('./simulador-grrt/index.html', '_blank')}
         onOpenCompare={(id) => { setCompareInitialId(id); setIsCompareOpen(true); }}
       />
 
