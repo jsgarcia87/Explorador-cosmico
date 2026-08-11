@@ -80,10 +80,10 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent pointer-events-none">
-      <div className="relative w-full h-full flex flex-col pointer-events-auto">
+      <div className="relative w-full h-full flex flex-col">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 bg-[#0a0c18]/90 border-b border-[rgba(122,175,200,0.2)] z-20 backdrop-blur-lg flex-shrink-0">
+        <header className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 bg-[#0a0c18]/90 border-b border-[rgba(122,175,200,0.2)] z-20 backdrop-blur-lg flex-shrink-0 pointer-events-auto">
           <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-[#7aafc8] animate-pulse shadow-[0_0_12px_rgba(122,175,200,0.5)] flex-shrink-0" />
             <div className="min-w-0">
@@ -130,7 +130,7 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
 
           {/* Education aside: bottom sheet on mobile, right panel on desktop */}
           {showEduPanel && (
-            <aside className="w-full md:w-96 md:max-w-[90vw] max-h-[50vh] md:max-h-full md:h-full bg-[#0a0d1e]/95 border-t md:border-t-0 md:border-l border-[rgba(122,175,200,0.15)] flex flex-col z-20 backdrop-blur-xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300 overflow-hidden">
+            <aside className="w-full md:w-96 md:max-w-[90vw] max-h-[50vh] md:max-h-full md:h-full bg-[#0a0d1e]/95 border-t md:border-t-0 md:border-l border-[rgba(122,175,200,0.15)] flex flex-col z-20 backdrop-blur-xl pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-right duration-300 overflow-hidden">
 
               {/* Header */}
               <div className="p-3 md:p-5 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(30,15,40,0.3)] flex-shrink-0">
