@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { SceneMode } from '../engine/CosmicEngine';
 import { ProfileId, USER_PROFILES } from '../data/profiles';
 import { CosmicState, ScaleMode } from '../core/CosmicState';
-import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network, MoreHorizontal, Gamepad2, Ruler, Menu, X } from 'lucide-react';
+import { Globe, Sun, Sparkles, Telescope, Volume2, VolumeX, User, FlaskConical, Bot, School, HelpCircle, Eye, EyeOff, Network, MoreHorizontal, Gamepad2, Ruler, Menu, X, Circle } from 'lucide-react';
 
 interface TopNavigationProps {
   currentMode: SceneMode;
@@ -84,6 +84,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
     { mode: 'deep', icon: Sparkles, label: 'Espacio Profundo', isAccent: true },
     { mode: 'observatory', icon: Telescope, label: 'Observatorio' },
     { mode: 'cosmicweb', icon: Network, label: 'Red Cósmica', isAccent: true },
+    { mode: 'black_hole', icon: Circle, label: 'Agujero Negro', isAccent: true },
   ];
 
   return (
@@ -104,7 +105,7 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
           {sceneModes.map(({ mode, icon: Icon, label, isAccent }) => (
             <button
               key={mode}
-              onClick={() => onModeChange(mode)}
+              onClick={() => mode === 'black_hole' ? onOpenGrrt() : onModeChange(mode)}
               className={`flex items-center space-x-2 px-4 py-1.5 text-[10px] tracking-widest uppercase transition-all duration-300 ${
                 currentMode === mode
                   ? isAccent
@@ -154,15 +155,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
             >
               <HelpCircle className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">MANUAL</span>
-            </button>
-
-            <button
-              onClick={onOpenGrrt}
-              title="Simulador de Agujero Negro Relativista GRRT"
-              className="flex items-center space-x-2 px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20 hover:border-accent/60 transition-all text-[9px] tracking-widest uppercase min-h-[36px]"
-            >
-              <span className="w-1.5 h-1.5 bg-accent animate-pulse" />
-              <span className="hidden lg:inline">GRRT_SIM</span>
             </button>
 
             <button
@@ -238,7 +230,10 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                   {sceneModes.map(({ mode, icon: Icon, label, isAccent }) => (
                     <button
                       key={mode}
-                      onClick={() => { onModeChange(mode); setIsMobileMenuOpen(false); }}
+                      onClick={() => {
+                        if (mode === 'black_hole') { onOpenGrrt(); } else { onModeChange(mode); }
+                        setIsMobileMenuOpen(false);
+                      }}
                       className={`w-full flex items-center space-x-3 px-3 py-3 text-[11px] tracking-wider uppercase transition-colors min-h-[44px] ${
                         currentMode === mode
                           ? isAccent
@@ -269,13 +264,6 @@ export const TopNavigation: React.FC<TopNavigationProps> = ({
                   >
                     <HelpCircle className="w-4 h-4 flex-shrink-0" />
                     <span>Manual / Guía</span>
-                  </button>
-                  <button
-                    onClick={() => { onOpenGrrt(); setIsMobileMenuOpen(false); }}
-                    className="w-full flex items-center space-x-3 px-3 py-3 text-[11px] tracking-wider uppercase text-accent hover:bg-accent/10 transition-colors min-h-[44px]"
-                  >
-                    <Sparkles className="w-4 h-4 flex-shrink-0" />
-                    <span>Simulador GRRT</span>
                   </button>
                 </div>
 

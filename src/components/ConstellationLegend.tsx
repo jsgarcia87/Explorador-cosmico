@@ -32,7 +32,7 @@ export const ConstellationLegend: React.FC<ConstellationLegendProps> = ({
   };
 
   return (
-    <div className="absolute top-14 md:top-24 right-2 md:right-6 w-56 md:w-72 bg-black/80 backdrop-blur-md border border-[rgba(237,233,228,0.07)] rounded-[6px] overflow-hidden shadow-2xl z-40 flex flex-col max-h-[50vh] md:max-h-[60vh]">
+    <div className="absolute top-16 md:top-24 right-2 md:right-6 w-56 md:w-72 bg-black/80 backdrop-blur-md border border-[rgba(237,233,228,0.07)] rounded-[6px] overflow-hidden shadow-2xl z-30 flex flex-col max-h-[50vh] md:max-h-[60vh]">
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
         className="w-full p-3 md:p-4 border-b border-[rgba(237,233,228,0.07)] flex justify-between items-center bg-[rgba(237,233,228,0.04)] min-h-[44px] md:min-h-0"
