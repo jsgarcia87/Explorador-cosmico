@@ -53,20 +53,7 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
 
   return (
     <div className="fixed inset-0 z-10 pointer-events-none font-mono">
-      {/* Mobile: compact single-line status bar */}
-      <div className="md:hidden absolute top-14 left-0 right-0 flex items-center justify-between px-3 py-1.5 bg-space-deep/70 backdrop-blur-sm border-b border-primary/10 opacity-70">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-accent animate-pulse-slow text-[8px]">●</span>
-          <span className="text-[10px] tracking-wider text-primary font-bold truncate">{meta.label}</span>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 text-[10px] tracking-wider">
-          <span className="text-white font-bold">{formatSimDate(currentDate)}</span>
-          <span className="text-telemetry-dim">|</span>
-          <span className={isPaused ? 'text-accent animate-flicker' : 'text-primary'}>
-            {formatTimeSpeed(timeSpeed, isPaused)}
-          </span>
-        </div>
-      </div>
+      {/* Mobile: removed — info consolidated into TopNavigation + TimeController */}
 
       {/* Desktop: Top-left Mode + Context */}
       <div className="hidden md:block absolute top-16 left-6 p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-64 opacity-80 hover:opacity-100 transition-opacity">
@@ -116,7 +103,7 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
       </div>
 
       {/* Bottom-right: Prev/Next module navigation */}
-      <div className="absolute bottom-20 md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-14 md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
         {prevMode && (
           <button
             onClick={() => onModeChange(prevMode)}

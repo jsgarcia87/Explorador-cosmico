@@ -26,7 +26,7 @@ export const ObservatoryHUD: React.FC<ObservatoryHUDProps> = ({
   const currentOpt = spectrumOptions.find(o => o.id === currentSpectrum) || spectrumOptions[0];
 
   return (
-    <div className="fixed top-14 md:top-16 left-2 md:left-6 z-40 flex flex-col space-y-2 md:space-y-3 animate-fade-in">
+    <div className="fixed top-16 md:top-16 left-2 md:left-6 z-30 flex flex-col space-y-2 md:space-y-3 animate-fade-in">
       {/* GPS indicator */}
       <div className="flex items-center space-x-2 md:space-x-3 px-2.5 md:px-3.5 py-1.5 md:py-2 rounded-[6px] bg-[rgba(3,3,5,1)]/70 backdrop-blur-xl border border-[rgba(237,233,228,0.10)] shadow-xl text-[10px] md:text-xs font-mono text-[rgba(237,233,228,0.6)]">
         <MapPin className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#7aafc8] flex-shrink-0" />
