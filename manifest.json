@@ -1,0 +1,19 @@
+{
+  "name": "Observatorio Cósmico NASA - Explorador Astrofísico 3D",
+  "short_name": "Observatorio NASA",
+  "description": "Plataforma web astrofísica interactiva de precisión de grado NASA/ESA para la exploración y enseñanza del Sistema Solar y Agujeros Negros GRRT.",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#010206",
+  "theme_color": "#010206",
+  "categories": ["education", "science", "utilities"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

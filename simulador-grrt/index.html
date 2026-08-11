@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <title>Observatorio GRRT — Simulación Relativista de Agujero Negro</title>
+        <link rel="icon" type="image/svg+xml" href="assets/img/icons/black-hole.svg"> 
+        <meta charset="utf-8">
+        <meta name="description" content="Simulación científica de agujero negro basada en la ecuación geodésica de Binet, métrica de Kerr-Schwarzschild, disco de acreción Doppler y jets relativistas.">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    </head>
+    <body>
+        <!-- HUD Corners -->
+        <div class="hud-container">
+            <!-- Top Left -->
+            <div class="hud-corner hud-top-left">
+                <div class="hud-title">COSMOS.EDU &middot; SIMULADOR INTERACTIVO</div>
+                <div class="hud-subtitle">
+                    <span class="hud-dot" style="color: #c78345;">&bull;</span>
+                    AGUJERO NEGRO M87*
+                </div>
+                <div class="hud-data">
+                    6.5 &times; 10&sup9; M&#x2609; &middot; Radio Horizonte ~19,000 AU
+                </div>
+            </div>
+
+            <!-- Top Right -->
+            <div class="hud-corner hud-top-right">
+                <button class="hud-btn hud-btn-outline" onclick="history.back()">&larr; VOLVER</button>
+                <div class="hud-data hud-data-right">
+                    <div id="hud-date">16 AGO 2026</div>
+                    <div id="hud-time">17:00:46 UTC</div>
+                    <div id="hud-fps">1&times; REAL &middot; <span id="hud-fps-val">60</span> FPS</div>
+                </div>
+            </div>
+
+            <!-- Bottom Left -->
+            <div class="hud-corner hud-bottom-left">
+                <div class="hud-crosshair">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="6"/>
+                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="hud-label">EXPLORACION INTERACTIVA</div>
+                    <div class="hud-hint">ARRASTRAR PARA ORBITAR &middot; SCROLL PARA ZOOM</div>
+                </div>
+            </div>
+
+            <!-- Bottom Right -->
+            <div class="hud-corner hud-bottom-right">
+                <button class="hud-btn hud-btn-outline">SISTEMA SOLAR &rarr;</button>
+            </div>
+        </div>
+
+        <script src="js-libs/jquery-2.1.4.min.js"></script>
+        <script src="js-libs/three.min.js"></script>
+        <script src="js-libs/OrbitControls.js"></script>
+        <script src="js-libs/Detector.js"></script>
+        <script src="js-libs/stats.min.js"></script>
+        <script src="js-libs/mustache.min.js"></script>
+        <script src="js-libs/dat.gui.min.js"></script>
+        <script src="js-libs/webm-muxer.js"></script>
+        <script src="three-js-monkey-patch.js"></script>
+
+        <script id="vertex-shader" type="x-shader/x-vertex">
+
+            void main()    {
+
+                gl_Position = vec4( position, 1.0 );
+
+            }
+
+        </script>
+
+        <!-- App modules (load order matters — later files depend on earlier ones) -->
+        <script src="js/app/core/observer.js"></script>
+        <script src="js/app/core/shader.js"></script>
+        <script src="js/app/scene/camera.js"></script>
+        <script src="js/app/graphics/bloom.js"></script>
+        <script src="js/app/ui/presets.js"></script>
+        <script src="js/app/ui/quality-presets.js"></script>
+        <script src="js/app/presentation/presentation-controller.js"></script>
+        <script src="js/app/presentation/timeline-panel.js"></script>
+        <script src="js/app/presentation/presentation-gui.js"></script>
+        <script src="js/app/ui/gui.js?v=20260226-2"></script>
+        <script src="js/app/core/renderer.js"></script>
+        <script src="js/app/bootstrap.js"></script>
+
+    </body>
+</html>
