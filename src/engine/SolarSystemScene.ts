@@ -163,12 +163,12 @@ export class SolarSystemScene {
     const textureLoader = new THREE.TextureLoader();
     let mat: THREE.Material;
     if (isSun) {
-      const sunMap = textureLoader.load('/textures/sol.jpg');
+      const sunMap = textureLoader.load('./textures/sol.jpg');
       sunMap.colorSpace = THREE.SRGBColorSpace;
       this.sunSurfaceMat = SunShader.createSurfaceMaterial(sunMap);
       mat = this.sunSurfaceMat;
     } else if (data.id === 'tierra') {
-      const earthMap = textureLoader.load('/textures/tierra.jpg');
+      const earthMap = textureLoader.load('./textures/tierra.jpg');
       earthMap.colorSpace = THREE.SRGBColorSpace;
       mat = new THREE.MeshStandardMaterial({
         map: earthMap,
@@ -176,7 +176,7 @@ export class SolarSystemScene {
         metalness: 0.0,
       });
     } else {
-      const map = textureLoader.load(`/textures/${data.id}.jpg`);
+      const map = textureLoader.load(`./textures/${data.id}.jpg`);
       map.colorSpace = THREE.SRGBColorSpace;
       mat = new THREE.MeshStandardMaterial({
         map: map,
@@ -216,7 +216,7 @@ export class SolarSystemScene {
 
     // Si tiene anillos (Saturno)
     if (data.hasRing) {
-      const ringMap = new THREE.TextureLoader().load('/textures/saturno_anillo.png');
+      const ringMap = new THREE.TextureLoader().load('./textures/saturno_anillo.png');
       ringMap.colorSpace = THREE.SRGBColorSpace;
       const innerR = data.radius * 1.35;
       const outerR = data.radius * 2.3;

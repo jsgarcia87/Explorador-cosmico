@@ -88,9 +88,9 @@ export class GrrtScene {
 
     // 3. Exoplanetas (Sistema Gargantúa)
     const textureLoader = new THREE.TextureLoader();
-    const neptuneTex = textureLoader.load('/textures/neptuno.jpg');
+    const neptuneTex = textureLoader.load('./textures/neptuno.jpg');
     neptuneTex.colorSpace = THREE.SRGBColorSpace;
-    const moonTex = textureLoader.load('/textures/luna.jpg');
+    const moonTex = textureLoader.load('./textures/luna.jpg');
     moonTex.colorSpace = THREE.SRGBColorSpace;
 
     this.planetsData.forEach((pd, index) => {

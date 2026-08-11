@@ -40,7 +40,7 @@ export class EarthScene {
     // 2. Globo Terrestre
     const earthGeo = new THREE.SphereGeometry(3.0, 64, 64);
     const textureLoader = new THREE.TextureLoader();
-    const earthMap = textureLoader.load('/textures/tierra.jpg');
+    const earthMap = textureLoader.load('./textures/tierra.jpg');
     earthMap.colorSpace = THREE.SRGBColorSpace;
     const earthMat = new THREE.MeshStandardMaterial({
       map: earthMap,
@@ -86,7 +86,7 @@ export class EarthScene {
 
     // 6. Satélite Natural: La Luna (Inclinación orbital 5.14° respecto a la eclíptica)
     const moonGeo = new THREE.SphereGeometry(0.82, 48, 48);
-    const moonMap = textureLoader.load('/textures/luna.jpg');
+    const moonMap = textureLoader.load('./textures/luna.jpg');
     moonMap.colorSpace = THREE.SRGBColorSpace;
     const moonMat = new THREE.MeshStandardMaterial({
       map: moonMap,
