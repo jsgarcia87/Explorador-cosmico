@@ -101,7 +101,7 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
 
   return (
     <aside
-      className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:left-auto md:top-20 md:right-6 md:w-96 max-h-[60vh] md:max-h-[82vh] z-40 flex flex-col glass-panel border-t-2 md:border-l-2 md:border-t-2 border-primary/40 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden animate-slide-up md:animate-slide-in font-mono"
+      className="fixed bottom-0 left-0 right-0 w-full md:bottom-auto md:left-auto md:top-20 md:right-6 md:w-96 max-h-[45vh] md:max-h-[82vh] z-40 flex flex-col glass-panel border-t-2 md:border-l-2 md:border-t-2 border-primary/40 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden animate-slide-up md:animate-slide-in font-mono"
       aria-label="Panel de inspección astronómica"
     >
       {/* Cabecera del panel */}
@@ -125,7 +125,7 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
             <button
               onClick={() => onOpenCompare(selected.data.id)}
               title="Comparar con otro cuerpo celeste"
-              className="p-2 border border-accent/20 bg-accent/5 hover:bg-accent/20 text-accent transition-colors"
+              className="p-2 border border-accent/20 bg-accent/5 hover:bg-accent/20 text-accent transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
               aria-label="Comparar"
             >
               <Scale className="w-4 h-4" />
@@ -134,7 +134,7 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
           <button
             onClick={handleSpeak}
             title="Narrar con Voz Guía"
-            className="p-2 border border-primary/20 bg-primary/5 hover:bg-primary/20 text-primary transition-colors"
+            className="p-2 border border-primary/20 bg-primary/5 hover:bg-primary/20 text-primary transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             aria-label="Escuchar narración"
           >
             <Volume2 className="w-4 h-4" />
@@ -144,7 +144,7 @@ export const ObjectInspectorPanel: React.FC<ObjectInspectorPanelProps> = ({
               cosmicAudio.stopSpeech();
               onClose();
             }}
-            className="p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 hover:text-white text-telemetry-muted transition-colors"
+            className="p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 hover:text-white text-telemetry-muted transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             aria-label="Cerrar panel de inspección"
           >
             <X className="w-4 h-4" />

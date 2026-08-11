@@ -72,10 +72,10 @@ const OnScreenLabel: React.FC<{ item: LegendItem }> = ({ item }) => {
       style={{ left: item.screenX, top: item.screenY, opacity }}
     >
       <div className={`w-1.5 h-1.5 border-[1px] ${dotClass}`} />
-      <span className="font-display font-bold text-[10px] tracking-widest text-white whitespace-nowrap bg-space-dark/80 px-2 py-0.5 border border-primary/30 uppercase mt-1">
+      <span className="font-display font-bold text-[11px] md:text-[10px] tracking-widest text-white whitespace-nowrap bg-space-dark/80 px-2 py-0.5 border border-primary/30 uppercase mt-1">
         {item.name}
       </span>
-      <span className="text-[9px] text-primary/60 tracking-widest whitespace-nowrap font-data">
+      <span className="text-[10px] md:text-[9px] text-primary/60 tracking-widest whitespace-nowrap font-data">
         {formatDistance(item.distance)}
       </span>
     </div>
@@ -126,7 +126,7 @@ const OffScreenArrow: React.FC<{ item: LegendItem }> = ({ item }) => {
       >
         <polygon points="16,8 4,2 6,8 4,14" className="fill-primary opacity-80" />
       </svg>
-      <span className="text-[8px] tracking-widest uppercase text-telemetry-muted whitespace-nowrap bg-space-dark/80 px-1.5 py-0.5 border border-primary/20">
+      <span className="text-[10px] md:text-[8px] tracking-widest uppercase text-telemetry-muted whitespace-nowrap bg-space-dark/80 px-1.5 py-0.5 border border-primary/20">
         {abbrev}
       </span>
     </div>

@@ -75,8 +75,8 @@ export const QuizModal: React.FC<QuizModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-[500px] max-w-[90vw] p-4 flex items-center pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
-      <div className="w-full max-h-full overflow-y-auto p-6 rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto animate-in slide-in-from-right duration-300">
+    <div className="fixed inset-0 md:inset-y-0 md:left-auto md:right-0 z-40 md:w-[500px] md:max-w-[90vw] md:p-4 flex items-center pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="quiz-title">
+      <div className="w-full h-full md:h-auto md:max-h-full overflow-y-auto p-4 md:p-6 rounded-none md:rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto animate-in slide-in-from-right duration-300">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div className="flex items-center space-x-3">
@@ -92,7 +92,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             aria-label="Cerrar cuestionario"
           >
             <X className="w-5 h-5" />
@@ -141,7 +141,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                     key={idx}
                     onClick={() => handleSelect(idx)}
                     disabled={isSubmitted}
-                    className={`w-full text-left p-3.5 rounded-[6px] border text-xs font-medium transition-all flex items-center justify-between ${btnStyle}`}
+                    className={`w-full text-left p-3.5 rounded-[6px] border text-xs font-medium transition-all flex items-center justify-between min-h-[44px] ${btnStyle}`}
                   >
                     <span>{opt}</span>
                     {isSubmitted && isCorrect && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
@@ -165,7 +165,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 <button
                   onClick={handleSubmit}
                   disabled={selectedOption === null}
-                  className={`px-6 py-2.5 rounded-[6px] font-outfit font-bold text-xs transition-all ${
+                  className={`w-full md:w-auto px-6 py-3 md:py-2.5 rounded-[6px] font-outfit font-bold text-xs transition-all min-h-[44px] md:min-h-0 ${
                     selectedOption !== null
                       ? 'bg-[#7aafc8] hover:bg-[#8ec5dc] text-black shadow-lg shadow-[rgba(122,175,200,0.15)]'
                       : 'bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.4)] cursor-not-allowed'
@@ -176,7 +176,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               ) : (
                 <button
                   onClick={handleNext}
-                  className="px-6 py-2.5 rounded-[6px] bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-[#ede9e4] font-outfit font-bold text-xs shadow-lg shadow-purple-500/25 transition-all"
+                  className="w-full md:w-auto px-6 py-3 md:py-2.5 rounded-[6px] bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-[#ede9e4] font-outfit font-bold text-xs shadow-lg shadow-purple-500/25 transition-all min-h-[44px] md:min-h-0"
                 >
                   {currentIndex < COSMIC_QUIZ.length - 1 ? 'Siguiente Pregunta' : 'Ver Resultado Final'}
                 </button>
@@ -202,17 +202,17 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               INSIGNIA DESBLOQUEADA: <strong className="text-[#ede9e4] font-bold">{profile.badge}</strong>
             </div>
 
-            <div className="pt-4 flex items-center justify-center space-x-3">
+            <div className="pt-4 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3">
               <button
                 onClick={handleRestart}
-                className="px-5 py-2.5 rounded-[6px] bg-[rgba(237,233,228,0.08)] hover:bg-[rgba(237,233,228,0.12)] text-[#ede9e4] font-outfit font-bold text-xs flex items-center space-x-1.5 transition-colors"
+                className="w-full md:w-auto px-5 py-2.5 rounded-[6px] bg-[rgba(237,233,228,0.08)] hover:bg-[rgba(237,233,228,0.12)] text-[#ede9e4] font-outfit font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors min-h-[44px] md:min-h-0"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Repetir Cuestionario</span>
               </button>
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-[6px] bg-[#7aafc8] hover:bg-[#8ec5dc] text-black font-outfit font-bold text-xs transition-colors"
+                className="w-full md:w-auto px-6 py-2.5 rounded-[6px] bg-[#7aafc8] hover:bg-[#8ec5dc] text-black font-outfit font-bold text-xs transition-colors min-h-[44px] md:min-h-0"
               >
                 Volver al Observatorio
               </button>

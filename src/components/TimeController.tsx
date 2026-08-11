@@ -32,10 +32,10 @@ export const TimeController: React.FC<TimeControllerProps> = ({
   });
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] md:w-auto md:left-6 md:translate-x-0 md:bottom-6 z-40 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start space-x-2 md:space-x-3 gap-y-2 p-2 glass-panel border-l-2 border-t-2 border-primary/40 font-mono">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] md:w-auto md:left-6 md:translate-x-0 md:bottom-6 z-40 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start gap-x-2 md:gap-x-3 gap-y-2 p-2 glass-panel border-l-2 border-t-2 border-primary/40 font-mono">
       <button
         onClick={onTogglePause}
-        className="p-2 border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex-shrink-0"
+        className="p-2 border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
         aria-label={isPaused ? 'Reanudar tiempo astronómico' : 'Pausar tiempo astronómico'}
       >
         {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
@@ -64,7 +64,7 @@ export const TimeController: React.FC<TimeControllerProps> = ({
                 if (isPaused) onTogglePause();
                 onSpeedChange(speed);
               }}
-              className={`px-3 py-1.5 text-[10px] tracking-widest font-bold transition-all flex-1 md:flex-none text-center border-b-2 ${
+              className={`px-3 py-1.5 text-[10px] tracking-widest font-bold transition-all flex-1 md:flex-none text-center border-b-2 min-h-[44px] md:min-h-0 ${
                 isActive
                   ? 'bg-primary/20 text-primary border-primary shadow-[0_0_8px_rgba(122,175,200,0.3)]'
                   : 'bg-space-dark text-telemetry-muted border-transparent hover:bg-primary/5 hover:text-white hover:border-primary/50'
@@ -79,7 +79,7 @@ export const TimeController: React.FC<TimeControllerProps> = ({
       <button
         onClick={onResetTime}
         title="Restablecer a fecha actual"
-        className="absolute md:relative right-4 top-4 md:right-auto md:top-auto p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 text-telemetry-muted hover:text-white transition-colors"
+        className="p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 text-telemetry-muted hover:text-white transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center flex-shrink-0"
         aria-label="Restablecer tiempo a fecha actual"
       >
         <RotateCcw className="w-3 h-3" />

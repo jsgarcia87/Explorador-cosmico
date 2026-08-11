@@ -20,8 +20,8 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
   const profilesList = Object.values(USER_PROFILES) as UserProfile[];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="profile-selector-title">
-      <div className="relative w-full max-w-2xl p-6 rounded-[8px] bg-[rgba(8,8,12,1)]/90 border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="profile-selector-title">
+      <div className="relative w-full md:max-w-2xl p-4 md:p-6 rounded-t-[12px] md:rounded-[8px] bg-[rgba(8,8,12,1)]/90 border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Cabecera del modal */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div>
@@ -35,7 +35,7 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             aria-label="Cerrar ventana de selección de perfil"
           >
             <X className="w-5 h-5" />
@@ -86,11 +86,11 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
         </div>
 
         {/* Pie del modal */}
-        <div className="mt-6 pt-4 border-t border-[rgba(237,233,228,0.07)] flex items-center justify-between text-xs text-[rgba(237,233,228,0.5)]">
-          <span>Modo Kiosko ideal para museos con temporizador auto-guiado.</span>
+        <div className="mt-4 md:mt-6 pt-4 border-t border-[rgba(237,233,228,0.07)] flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-[rgba(237,233,228,0.5)] flex-shrink-0">
+          <span className="hidden md:inline">Modo Kiosko ideal para museos con temporizador auto-guiado.</span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-[4px] bg-[rgba(237,233,228,0.08)] hover:bg-[rgba(237,233,228,0.12)] text-[#ede9e4] font-medium transition-colors"
+            className="w-full md:w-auto px-4 py-3 md:py-2 rounded-[4px] bg-[rgba(237,233,228,0.08)] hover:bg-[rgba(237,233,228,0.12)] text-[#ede9e4] font-medium transition-colors min-h-[44px] md:min-h-0"
           >
             Aceptar
           </button>
