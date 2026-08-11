@@ -53,7 +53,6 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
       timestamp: 'Ahora'
     };
 
-    // Respuesta inteligente astrofísica adaptada según consulta
     let responseText = 'El universo está lleno de misterios fascinantes. ';
     const lower = query.toLowerCase();
     if (lower.includes('agujero') || lower.includes('negro') || lower.includes('gargantua') || lower.includes('sagitario')) {
@@ -84,20 +83,20 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 z-40 w-[400px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="astro-assistant-title">
-      <div className="w-full h-full flex flex-col rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto overflow-hidden animate-in slide-in-from-right duration-300">
-        {/* Cabecera */}
-        <div className="flex items-center justify-between p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,1)]/70">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-[6px] bg-purple-500/20 border border-[rgba(152,120,184,0.3)]/40 text-[#a88cc8]">
-              <Bot className="w-6 h-6" />
+    <div className="fixed inset-0 md:inset-y-0 md:left-auto md:right-0 z-40 md:w-[400px] md:max-w-[90vw] md:p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="astro-assistant-title">
+      <div className="w-full h-full flex flex-col rounded-none md:rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto overflow-hidden animate-in slide-in-from-right duration-300">
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 md:p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,1)]/70 flex-shrink-0">
+          <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
+            <div className="p-1.5 md:p-2 rounded-[6px] bg-purple-500/20 border border-[rgba(152,120,184,0.3)]/40 text-[#a88cc8] flex-shrink-0">
+              <Bot className="w-5 h-5 md:w-6 md:h-6" />
             </div>
-            <div>
-              <h2 id="astro-assistant-title" className="text-lg font-outfit font-bold text-[#ede9e4]">
-                Astro-IA • Tutor Astronómico Inteligente
+            <div className="min-w-0">
+              <h2 id="astro-assistant-title" className="text-sm md:text-lg font-outfit font-bold text-[#ede9e4] truncate">
+                Astro-IA
               </h2>
-              <span className="text-xs font-mono text-[#7aafc8]">
-                Perfil Activo: {profile.name}
+              <span className="text-[10px] md:text-xs font-mono text-[#7aafc8]">
+                Perfil: {profile.name}
               </span>
             </div>
           </div>
@@ -107,28 +106,28 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               cosmicAudio.stopSpeech();
               onClose();
             }}
-            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors"
+            className="p-2 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center flex-shrink-0"
             aria-label="Cerrar asistente inteligente"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Historial de conversación */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Chat history */}
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 min-h-0">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex items-start space-x-3 ${msg.sender === 'user' ? 'justify-end' : ''}`}
+              className={`flex items-start space-x-2 md:space-x-3 ${msg.sender === 'user' ? 'justify-end' : ''}`}
             >
               {msg.sender === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-[#a88cc8] border border-[rgba(152,120,184,0.3)]/30 flex-shrink-0">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-[#a88cc8] border border-[rgba(152,120,184,0.3)]/30 flex-shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </div>
               )}
 
               <div
-                className={`max-w-md p-4 rounded-[8px] text-xs leading-relaxed ${
+                className={`max-w-[80%] p-3 md:p-4 rounded-[8px] text-[11px] md:text-xs leading-relaxed ${
                   msg.sender === 'user'
                     ? 'bg-[#7aafc8] text-black font-medium rounded-tr-none'
                     : 'bg-[rgba(237,233,228,0.04)] border border-[rgba(237,233,228,0.07)] text-[#ede9e4] rounded-tl-none'
@@ -137,11 +136,11 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
                 <p>{msg.text}</p>
                 {msg.sender === 'assistant' && (
                   <div className="mt-2 pt-2 border-t border-[rgba(237,233,228,0.07)] flex items-center justify-between text-[10px] text-[rgba(237,233,228,0.5)]">
-                    <span>Voz Inteligente NASA</span>
+                    <span className="hidden sm:inline">Voz Inteligente NASA</span>
                     <button
                       onClick={() => cosmicAudio.speakNarration(msg.text)}
                       title="Repetir narración"
-                      className="text-[#8ec5dc] hover:text-[#ede9e4] flex items-center space-x-1"
+                      className="text-[#8ec5dc] hover:text-[#ede9e4] flex items-center space-x-1 min-h-[44px] md:min-h-0"
                     >
                       <Volume2 className="w-3 h-3" />
                       <span>Escuchar</span>
@@ -151,18 +150,18 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               </div>
 
               {msg.sender === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-[#7aafc8] flex items-center justify-center text-black font-bold flex-shrink-0">
-                  <User className="w-4 h-4" />
+                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#7aafc8] flex items-center justify-center text-black font-bold flex-shrink-0">
+                  <User className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Preguntas sugeridas y barra de envío */}
-        <div className="p-4 border-t border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)] space-y-3">
-          <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[rgba(237,233,228,0.5)] flex items-center mr-1">
+        {/* Suggestions + input */}
+        <div className="p-3 md:p-4 border-t border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)] space-y-2 md:space-y-3 flex-shrink-0">
+          <div className="grid grid-cols-2 md:flex md:items-center gap-1.5 md:gap-2 md:overflow-x-auto md:pb-1">
+            <span className="col-span-2 md:col-auto text-[10px] font-mono uppercase tracking-wider text-[rgba(237,233,228,0.5)] flex items-center mb-0.5 md:mb-0 md:mr-1">
               <HelpCircle className="w-3 h-3 mr-1" />
               <span>Sugerencias:</span>
             </span>
@@ -170,7 +169,7 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               <button
                 key={idx}
                 onClick={() => handleSend(q)}
-                className="whitespace-nowrap px-3 py-1 rounded-full bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] border border-[rgba(237,233,228,0.07)] text-xs text-[#8ec5dc] transition-colors"
+                className="px-2 md:px-3 py-1.5 rounded-full bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] border border-[rgba(237,233,228,0.07)] text-[10px] md:text-xs text-[#8ec5dc] transition-colors text-left md:whitespace-nowrap min-h-[44px] md:min-h-0 flex items-center"
               >
                 {q}
               </button>
@@ -188,15 +187,15 @@ export const AstroAssistantModal: React.FC<AstroAssistantModalProps> = ({
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pregunta a Astro-IA sobre estrellas, agujeros negros o física..."
-              className="flex-1 px-4 py-2.5 rounded-[6px] bg-black/60 border border-[rgba(237,233,228,0.10)] text-[#ede9e4] text-xs placeholder-slate-500 focus:outline-none focus:border-[rgba(122,175,200,0.3)] transition-all"
+              placeholder="Pregunta sobre estrellas, agujeros negros..."
+              className="flex-1 px-3 md:px-4 py-2.5 rounded-[6px] bg-black/60 border border-[rgba(237,233,228,0.10)] text-[#ede9e4] text-xs placeholder-slate-500 focus:outline-none focus:border-[rgba(122,175,200,0.3)] transition-all min-h-[44px] md:min-h-0"
             />
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-[6px] bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-[#ede9e4] font-outfit font-bold text-xs flex items-center space-x-1.5 transition-all shadow-lg shadow-purple-500/25"
+              className="px-4 md:px-5 py-2.5 rounded-[6px] bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-[#ede9e4] font-outfit font-bold text-xs flex items-center space-x-1.5 transition-all shadow-lg shadow-purple-500/25 min-h-[44px] md:min-h-0"
             >
-              <span>Preguntar</span>
-              <Send className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Preguntar</span>
+              <Send className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
             </button>
           </form>
         </div>

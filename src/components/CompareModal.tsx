@@ -40,7 +40,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, ini
           <div className="flex-1 text-right text-xs font-data font-bold text-accent">
             {typeof val1 === 'number' ? formatNumber(val1) : val1}
           </div>
-          <div className="w-1/3 flex space-x-1 items-center justify-center">
+          <div className="w-1/4 md:w-1/3 flex space-x-1 items-center justify-center">
             <div className="flex-1 flex justify-end">
               <div className="h-[2px] bg-accent transition-all" style={{ width: `${Math.max(bar1, 2)}%` }}></div>
             </div>
@@ -71,7 +71,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, ini
               <p className="text-[10px] tracking-widest text-telemetry-dim uppercase">SYS_ANÁLISIS_TELEMETRÍA</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 hover:border-white text-telemetry-muted hover:text-white transition-all">
+          <button onClick={onClose} className="p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 hover:border-white text-telemetry-muted hover:text-white transition-all min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -85,7 +85,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, ini
               <select
                 value={planet1Id}
                 onChange={(e) => setPlanet1Id(e.target.value)}
-                className="w-full bg-accent/5 border border-accent/30 hover:border-accent text-accent p-3 outline-none appearance-none cursor-pointer uppercase tracking-widest text-xs font-bold transition-all"
+                className="w-full bg-accent/5 border border-accent/30 hover:border-accent text-accent p-3 outline-none appearance-none cursor-pointer uppercase tracking-widest text-xs font-bold transition-all min-h-[44px]"
               >
                 {PLANETS.map(p => <option key={p.id} value={p.id} className="bg-space-deep text-accent">{p.name}</option>)}
               </select>
@@ -102,7 +102,7 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, ini
               <select
                 value={planet2Id}
                 onChange={(e) => setPlanet2Id(e.target.value)}
-                className="w-full bg-primary/5 border border-primary/30 hover:border-primary text-primary p-3 outline-none appearance-none cursor-pointer uppercase tracking-widest text-xs font-bold transition-all text-right"
+                className="w-full bg-primary/5 border border-primary/30 hover:border-primary text-primary p-3 outline-none appearance-none cursor-pointer uppercase tracking-widest text-xs font-bold transition-all text-right min-h-[44px]"
               >
                 {PLANETS.map(p => <option key={p.id} value={p.id} className="bg-space-deep text-primary">{p.name}</option>)}
               </select>

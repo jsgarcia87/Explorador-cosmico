@@ -10,10 +10,10 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 left-0 z-40 w-[450px] max-w-[90vw] p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="quick-help-title">
-      <div className="flex-1 w-full rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 text-[#ede9e4]">
+    <div className="fixed inset-0 md:inset-y-0 md:right-auto md:left-0 z-40 md:w-[450px] md:max-w-[90vw] md:p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="quick-help-title">
+      <div className="flex-1 w-full rounded-none md:rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300 text-[#ede9e4]">
         {/* Cabecera NASA Mission Control */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(8,15,30,0.4)]">
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(8,15,30,0.4)] flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-[4px] bg-[rgba(122,175,200,0.2)] text-[#7aafc8] border border-[rgba(122,175,200,0.2)]">
               <Compass className="w-6 h-6" />
@@ -29,15 +29,15 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-[4px] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.08)] transition-colors"
+            className="p-2 rounded-[4px] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[rgba(237,233,228,0.08)] transition-colors min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 flex items-center justify-center"
             aria-label="Cerrar guía rápida"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Contenido en cuadrícula inmersiva */}
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        {/* Content - scrollable area */}
+        <div className="p-4 md:p-6 space-y-5 md:space-y-6 flex-1 overflow-y-auto min-h-0">
           {/* Sección 1: Controles Táctiles y de Ratón */}
           <div className="space-y-3">
             <h3 className="text-sm font-outfit font-semibold uppercase tracking-wider text-[#7aafc8] flex items-center space-x-2">
@@ -77,8 +77,8 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
             </div>
           </div>
 
-          {/* Sección 2: Atajos de Teclado */}
-          <div className="space-y-3">
+          {/* Keyboard shortcuts — hidden on touch/mobile */}
+          <div className="hidden md:block space-y-3">
             <h3 className="text-sm font-outfit font-semibold uppercase tracking-wider text-[#c8964a] flex items-center space-x-2">
               <HelpCircle className="w-4 h-4" />
               <span>Atajos de Teclado</span>
@@ -134,10 +134,10 @@ export const QuickHelpModal: React.FC<QuickHelpModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Pie del Modal */}
-        <div className="flex items-center justify-end px-6 py-4 border-t border-[rgba(237,233,228,0.07)] bg-black/40">
+        <div className="flex items-center justify-end px-4 md:px-6 py-3 md:py-4 border-t border-[rgba(237,233,228,0.07)] bg-black/40 flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-[4px] bg-gradient-to-r from-[#7aafc8] to-[#5b8fb4] hover:from-[#8ec5dc] hover:to-[#7aafc8] text-[#ede9e4] font-outfit font-semibold text-xs tracking-wider transition-all shadow-lg shadow-[rgba(122,175,200,0.15)]"
+            className="w-full md:w-auto px-5 py-3 md:py-2 rounded-[4px] bg-gradient-to-r from-[#7aafc8] to-[#5b8fb4] hover:from-[#8ec5dc] hover:to-[#7aafc8] text-[#ede9e4] font-outfit font-semibold text-xs tracking-wider transition-all shadow-lg shadow-[rgba(122,175,200,0.15)] min-h-[44px] md:min-h-0"
           >
             COMENZAR EXPLORACIÓN
           </button>

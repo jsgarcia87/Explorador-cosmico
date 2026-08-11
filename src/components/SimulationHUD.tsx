@@ -53,8 +53,23 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
 
   return (
     <div className="fixed inset-0 z-10 pointer-events-none font-mono">
-      {/* Top-left: Mode + Context */}
-      <div className="absolute top-16 left-6 p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-64 opacity-80 hover:opacity-100 transition-opacity">
+      {/* Mobile: compact single-line status bar */}
+      <div className="md:hidden absolute top-14 left-0 right-0 flex items-center justify-between px-3 py-1.5 bg-space-deep/70 backdrop-blur-sm border-b border-primary/10 opacity-70">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-accent animate-pulse-slow text-[8px]">●</span>
+          <span className="text-[10px] tracking-wider text-primary font-bold truncate">{meta.label}</span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0 text-[10px] tracking-wider">
+          <span className="text-white font-bold">{formatSimDate(currentDate)}</span>
+          <span className="text-telemetry-dim">|</span>
+          <span className={isPaused ? 'text-accent animate-flicker' : 'text-primary'}>
+            {formatTimeSpeed(timeSpeed, isPaused)}
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop: Top-left Mode + Context */}
+      <div className="hidden md:block absolute top-16 left-6 p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-64 opacity-80 hover:opacity-100 transition-opacity">
         <div className="text-[10px] tracking-[0.2em] font-bold text-primary mb-2 uppercase flex items-center gap-2 border-b border-primary/20 pb-2">
           <span className="text-accent animate-pulse-slow">●</span>
           {meta.label}
@@ -65,8 +80,8 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
         <div className="mt-3 hud-barcode"></div>
       </div>
 
-      {/* Top-right: Technical readouts */}
-      <div className="absolute top-16 right-6 p-4 glass-panel border-r-2 border-t-2 border-primary/40 rounded-none pointer-events-auto text-right min-w-[160px] opacity-80 hover:opacity-100 transition-opacity">
+      {/* Desktop: Top-right Technical readouts */}
+      <div className="hidden md:block absolute top-16 right-6 p-4 glass-panel border-r-2 border-t-2 border-primary/40 rounded-none pointer-events-auto text-right min-w-[160px] opacity-80 hover:opacity-100 transition-opacity">
         <div className="text-[11px] tracking-widest text-white mb-1 font-bold">
           {formatSimDate(currentDate)}
         </div>
@@ -78,9 +93,8 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
         </div>
       </div>
 
-      {/* Bottom-left: Crosshair + mode indicator */}
-      <div className="absolute bottom-16 left-6 p-4 flex items-center gap-4 opacity-60">
-        {/* Crosshair reticle */}
+      {/* Desktop: Bottom-left Crosshair + mode indicator */}
+      <div className="hidden md:flex absolute bottom-16 left-6 p-4 items-center gap-4 opacity-60">
         <div className="relative w-12 h-12 flex items-center justify-center">
           <div className="absolute inset-0 border border-primary/30 rounded-full animate-[spin_10s_linear_infinite]" />
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/70" strokeWidth="0.5">
@@ -102,12 +116,12 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
       </div>
 
       {/* Bottom-right: Prev/Next module navigation */}
-      <div className="absolute bottom-16 right-6 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-20 md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
         {prevMode && (
           <button
             onClick={() => onModeChange(prevMode)}
             title={`Anterior: ${MODE_META[prevMode].label}`}
-            className="flex items-center gap-2 px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase"
+            className="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
           >
             <ChevronLeft size={12} className="text-primary" />
             <span className="hidden md:inline">{MODE_META[prevMode].label}</span>
@@ -117,7 +131,7 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
           <button
             onClick={() => onModeChange(nextMode)}
             title={`Siguiente: ${MODE_META[nextMode].label}`}
-            className="flex items-center gap-2 px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase"
+            className="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
           >
             <span className="hidden md:inline">{MODE_META[nextMode].label}</span>
             <ChevronRight size={12} className="text-primary" />
@@ -127,4 +141,3 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
     </div>
   );
 };
-
