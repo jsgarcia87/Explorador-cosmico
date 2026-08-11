@@ -24,7 +24,7 @@ export const TimeController: React.FC<TimeControllerProps> = ({
     day: '2-digit',
     month: 'short',
     year: 'numeric'
-  });
+  }).toUpperCase();
   const formattedTime = currentDate.toLocaleTimeString('es-ES', {
     hour: '2-digit',
     minute: '2-digit',
@@ -32,29 +32,29 @@ export const TimeController: React.FC<TimeControllerProps> = ({
   });
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] md:w-auto md:left-6 md:translate-x-0 md:bottom-6 z-40 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start space-x-2 md:space-x-3 gap-y-2 p-3 rounded-[6px] bg-[rgba(8,8,12,0.85)] backdrop-blur-xl border border-[rgba(237,233,228,0.07)] shadow-2xl">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] md:w-auto md:left-6 md:translate-x-0 md:bottom-6 z-40 flex flex-wrap md:flex-nowrap items-center justify-center md:justify-start space-x-2 md:space-x-3 gap-y-2 p-2 glass-panel border-l-2 border-t-2 border-primary/40 font-mono">
       <button
         onClick={onTogglePause}
-        className="p-3 md:p-2.5 rounded-[4px] bg-[rgba(122,175,200,0.2)] hover:bg-[rgba(122,175,200,0.3)] text-[#7aafc8] border border-[rgba(122,175,200,0.3)] transition-all flex-shrink-0"
+        className="p-2 border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex-shrink-0"
         aria-label={isPaused ? 'Reanudar tiempo astronómico' : 'Pausar tiempo astronómico'}
       >
-        {isPaused ? <Play className="w-5 h-5 md:w-4 md:h-4 fill-current" /> : <Pause className="w-5 h-5 md:w-4 md:h-4 fill-current" />}
+        {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
       </button>
 
-      <div className="flex flex-col px-3 border-x md:border-l-0 border-[rgba(237,233,228,0.07)] flex-shrink-0">
-        <span className="text-[10px] md:text-xs font-mono uppercase tracking-widest text-[rgba(237,233,228,0.4)] flex items-center space-x-1">
-          <Clock className="w-3 h-3 md:w-3.5 md:h-3.5 inline mr-1" />
+      <div className="flex flex-col px-4 border-x border-primary/20 flex-shrink-0">
+        <span className="text-[9px] uppercase tracking-[0.2em] text-telemetry-dim flex items-center space-x-2">
+          <Clock className="w-3 h-3 text-primary/50" />
           <span>RELOJ ORBITAL</span>
         </span>
-        <div className="text-xs md:text-sm font-mono font-bold text-[#ede9e4] flex items-center space-x-2">
+        <div className="text-xs font-data font-bold text-white flex items-center space-x-2 mt-1 tracking-widest">
           <span>{formattedDate}</span>
-          <span className="text-[rgba(237,233,228,0.2)]">·</span>
-          <span className="text-[#c8964a]">{formattedTime}</span>
+          <span className="text-telemetry-dim">|</span>
+          <span className="text-accent">{formattedTime}</span>
         </div>
       </div>
 
-      <div className="flex items-center space-x-1.5 md:space-x-1 w-full md:w-auto justify-center md:justify-start mt-1 md:mt-0">
-        <FastForward className="w-4 h-4 md:w-3.5 md:h-3.5 text-[rgba(237,233,228,0.3)] mr-1" />
+      <div className="flex items-center space-x-1.5 md:space-x-2 w-full md:w-auto justify-center md:justify-start mt-1 md:mt-0 px-2">
+        <FastForward className="w-3 h-3 text-telemetry-dim mr-2" />
         {speeds.map((speed) => {
           const isActive = timeSpeed === speed && !isPaused;
           return (
@@ -64,13 +64,13 @@ export const TimeController: React.FC<TimeControllerProps> = ({
                 if (isPaused) onTogglePause();
                 onSpeedChange(speed);
               }}
-              className={`px-3 py-2 md:px-2.5 md:py-1.5 rounded-[4px] text-sm md:text-xs font-mono font-bold transition-all flex-1 md:flex-none text-center ${
+              className={`px-3 py-1.5 text-[10px] tracking-widest font-bold transition-all flex-1 md:flex-none text-center border-b-2 ${
                 isActive
-                  ? 'bg-[rgba(122,175,200,0.25)] text-[#7aafc8] border border-[rgba(122,175,200,0.3)]'
-                  : 'bg-[rgba(237,233,228,0.04)] text-[rgba(237,233,228,0.4)] hover:bg-[rgba(237,233,228,0.08)] hover:text-[#ede9e4] border border-transparent'
+                  ? 'bg-primary/20 text-primary border-primary shadow-[0_0_8px_rgba(122,175,200,0.3)]'
+                  : 'bg-space-dark text-telemetry-muted border-transparent hover:bg-primary/5 hover:text-white hover:border-primary/50'
               }`}
             >
-              {speed}x
+              {speed}X
             </button>
           );
         })}
@@ -79,11 +79,12 @@ export const TimeController: React.FC<TimeControllerProps> = ({
       <button
         onClick={onResetTime}
         title="Restablecer a fecha actual"
-        className="absolute md:relative right-4 top-4 md:right-auto md:top-auto p-2.5 rounded-[4px] bg-[rgba(237,233,228,0.04)] hover:bg-[rgba(237,233,228,0.08)] text-[rgba(237,233,228,0.3)] hover:text-[#ede9e4] transition-colors"
+        className="absolute md:relative right-4 top-4 md:right-auto md:top-auto p-2 border border-telemetry-dim bg-space-dark hover:bg-white/10 text-telemetry-muted hover:text-white transition-colors"
         aria-label="Restablecer tiempo a fecha actual"
       >
-        <RotateCcw className="w-4 h-4 md:w-3.5 md:h-3.5" />
+        <RotateCcw className="w-3 h-3" />
       </button>
     </div>
   );
 };
+

@@ -52,126 +52,64 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
   const nextMode = modeIdx < MODE_ORDER.length - 1 ? MODE_ORDER[modeIdx + 1] : null;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 12,
-        pointerEvents: 'none',
-        fontFamily: "'Space Mono', 'JetBrains Mono', monospace",
-      }}
-    >
+    <div className="fixed inset-0 z-10 pointer-events-none font-mono">
       {/* Top-left: Mode + Context */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 52,
-          left: 16,
-          opacity: 0.35,
-        }}
-      >
-        <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: '#ede9e4', marginBottom: 3 }}>
-          <span style={{ color: '#c8964a', marginRight: 6 }}>&#x2726;</span>
+      <div className="absolute top-16 left-6 p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-64 opacity-80 hover:opacity-100 transition-opacity">
+        <div className="text-[10px] tracking-[0.2em] font-bold text-primary mb-2 uppercase flex items-center gap-2 border-b border-primary/20 pb-2">
+          <span className="text-accent animate-pulse-slow">●</span>
           {meta.label}
         </div>
-        <div style={{ fontSize: 9, letterSpacing: '0.06em', color: 'rgba(237,233,228,0.6)' }}>
+        <div className="text-[9px] tracking-wider text-telemetry-muted leading-relaxed">
           {meta.context}
         </div>
+        <div className="mt-3 hud-barcode"></div>
       </div>
 
       {/* Top-right: Technical readouts */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 52,
-          right: 16,
-          textAlign: 'right',
-          opacity: 0.3,
-        }}
-      >
-        <div style={{ fontSize: 9, letterSpacing: '0.08em', color: '#ede9e4', marginBottom: 2 }}>
+      <div className="absolute top-16 right-6 p-4 glass-panel border-r-2 border-t-2 border-primary/40 rounded-none pointer-events-auto text-right min-w-[160px] opacity-80 hover:opacity-100 transition-opacity">
+        <div className="text-[11px] tracking-widest text-white mb-1 font-bold">
           {formatSimDate(currentDate)}
         </div>
-        <div style={{ fontSize: 9, letterSpacing: '0.08em', color: 'rgba(237,233,228,0.6)', marginBottom: 2 }}>
+        <div className="text-[10px] tracking-widest text-telemetry-muted mb-2 font-data">
           {formatSimTime(currentDate)}
         </div>
-        <div style={{ fontSize: 9, letterSpacing: '0.08em', color: isPaused ? '#c8964a' : 'rgba(237,233,228,0.5)' }}>
-          {formatTimeSpeed(timeSpeed, isPaused)} · {fps} FPS
+        <div className={`text-[10px] tracking-widest font-data ${isPaused ? 'text-accent animate-flicker' : 'text-primary'}`}>
+          {formatTimeSpeed(timeSpeed, isPaused)} <span className="opacity-50 mx-1">|</span> {fps} FPS
         </div>
       </div>
 
       {/* Bottom-left: Crosshair + mode indicator */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 56,
-          left: 16,
-          opacity: 0.25,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-        }}
-      >
+      <div className="absolute bottom-16 left-6 p-4 flex items-center gap-4 opacity-60">
         {/* Crosshair reticle */}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(237,233,228,0.6)" strokeWidth="1">
-          <circle cx="12" cy="12" r="6" />
-          <line x1="12" y1="2" x2="12" y2="7" />
-          <line x1="12" y1="17" x2="12" y2="22" />
-          <line x1="2" y1="12" x2="7" y2="12" />
-          <line x1="17" y1="12" x2="22" y2="12" />
-          <circle cx="12" cy="12" r="1.5" fill="rgba(237,233,228,0.4)" stroke="none" />
-        </svg>
+        <div className="relative w-12 h-12 flex items-center justify-center">
+          <div className="absolute inset-0 border border-primary/30 rounded-full animate-[spin_10s_linear_infinite]" />
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/70" strokeWidth="0.5">
+            <line x1="12" y1="2" x2="12" y2="8" />
+            <line x1="12" y1="16" x2="12" y2="22" />
+            <line x1="2" y1="12" x2="8" y2="12" />
+            <line x1="16" y1="12" x2="22" y2="12" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+          </svg>
+        </div>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: '0.1em', color: 'rgba(237,233,228,0.5)' }}>
-            EXPLORACIÓN INTERACTIVA
+          <div className="text-[9px] tracking-[0.15em] text-primary/80 mb-1">
+            SYS_EXPLORATION_ACTIVE
           </div>
-          <div style={{ fontSize: 8, letterSpacing: '0.06em', color: 'rgba(237,233,228,0.35)', marginTop: 1 }}>
-            ARRASTRAR PARA ORBITAR · SCROLL PARA ZOOM
+          <div className="text-[8px] tracking-wider text-telemetry-muted uppercase">
+            [L-CLICK] Orbit &nbsp;|&nbsp; [SCROLL] Zoom
           </div>
         </div>
       </div>
 
       {/* Bottom-right: Prev/Next module navigation */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 56,
-          right: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-          pointerEvents: 'auto',
-        }}
-      >
+      <div className="absolute bottom-16 right-6 flex items-center gap-2 pointer-events-auto">
         {prevMode && (
           <button
             onClick={() => onModeChange(prevMode)}
             title={`Anterior: ${MODE_META[prevMode].label}`}
-            style={{
-              background: 'rgba(237,233,228,0.04)',
-              border: '1px solid rgba(237,233,228,0.08)',
-              borderRadius: 4,
-              padding: '4px 8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              cursor: 'pointer',
-              color: 'rgba(237,233,228,0.4)',
-              fontSize: 9,
-              fontFamily: "'Space Mono', monospace",
-              letterSpacing: '0.06em',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ede9e4';
-              e.currentTarget.style.background = 'rgba(237,233,228,0.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(237,233,228,0.4)';
-              e.currentTarget.style.background = 'rgba(237,233,228,0.04)';
-            }}
+            className="flex items-center gap-2 px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase"
           >
-            <ChevronLeft size={12} />
+            <ChevronLeft size={12} className="text-primary" />
             <span className="hidden md:inline">{MODE_META[prevMode].label}</span>
           </button>
         )}
@@ -179,35 +117,14 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
           <button
             onClick={() => onModeChange(nextMode)}
             title={`Siguiente: ${MODE_META[nextMode].label}`}
-            style={{
-              background: 'rgba(237,233,228,0.04)',
-              border: '1px solid rgba(237,233,228,0.08)',
-              borderRadius: 4,
-              padding: '4px 8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              cursor: 'pointer',
-              color: 'rgba(237,233,228,0.4)',
-              fontSize: 9,
-              fontFamily: "'Space Mono', monospace",
-              letterSpacing: '0.06em',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ede9e4';
-              e.currentTarget.style.background = 'rgba(237,233,228,0.08)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'rgba(237,233,228,0.4)';
-              e.currentTarget.style.background = 'rgba(237,233,228,0.04)';
-            }}
+            className="flex items-center gap-2 px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase"
           >
             <span className="hidden md:inline">{MODE_META[nextMode].label}</span>
-            <ChevronRight size={12} />
+            <ChevronRight size={12} className="text-primary" />
           </button>
         )}
       </div>
     </div>
   );
 };
+

@@ -8,22 +8,30 @@ export default {
     extend: {
       colors: {
         space: {
-          dark: '#030712',
-          deep: '#050a1a',
+          dark: '#020202',
+          deep: '#050508',
+          glass: 'rgba(5, 5, 8, 0.65)',
         },
-        nebula: {
-          cyan: '#22d3ee',
-          blue: '#3b82f6',
-          purple: '#a855f7',
+        accent: {
+          cyan: '#7aafc8',
+          orange: '#d4864a',
+          gold: '#c8964a',
+        },
+        telemetry: {
+          muted: 'rgba(237, 233, 228, 0.4)',
+          dim: 'rgba(237, 233, 228, 0.15)',
         }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        outfit: ['Outfit', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['Space Grotesk', 'Orbitron', 'sans-serif'],
+        mono: ['Space Mono', 'JetBrains Mono', 'monospace'],
+        ui: ['Outfit', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'scanline': 'scanline 8s linear infinite',
+        'flicker': 'flicker 0.15s infinite',
       }
     },
   },

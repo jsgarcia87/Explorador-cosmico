@@ -64,62 +64,18 @@ export const DeepSpaceLegendHUD: React.FC<DeepSpaceLegendHUDProps> = ({ engine }
 
 const OnScreenLabel: React.FC<{ item: LegendItem }> = ({ item }) => {
   const opacity = Math.max(0.35, 1 - item.distance / 200);
-  const dotColor = item.selected ? '#c8964a' : '#7aafc8';
+  const dotClass = item.selected ? 'border-accent bg-accent shadow-[0_0_8px_var(--accent)]' : 'border-primary bg-transparent shadow-[0_0_8px_var(--primary)]';
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        left: item.screenX,
-        top: item.screenY,
-        transform: 'translate(-50%, -100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 2,
-        opacity,
-      }}
+      className="absolute flex flex-col items-center gap-1 -translate-x-1/2 -translate-y-full font-mono"
+      style={{ left: item.screenX, top: item.screenY, opacity }}
     >
-      {/* Dot marker */}
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          border: `1.5px solid ${dotColor}`,
-          background: item.selected ? dotColor : 'transparent',
-          boxShadow: `0 0 6px ${dotColor}`,
-        }}
-      />
-      {/* Name */}
-      <span
-        style={{
-          fontFamily: "'Fraunces', Georgia, serif",
-          fontWeight: 400,
-          fontSize: 11,
-          letterSpacing: '0.5px',
-          color: '#ede9e4',
-          textShadow: '0 1px 4px rgba(0,0,0,.8)',
-          whiteSpace: 'nowrap',
-          background: 'rgba(3,3,3,0.6)',
-          padding: '2px 8px',
-          borderRadius: '2px',
-          marginTop: 2,
-        }}
-      >
+      <div className={`w-1.5 h-1.5 border-[1px] ${dotClass}`} />
+      <span className="font-display font-bold text-[10px] tracking-widest text-white whitespace-nowrap bg-space-dark/80 px-2 py-0.5 border border-primary/30 uppercase mt-1">
         {item.name}
       </span>
-      {/* Distance */}
-      <span
-        style={{
-          fontFamily: "'Space Mono', monospace",
-          fontWeight: 400,
-          fontSize: 9,
-          color: 'rgba(237,233,228,0.4)',
-          textShadow: '0 1px 3px rgba(0,0,0,.7)',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <span className="text-[9px] text-primary/60 tracking-widest whitespace-nowrap font-data">
         {formatDistance(item.distance)}
       </span>
     </div>
@@ -158,46 +114,19 @@ const OffScreenArrow: React.FC<{ item: LegendItem }> = ({ item }) => {
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        left: x,
-        top: y,
-        transform: 'translate(-50%, -50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        opacity: 0.6,
-      }}
+      className="absolute flex items-center gap-1 -translate-x-1/2 -translate-y-1/2 opacity-60 font-mono"
+      style={{ left: x, top: y }}
     >
-      {/* Arrow */}
       <svg
-        width="18"
-        height="18"
-        viewBox="0 0 18 18"
-        style={{ transform: `rotate(${deg}deg)`, flexShrink: 0 }}
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        className="flex-shrink-0"
+        style={{ transform: `rotate(${deg}deg)` }}
       >
-        <polygon
-          points="18,9 4,2 6,9 4,16"
-          fill="#7aafc8"
-          opacity="0.85"
-        />
+        <polygon points="16,8 4,2 6,8 4,14" className="fill-primary opacity-80" />
       </svg>
-      {/* Label */}
-      <span
-        style={{
-          fontFamily: "'Space Mono', monospace",
-          fontWeight: 400,
-          fontSize: 9,
-          letterSpacing: '0.6px',
-          textTransform: 'uppercase',
-          color: 'rgba(237,233,228,0.4)',
-          textShadow: '0 1px 3px rgba(0,0,0,.8)',
-          whiteSpace: 'nowrap',
-          background: 'rgba(3,3,3,0.6)',
-          padding: '1px 5px',
-          borderRadius: '2px',
-        }}
-      >
+      <span className="text-[8px] tracking-widest uppercase text-telemetry-muted whitespace-nowrap bg-space-dark/80 px-1.5 py-0.5 border border-primary/20">
         {abbrev}
       </span>
     </div>

@@ -2691,107 +2691,169 @@ body.has-timeline-panel #tl-open-btn {
 
 .hud-corner {
     position: absolute;
-    padding: 32px 40px;
+    padding: 24px;
     pointer-events: auto;
+    /* Sci-Fi bracket corners */
+    background: 
+        linear-gradient(to right, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 0 0,
+        linear-gradient(to bottom, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 0 0,
+        linear-gradient(to left, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 100% 0,
+        linear-gradient(to bottom, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 100% 0,
+        linear-gradient(to right, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 0 100%,
+        linear-gradient(to top, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 0 100%,
+        linear-gradient(to left, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 100% 100%,
+        linear-gradient(to top, rgba(122, 175, 200, 0.8) 2px, transparent 2px) 100% 100%;
+    background-repeat: no-repeat;
+    background-size: 6px 6px;
 }
 
 .hud-top-left {
-    top: 0;
-    left: 0;
+    top: 24px;
+    left: 24px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(5, 5, 8, 0.6);
+    backdrop-filter: blur(8px);
 }
 
 .hud-top-right {
-    top: 0;
-    right: 0;
+    top: 24px;
+    right: 24px;
     text-align: right;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(5, 5, 8, 0.6);
+    backdrop-filter: blur(8px);
 }
 
 .hud-bottom-left {
-    bottom: 0;
-    left: 0;
+    bottom: 24px;
+    left: 24px;
     display: flex;
     align-items: center;
     gap: 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(5, 5, 8, 0.6);
+    backdrop-filter: blur(8px);
 }
 
 .hud-bottom-right {
-    bottom: 0;
-    right: 0;
+    bottom: 24px;
+    right: 24px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(5, 5, 8, 0.6);
+    backdrop-filter: blur(8px);
 }
 
 /* Typography elements */
 .hud-title {
     font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 2px;
-    margin-bottom: 24px;
+    font-size: 10px;
+    color: #7aafc8;
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(122, 175, 200, 0.3);
+    padding-bottom: 8px;
+    display: inline-block;
 }
 
 .hud-subtitle {
     font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-    letter-spacing: 1.5px;
+    font-size: 12px;
+    color: #ffffff;
+    letter-spacing: 2px;
     margin-bottom: 8px;
+    font-weight: 700;
 }
 
 .hud-data {
     font-family: 'Space Mono', monospace;
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.3);
-    letter-spacing: 1.2px;
+    color: rgba(237, 233, 228, 0.5);
+    letter-spacing: 1.5px;
+    font-variant-numeric: tabular-nums;
 }
 
 .hud-data-right {
-    margin-top: 24px;
-    line-height: 1.8;
+    margin-top: 16px;
+    line-height: 2;
+    border-right: 2px solid #d4864a;
+    padding-right: 12px;
+    position: relative;
+}
+
+/* Sci-fi Barcode generator via CSS repeating gradient */
+.hud-data-right::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    right: 12px;
+    height: 8px;
+    width: 60px;
+    background: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.3),
+        rgba(255, 255, 255, 0.3) 1px,
+        transparent 1px,
+        transparent 3px,
+        rgba(255, 255, 255, 0.3) 3px,
+        rgba(255, 255, 255, 0.3) 5px,
+        transparent 5px,
+        transparent 6px
+    );
 }
 
 .hud-label {
     font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.3);
-    letter-spacing: 1.5px;
+    font-size: 10px;
+    color: #d4864a;
+    letter-spacing: 2px;
     margin-bottom: 4px;
+    text-transform: uppercase;
 }
 
 .hud-hint {
     font-family: 'Space Mono', monospace;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.15);
-    letter-spacing: 1.2px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 1.5px;
 }
 
 .hud-crosshair {
-    color: rgba(255, 255, 255, 0.2);
+    color: #7aafc8;
+    opacity: 0.8;
 }
 
 /* Buttons */
 .hud-btn {
     font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.7);
-    letter-spacing: 1.5px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 2px;
+    background: rgba(122, 175, 200, 0.1);
+    border: 1px solid rgba(122, 175, 200, 0.3);
     padding: 8px 16px;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-transform: uppercase;
 }
 
 .hud-btn:hover {
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(255, 255, 255, 0.05);
+    color: #000;
+    border-color: #7aafc8;
+    background: #7aafc8;
+    box-shadow: 0 0 12px rgba(122, 175, 200, 0.4);
 }
 
 /* Responsive adjustments */
 @media screen and (max-width: 800px) {
     .hud-corner {
-        padding: 16px 20px;
+        padding: 12px 16px;
     }
 }
