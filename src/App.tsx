@@ -453,6 +453,7 @@ export const App: React.FC = () => {
           />
         </>
       )}
+      </div>
 
       {/* Drawer de Inspección Pedagógica y Telemetría */}
       <ObjectInspectorPanel
@@ -518,7 +519,6 @@ export const App: React.FC = () => {
           settings={a11ySettings}
           onUpdateSettings={setA11ySettings}
         />
-      </div>
 
       {/* Overlay SVG para filtros de daltonismo FeColorMatrix */}
       <svg className="hidden">

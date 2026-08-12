@@ -2857,3 +2857,364 @@ body.has-timeline-panel #tl-open-btn {
         padding: 12px 16px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Explorador Cósmico — Platform Aesthetic Overrides                         */
+/* Unifies the GRRT simulator's visual language with the host application.   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+body {
+    background-color: #030305;
+    font-family: 'Space Mono', 'Inter', monospace;
+}
+
+/* ── Side panels ── */
+.sp-panel {
+    background: rgba(5, 8, 18, 0.97);
+    border-color: rgba(122, 175, 200, 0.25);
+    font-family: 'Space Mono', 'Inter', monospace;
+}
+.sp-panel--left  { border-right-color: rgba(122, 175, 200, 0.25); }
+.sp-panel--right { border-left-color: rgba(122, 175, 200, 0.25); }
+
+.sp-header {
+    background: rgba(5, 8, 18, 0.98);
+    border-bottom-color: rgba(122, 175, 200, 0.15);
+}
+.sp-title {
+    color: #7aafc8;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 2.5px;
+}
+.sp-close {
+    background: linear-gradient(180deg, rgba(122, 175, 200, 0.12) 0%, rgba(5, 8, 18, 0.9) 100%);
+    border-color: rgba(122, 175, 200, 0.3);
+    color: #7aafc8;
+}
+.sp-close:hover {
+    background: linear-gradient(180deg, rgba(122, 175, 200, 0.25) 0%, rgba(5, 8, 18, 0.9) 100%);
+    border-color: #7aafc8;
+    color: #ede9e4;
+}
+
+/* ── Side panel open buttons ── */
+.sp-open-btn {
+    background: rgba(5, 8, 18, 0.94);
+    border-color: rgba(122, 175, 200, 0.3);
+    color: #7aafc8;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1.5px;
+}
+.sp-open-btn:hover {
+    background: rgba(122, 175, 200, 0.12);
+    border-color: #7aafc8;
+    color: #ede9e4;
+}
+
+/* ── Resize handle ── */
+.sp-resize::before {
+    background: rgba(122, 175, 200, 0.3);
+}
+.sp-panel:hover .sp-resize::before,
+.sp-resize:hover::before {
+    background: rgba(122, 175, 200, 0.6);
+}
+
+/* ── dat.GUI controls ── */
+.dg.main {
+    font-family: 'Space Mono', monospace !important;
+}
+.dg li:not(.folder) {
+    background: rgba(5, 8, 18, 0.6) !important;
+    border-bottom: 1px solid rgba(122, 175, 200, 0.08) !important;
+}
+.dg li.title {
+    background: rgba(122, 175, 200, 0.1) !important;
+    color: #7aafc8 !important;
+    font-family: 'Space Mono', monospace !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    border-bottom: 1px solid rgba(122, 175, 200, 0.2) !important;
+}
+.dg .property-name {
+    color: rgba(237, 233, 228, 0.6) !important;
+    font-family: 'Space Mono', monospace !important;
+    font-size: 10px !important;
+    letter-spacing: 0.5px !important;
+}
+.dg .c input[type="text"],
+.dg .c input[type="number"] {
+    background: rgba(5, 8, 18, 0.8) !important;
+    color: #ede9e4 !important;
+    border: 1px solid rgba(122, 175, 200, 0.2) !important;
+    font-family: 'Space Mono', monospace !important;
+}
+.dg .c input[type="text"]:focus,
+.dg .c input[type="number"]:focus {
+    border-color: #7aafc8 !important;
+    outline: none !important;
+}
+.dg .c select {
+    background: rgba(5, 8, 18, 0.8) !important;
+    color: #ede9e4 !important;
+    border: 1px solid rgba(122, 175, 200, 0.2) !important;
+    font-family: 'Space Mono', monospace !important;
+}
+.dg .c .slider {
+    background: rgba(122, 175, 200, 0.12) !important;
+}
+.dg .c .slider:hover {
+    background: rgba(122, 175, 200, 0.18) !important;
+}
+.dg .c .slider-fg {
+    background: linear-gradient(90deg, #7aafc8, rgba(122, 175, 200, 0.7)) !important;
+}
+.dg .cr.boolean .c input[type="checkbox"] {
+    accent-color: #7aafc8;
+}
+.dg .cr.function .property-name {
+    color: #d4864a !important;
+}
+
+/* ── Collapsible section headers ── */
+.anim-section-toggle {
+    color: rgba(237, 233, 228, 0.5);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 2px;
+}
+.anim-section-toggle:hover {
+    color: #ede9e4;
+}
+.anim-section-arrow {
+    color: rgba(122, 175, 200, 0.4);
+}
+.anim-section.is-open > .anim-section-toggle .anim-section-arrow {
+    color: #7aafc8;
+}
+.anim-section {
+    border-top-color: rgba(122, 175, 200, 0.1);
+}
+
+/* ── Dive & Hover action buttons ── */
+.dive-btn-start {
+    background: linear-gradient(135deg, rgba(122, 175, 200, 0.35) 0%, rgba(122, 175, 200, 0.15) 100%);
+    color: #ede9e4;
+    box-shadow: 0 2px 8px rgba(122, 175, 200, 0.2);
+    border: 1px solid rgba(122, 175, 200, 0.3);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+}
+.dive-btn-start:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(122, 175, 200, 0.5) 0%, rgba(122, 175, 200, 0.25) 100%);
+    box-shadow: 0 2px 14px rgba(122, 175, 200, 0.35);
+}
+.dive-btn-reset {
+    background: rgba(5, 8, 18, 0.8);
+    color: rgba(237, 233, 228, 0.5);
+    border: 1px solid rgba(122, 175, 200, 0.15);
+}
+.dive-btn-reset:hover:not(:disabled) {
+    background: rgba(122, 175, 200, 0.1);
+    color: #ede9e4;
+}
+
+.hover-btn-start {
+    background: linear-gradient(135deg, rgba(122, 175, 200, 0.35) 0%, rgba(122, 175, 200, 0.15) 100%);
+    color: #ede9e4;
+    box-shadow: 0 2px 8px rgba(122, 175, 200, 0.2);
+    border: 1px solid rgba(122, 175, 200, 0.3);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+}
+.hover-btn-start:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(122, 175, 200, 0.5) 0%, rgba(122, 175, 200, 0.25) 100%);
+    box-shadow: 0 2px 14px rgba(122, 175, 200, 0.35);
+}
+.hover-btn-reset {
+    background: rgba(5, 8, 18, 0.8);
+    color: rgba(237, 233, 228, 0.5);
+    border: 1px solid rgba(122, 175, 200, 0.15);
+}
+.hover-btn-reset:hover:not(:disabled) {
+    background: rgba(122, 175, 200, 0.1);
+    color: #ede9e4;
+}
+
+/* ── Sliders ── */
+.dive-control-row input[type="range"],
+.hover-control-row input[type="range"] {
+    background: rgba(122, 175, 200, 0.12);
+}
+.dive-control-row input[type="range"]::-webkit-slider-thumb,
+.hover-control-row input[type="range"]::-webkit-slider-thumb {
+    background: #7aafc8;
+}
+.dive-control-row label,
+.hover-control-row label {
+    color: rgba(237, 233, 228, 0.5);
+    font-family: 'Space Mono', monospace;
+}
+#dive-speed-val,
+#hover-speed-val {
+    color: #7aafc8;
+    font-family: 'Space Mono', monospace;
+}
+
+/* ── Readout panels ── */
+.dive-readout,
+.hover-readout {
+    background: rgba(5, 8, 18, 0.9);
+    border-color: rgba(122, 175, 200, 0.15);
+}
+.dive-metric,
+.hover-metric {
+    font-family: 'Space Mono', monospace;
+    color: #7aafc8;
+}
+
+/* ── Capture blocks ── */
+.anim-capture-block {
+    border-color: rgba(122, 175, 200, 0.15);
+    background: rgba(5, 8, 18, 0.7);
+}
+.anim-capture-label {
+    color: #7aafc8;
+    font-family: 'Space Mono', monospace;
+}
+.anim-capture-status {
+    color: rgba(237, 233, 228, 0.5);
+}
+.anim-capture-status.is-recording {
+    color: #d4864a;
+}
+.anim-capture-hint {
+    color: rgba(237, 233, 228, 0.4);
+}
+.anim-capture-check {
+    color: rgba(237, 233, 228, 0.6);
+}
+.anim-capture-check input[type="checkbox"] {
+    accent-color: #7aafc8;
+}
+
+.dive-btn-capture,
+.hover-btn-capture {
+    border-color: rgba(122, 175, 200, 0.2);
+    background: linear-gradient(135deg, rgba(5, 8, 18, 0.95) 0%, rgba(10, 14, 28, 0.98) 100%);
+    font-family: 'Space Mono', monospace;
+}
+.dive-btn-capture {
+    color: #7aafc8;
+}
+.hover-btn-capture {
+    color: #7aafc8;
+}
+.dive-btn-capture:hover:not(:disabled),
+.hover-btn-capture:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(122, 175, 200, 0.12) 0%, rgba(5, 8, 18, 0.98) 100%);
+    box-shadow: 0 2px 12px rgba(122, 175, 200, 0.15);
+}
+.dive-btn-capture.is-recording,
+.hover-btn-capture.is-recording {
+    background: linear-gradient(135deg, rgba(212, 134, 74, 0.4) 0%, rgba(212, 134, 74, 0.15) 100%);
+    color: #ede9e4;
+    border-color: rgba(212, 134, 74, 0.4);
+    box-shadow: 0 2px 12px rgba(212, 134, 74, 0.2);
+}
+
+/* ── Descriptions ── */
+.dive-desc,
+.hover-desc {
+    color: rgba(237, 233, 228, 0.45);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+}
+
+/* ── Horizon bars ── */
+.dive-horizon-track {
+    background: rgba(5, 8, 18, 0.8);
+    border-color: rgba(122, 175, 200, 0.15);
+}
+.dive-horizon-fill.outside {
+    background: linear-gradient(90deg, #7aafc8, rgba(122, 175, 200, 0.6));
+}
+.dive-horizon-fill.inside {
+    background: linear-gradient(90deg, #d4864a, #e8a060, #f0c080);
+}
+.dive-horizon-label {
+    color: rgba(237, 233, 228, 0.35);
+    font-family: 'Space Mono', monospace;
+}
+
+.hover-horizon-track {
+    background: rgba(5, 8, 18, 0.8);
+    border-color: rgba(122, 175, 200, 0.15);
+}
+.hover-horizon-fill.normal {
+    background: linear-gradient(90deg, #7aafc8, rgba(122, 175, 200, 0.6));
+}
+.hover-horizon-fill.near {
+    background: linear-gradient(90deg, #7aafc8, #ede9e4);
+}
+.hover-horizon-label {
+    color: rgba(237, 233, 228, 0.35);
+    font-family: 'Space Mono', monospace;
+}
+
+/* ── Status text ── */
+.dive-status.ready       { color: rgba(237, 233, 228, 0.5); }
+.dive-status.approaching { color: #7aafc8; }
+.dive-status.near-horizon { color: #d4864a; }
+.dive-status.inside      { color: #c05040; }
+.dive-status.paused      { color: rgba(237, 233, 228, 0.4); }
+.dive-status.singularity { color: #d4864a; }
+
+.dive-cinematic-row input[type="checkbox"] {
+    accent-color: #7aafc8;
+}
+.dive-cinematic-hint {
+    color: rgba(237, 233, 228, 0.35);
+}
+
+/* ── Loading screen ── */
+#loader {
+    color: #7aafc8;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+.disclaimer {
+    color: rgba(237, 233, 228, 0.35);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+}
+
+/* ── Link bar & hints ── */
+.link-bar a {
+    color: rgba(237, 233, 228, 0.6);
+}
+.link-bar a:hover {
+    color: #7aafc8;
+}
+#hint-text {
+    color: rgba(237, 233, 228, 0.4);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+/* ── Mobile open buttons (platform match) ── */
+@media screen and (max-width: 960px) {
+    .sp-open-btn {
+        border-color: rgba(122, 175, 200, 0.3) !important;
+        background: rgba(5, 8, 18, 0.95) !important;
+        color: #7aafc8 !important;
+        font-family: 'Space Mono', monospace !important;
+    }
+    .sp-open-btn:active {
+        background: rgba(122, 175, 200, 0.15) !important;
+        border-color: #7aafc8 !important;
+        color: #ede9e4 !important;
+    }
+}
