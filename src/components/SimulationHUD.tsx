@@ -81,7 +81,7 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
       </div>
 
       {/* Desktop: Bottom-left Crosshair + mode indicator */}
-      <div className="hidden md:flex absolute bottom-16 left-6 p-4 items-center gap-4 opacity-60">
+      <div className="hidden md:flex absolute bottom-24 left-6 p-4 items-center gap-4 opacity-60">
         <div className="relative w-12 h-12 flex items-center justify-center">
           <div className="absolute inset-0 border border-primary/30 rounded-full animate-[spin_10s_linear_infinite]" />
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/70" strokeWidth="0.5">
