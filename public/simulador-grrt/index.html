@@ -12,6 +12,16 @@
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,700;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+        <script>
+          if (new URLSearchParams(location.search).has('embed')) {
+            document.documentElement.classList.add('embedded');
+          }
+        </script>
+        <style>
+          .embedded .hud-container,
+          .embedded .link-bar,
+          .embedded #hint-text { display: none !important; }
+        </style>
     </head>
     <body>
         <!-- HUD Corners -->
