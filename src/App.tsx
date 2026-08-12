@@ -388,10 +388,9 @@ export const App: React.FC = () => {
 
         {/* Navegación HUD Superior */}
       <div
-        className="transition-all duration-500 ease-in-out"
+        className="transition-opacity duration-500 ease-in-out"
         style={{
           opacity: isChromeVisible ? 1 : 0,
-          transform: isChromeVisible ? 'translateY(0)' : 'translateY(-8px)',
           pointerEvents: isChromeVisible ? 'auto' : 'none',
         }}
         onPointerEnter={() => { chromeHoveredRef.current = true; setIsChromeVisible(true); }}
@@ -419,10 +418,9 @@ export const App: React.FC = () => {
 
       {/* Controles Astronómicos Inferiores (Reloj Orbital y Velocidad) */}
       <div
-        className="transition-all duration-500 ease-in-out"
+        className="transition-opacity duration-500 ease-in-out"
         style={{
           opacity: isChromeVisible ? 1 : 0,
-          transform: isChromeVisible ? 'translateY(0)' : 'translateY(8px)',
           pointerEvents: isChromeVisible ? 'auto' : 'none',
         }}
         onPointerEnter={() => { chromeHoveredRef.current = true; setIsChromeVisible(true); }}
