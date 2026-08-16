@@ -367,6 +367,7 @@ export const App: React.FC = () => {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full block cursor-grab active:cursor-grabbing"
+        style={{ touchAction: 'none' }}
         role="img"
         aria-label="Vista 3D interactiva del universo"
       />

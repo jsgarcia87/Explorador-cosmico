@@ -103,6 +103,8 @@ export class CosmicEngine {
     this.init();
   }
 
+  private resizeObserver: ResizeObserver | null = null;
+
   private init(): void {
     const width = this.canvas.clientWidth || window.innerWidth;
     const height = this.canvas.clientHeight || window.innerHeight;
@@ -114,7 +116,7 @@ export class CosmicEngine {
       alpha: false,
       logarithmicDepthBuffer: true
     });
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
     this.updateAdaptivePixelRatio(width);
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.toneMappingExposure = 1.25;
