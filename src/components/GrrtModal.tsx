@@ -139,6 +139,9 @@ export const GrrtModal: React.FC<GrrtModalProps> = ({ isOpen, onClose }) => {
           {showEduPanel && (
             <aside className="w-full md:w-96 md:max-w-[90vw] max-h-[50vh] md:max-h-full md:h-full bg-[#0a0d1e]/95 border-t md:border-t-0 md:border-l border-[rgba(122,175,200,0.15)] flex flex-col z-20 backdrop-blur-xl animate-in slide-in-from-bottom md:slide-in-from-right duration-300 overflow-hidden">
 
+              {/* Drag handle for mobile */}
+              <div className="w-12 h-1.5 bg-[rgba(237,233,228,0.2)] rounded-full mx-auto mt-2 mb-1 md:hidden flex-shrink-0" />
+
               {/* Header */}
               <div className="p-3 md:p-5 border-b border-[rgba(237,233,228,0.07)] bg-gradient-to-r from-[rgba(8,20,40,0.4)] to-[rgba(30,15,40,0.3)] flex-shrink-0">
                 <div className="flex items-center gap-3 mb-1 md:mb-2">

@@ -58,8 +58,12 @@ export const CompareModal: React.FC<CompareModalProps> = ({ isOpen, onClose, ini
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-space-deep/90 backdrop-blur-md animate-fade-in font-mono">
-      <div className="glass-panel border-t-2 border-l-2 border-primary/50 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 pointer-events-none font-mono" role="dialog" aria-modal="true" aria-labelledby="compare-modal-title">
+      <div className="absolute inset-0 bg-space-deep/90 backdrop-blur-md pointer-events-auto animate-fade-in" onClick={onClose} />
+      <div className="relative w-full h-[85vh] md:h-auto md:max-w-4xl max-h-[90vh] flex flex-col rounded-t-[20px] md:rounded-[8px] glass-panel border-t-2 md:border-l-2 border-primary/50 overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] pointer-events-auto animate-in slide-in-from-bottom md:fade-in duration-300">
+        
+        {/* Indicador de arrastre móvil */}
+        <div className="w-12 h-1.5 bg-primary/30 rounded-full mx-auto mt-3 mb-1 md:hidden flex-shrink-0" />
         {/* Header */}
         <div className="flex justify-between items-center p-4 md:p-6 border-b border-primary/20 bg-primary/5">
           <div className="flex items-center space-x-4">

@@ -38,22 +38,22 @@ export const TimeController: React.FC<TimeControllerProps> = ({
 
   return (
     <>
-      {/* Mobile: compact bottom bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center gap-1 px-2 py-1.5 bg-space-deep/90 backdrop-blur-md border-t border-primary/20 font-mono">
+      {/* Mobile: compact floating pill */}
+      <div className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-[380px] z-40 flex items-center justify-between gap-1 px-2 py-1.5 bg-[#0a0f1e]/95 backdrop-blur-xl border border-[rgba(122,175,200,0.3)] rounded-full shadow-[0_0_20px_rgba(0,0,0,0.8)] font-mono">
         <button
           onClick={onTogglePause}
-          className="p-2 border border-primary/30 bg-primary/10 text-primary flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
+          className="p-2 border border-[rgba(122,175,200,0.4)] bg-[rgba(122,175,200,0.15)] text-[#7aafc8] rounded-full flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
           aria-label={isPaused ? 'Reanudar' : 'Pausar'}
         >
           {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
         </button>
 
-        <div className="flex flex-col px-2 min-w-0 flex-shrink-0">
-          <span className="text-[9px] text-white font-bold tracking-wider">{shortDate}</span>
-          <span className="text-[9px] text-accent tracking-wider">{formattedTime}</span>
+        <div className="flex flex-col px-2 min-w-0 flex-shrink-0 items-center">
+          <span className="text-[9px] text-[#ede9e4] font-bold tracking-wider">{shortDate}</span>
+          <span className="text-[9px] text-[#d4864a] tracking-wider">{formattedTime}</span>
         </div>
 
-        <div className="flex items-center gap-1 flex-1 justify-center overflow-hidden">
+        <div className="flex items-center gap-1 flex-1 justify-center overflow-x-auto hide-scrollbar mask-edges">
           {speeds.map((speed) => {
             const isActive = timeSpeed === speed && !isPaused;
             const label = speed >= 1000 ? `${speed/1000}k` : `${speed}`;
@@ -64,10 +64,10 @@ export const TimeController: React.FC<TimeControllerProps> = ({
                   if (isPaused) onTogglePause();
                   onSpeedChange(speed);
                 }}
-                className={`px-1.5 py-1 text-[9px] tracking-wider font-bold min-w-[32px] min-h-[32px] text-center border-b-2 ${
+                className={`px-1.5 py-1 text-[9px] tracking-wider font-bold min-w-[32px] min-h-[32px] text-center rounded-full transition-colors ${
                   isActive
-                    ? 'bg-primary/20 text-primary border-primary'
-                    : 'bg-space-dark text-telemetry-muted border-transparent'
+                    ? 'bg-[#7aafc8]/20 text-[#7aafc8] border border-[#7aafc8]/50'
+                    : 'bg-transparent text-[rgba(237,233,228,0.5)] border border-transparent'
                 }`}
               >
                 {label}x
@@ -78,10 +78,10 @@ export const TimeController: React.FC<TimeControllerProps> = ({
 
         <button
           onClick={onResetTime}
-          className="p-2 border border-telemetry-dim bg-space-dark text-telemetry-muted flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="p-2 bg-[rgba(237,233,228,0.05)] rounded-full text-[rgba(237,233,228,0.5)] flex-shrink-0 min-w-[40px] min-h-[40px] flex items-center justify-center"
           aria-label="Restablecer tiempo"
         >
-          <RotateCcw className="w-3 h-3" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
       </div>
 

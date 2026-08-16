@@ -103,14 +103,14 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
       </div>
 
       {/* Bottom-right: Prev/Next module navigation */}
-      <div className="absolute bottom-14 md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-[80px] md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
         {prevMode && (
           <button
             onClick={() => onModeChange(prevMode)}
             title={`Anterior: ${MODE_META[prevMode].label}`}
-            className="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0f1e]/80 border border-[rgba(237,233,228,0.2)] rounded-full md:rounded-none md:border-[rgba(122,175,200,0.3)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[#7aafc8]/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
           >
-            <ChevronLeft size={12} className="text-primary" />
+            <ChevronLeft size={12} className="text-[#7aafc8]" />
             <span className="hidden md:inline">{MODE_META[prevMode].label}</span>
           </button>
         )}
@@ -118,10 +118,10 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
           <button
             onClick={() => onModeChange(nextMode)}
             title={`Siguiente: ${MODE_META[nextMode].label}`}
-            className="flex items-center gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0f1e]/80 border border-[rgba(237,233,228,0.2)] rounded-full md:rounded-none md:border-[rgba(122,175,200,0.3)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[#7aafc8]/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
           >
             <span className="hidden md:inline">{MODE_META[nextMode].label}</span>
-            <ChevronRight size={12} className="text-primary" />
+            <ChevronRight size={12} className="text-[#7aafc8]" />
           </button>
         )}
       </div>

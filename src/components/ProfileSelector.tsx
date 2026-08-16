@@ -20,8 +20,16 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
   const profilesList = Object.values(USER_PROFILES) as UserProfile[];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/80 backdrop-blur-md animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="profile-selector-title">
-      <div className="relative w-full md:max-w-2xl p-4 md:p-6 rounded-t-[12px] md:rounded-[8px] bg-[rgba(8,8,12,1)]/90 border border-[rgba(237,233,228,0.10)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="profile-selector-title">
+      {/* Fondo oscuro en móvil para enfocar el bottom sheet */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto animate-fade-in" onClick={onClose} />
+      
+      <div className="relative w-full h-[85vh] md:h-auto md:max-w-2xl flex flex-col rounded-t-[20px] md:rounded-[8px] bg-[rgba(8,8,12,0.98)] border-t md:border border-[rgba(237,233,228,0.10)] shadow-2xl pointer-events-auto animate-in slide-in-from-bottom md:fade-in duration-300 overflow-hidden">
+        
+        {/* Indicador de arrastre móvil */}
+        <div className="w-12 h-1.5 bg-[rgba(237,233,228,0.2)] rounded-full mx-auto mt-3 mb-1 md:hidden flex-shrink-0" />
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col">
         {/* Cabecera del modal */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div>
@@ -94,6 +102,7 @@ export const ProfileSelector: React.FC<ProfileSelectorProps> = ({
           >
             Aceptar
           </button>
+        </div>
         </div>
       </div>
     </div>

@@ -54,8 +54,16 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 md:inset-y-0 md:right-auto md:left-0 z-40 md:w-[450px] md:max-w-[90vw] md:p-4 flex flex-col pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="teacher-modal-title">
-      <div className="flex-1 w-full p-4 md:p-6 rounded-none md:rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto flex flex-col overflow-hidden animate-in slide-in-from-left duration-300">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:justify-start md:p-4 pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="teacher-modal-title">
+      {/* Fondo oscuro en móvil para enfocar el bottom sheet */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden pointer-events-auto" onClick={onClose} />
+      
+      <div className="relative w-full h-[85vh] md:h-auto md:w-[450px] md:max-h-[90vh] flex flex-col rounded-t-[20px] md:rounded-[8px] bg-[rgba(8,8,12,0.98)] border-t md:border border-[rgba(237,233,228,0.10)] shadow-2xl pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-left duration-300 overflow-hidden">
+        
+        {/* Indicador de arrastre móvil */}
+        <div className="w-12 h-1.5 bg-[rgba(237,233,228,0.2)] rounded-full mx-auto mt-3 mb-1 md:hidden flex-shrink-0" />
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-[rgba(237,233,228,0.07)]">
           <div className="flex items-center space-x-3">
@@ -136,6 +144,7 @@ export const TeacherClassroomModal: React.FC<TeacherClassroomModalProps> = ({
               </button>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>

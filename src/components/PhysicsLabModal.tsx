@@ -194,8 +194,14 @@ export const PhysicsLabModal: React.FC<PhysicsLabModalProps> = ({ isOpen, onClos
   ];
 
   return (
-    <div className="fixed inset-0 md:inset-auto md:bottom-6 md:right-6 z-40 md:w-[700px] md:max-w-[90vw] md:h-[450px] flex pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="physics-lab-title">
-      <div className="w-full h-full flex flex-col rounded-none md:rounded-[8px] bg-[rgba(8,8,12,0.95)] border border-[rgba(237,233,228,0.10)] shadow-2xl backdrop-blur-xl pointer-events-auto overflow-hidden animate-in slide-in-from-bottom-8 duration-300">
+    <div className="fixed inset-0 z-50 flex items-end md:items-end md:justify-end md:p-6 pointer-events-none" role="dialog" aria-modal="true" aria-labelledby="physics-lab-title">
+      {/* Fondo oscuro en móvil para enfocar el bottom sheet */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm md:hidden pointer-events-auto" onClick={onClose} />
+      
+      <div className="relative w-full h-[85vh] md:h-[450px] md:w-[700px] flex flex-col rounded-t-[20px] md:rounded-[8px] bg-[rgba(8,8,12,0.98)] border-t md:border border-[rgba(237,233,228,0.10)] shadow-2xl pointer-events-auto animate-in slide-in-from-bottom duration-300 overflow-hidden">
+        
+        {/* Indicador de arrastre móvil */}
+        <div className="w-12 h-1.5 bg-[rgba(237,233,228,0.2)] rounded-full mx-auto mt-3 mb-1 md:hidden flex-shrink-0" />
         {/* Header */}
         <div className="flex items-center justify-between p-3 md:p-4 border-b border-[rgba(237,233,228,0.07)] bg-[rgba(3,3,5,0.60)] flex-shrink-0">
           <div className="flex items-center space-x-3 min-w-0">
