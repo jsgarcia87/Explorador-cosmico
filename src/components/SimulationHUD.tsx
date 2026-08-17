@@ -56,17 +56,9 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
 
   return (
     <div className="fixed inset-0 z-10 pointer-events-none font-mono">
-<<<<<<< Updated upstream
-      {/* Mobile: removed — info consolidated into TopNavigation + TimeController */}
-
-      {/* Desktop: Top-left Mode + Context */}
-      <div className="hidden md:block absolute top-16 left-6 p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-64 opacity-80 hover:opacity-100 transition-opacity">
-        <div className="text-[10px] tracking-[0.2em] font-bold text-primary mb-2 uppercase flex items-center gap-2 border-b border-primary/20 pb-2">
-=======
       {/* Top-left: Mode + Context */}
       <div className="absolute top-14 md:top-16 left-3 md:left-6 p-2.5 md:p-4 glass-panel border-l-2 border-t-2 border-primary/40 rounded-none pointer-events-auto w-44 md:w-64 opacity-80 hover:opacity-100 transition-opacity">
         <div className="text-[9px] md:text-[10px] tracking-[0.2em] font-bold text-primary mb-1.5 md:mb-2 uppercase flex items-center gap-2 border-b border-primary/20 pb-1.5 md:pb-2">
->>>>>>> Stashed changes
           <span className="text-accent animate-pulse-slow">●</span>
           <span className="md:hidden">{meta.short}</span>
           <span className="hidden md:inline">{meta.label}</span>
@@ -77,15 +69,9 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
         <div className="mt-2 md:mt-3 hud-barcode"></div>
       </div>
 
-<<<<<<< Updated upstream
-      {/* Desktop: Top-right Technical readouts */}
-      <div className="hidden md:block absolute top-16 right-6 p-4 glass-panel border-r-2 border-t-2 border-primary/40 rounded-none pointer-events-auto text-right min-w-[160px] opacity-80 hover:opacity-100 transition-opacity">
-        <div className="text-[11px] tracking-widest text-white mb-1 font-bold">
-=======
       {/* Top-right: Technical readouts */}
       <div className="absolute top-14 md:top-16 right-3 md:right-6 p-2.5 md:p-4 glass-panel border-r-2 border-t-2 border-primary/40 rounded-none pointer-events-auto text-right min-w-[120px] md:min-w-[160px] opacity-80 hover:opacity-100 transition-opacity">
         <div className="text-[10px] md:text-[11px] tracking-widest text-white mb-1 font-bold">
->>>>>>> Stashed changes
           {formatSimDate(currentDate)}
         </div>
         <div className="text-[9px] md:text-[10px] tracking-widest text-telemetry-muted mb-1.5 md:mb-2 font-data">
@@ -96,15 +82,9 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
         </div>
       </div>
 
-<<<<<<< Updated upstream
-      {/* Desktop: Bottom-left Crosshair + mode indicator */}
-      <div className="hidden md:flex absolute bottom-24 left-6 p-4 items-center gap-4 opacity-60">
-        <div className="relative w-12 h-12 flex items-center justify-center">
-=======
       {/* Bottom-left: Crosshair + mode indicator — hidden on small screens to avoid TimeController collision */}
       <div className="absolute bottom-20 md:bottom-16 left-3 md:left-6 p-2 md:p-4 flex items-center gap-3 md:gap-4 opacity-60">
         <div className="relative w-10 h-10 md:w-12 md:h-12 flex items-center justify-center">
->>>>>>> Stashed changes
           <div className="absolute inset-0 border border-primary/30 rounded-full animate-[spin_10s_linear_infinite]" />
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-primary/70 md:w-8 md:h-8" strokeWidth="0.5">
             <line x1="12" y1="2" x2="12" y2="8" />
@@ -127,45 +107,27 @@ export const SimulationHUD: React.FC<SimulationHUDProps> = ({
       </div>
 
       {/* Bottom-right: Prev/Next module navigation */}
-<<<<<<< Updated upstream
-      <div className="absolute bottom-[80px] md:bottom-16 right-3 md:right-6 flex items-center gap-2 pointer-events-auto">
-=======
       <div className="absolute bottom-20 md:bottom-16 right-3 md:right-6 flex items-center gap-1.5 md:gap-2 pointer-events-auto">
->>>>>>> Stashed changes
         {prevMode && (
           <button
             onClick={() => onModeChange(prevMode)}
             title={`Anterior: ${MODE_META[prevMode].label}`}
-<<<<<<< Updated upstream
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0f1e]/80 border border-[rgba(237,233,228,0.2)] rounded-full md:rounded-none md:border-[rgba(122,175,200,0.3)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[#7aafc8]/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
-          >
-            <ChevronLeft size={12} className="text-[#7aafc8]" />
-            <span className="hidden md:inline">{MODE_META[prevMode].label}</span>
-=======
             className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[8px] md:text-[9px] tracking-widest uppercase"
           >
             <ChevronLeft size={12} className="text-primary" />
             <span className="hidden sm:inline lg:hidden">{MODE_META[prevMode].short}</span>
             <span className="hidden lg:inline">{MODE_META[prevMode].label}</span>
->>>>>>> Stashed changes
           </button>
         )}
         {nextMode && (
           <button
             onClick={() => onModeChange(nextMode)}
             title={`Siguiente: ${MODE_META[nextMode].label}`}
-<<<<<<< Updated upstream
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#0a0f1e]/80 border border-[rgba(237,233,228,0.2)] rounded-full md:rounded-none md:border-[rgba(122,175,200,0.3)] text-[rgba(237,233,228,0.5)] hover:text-[#ede9e4] hover:bg-[#7aafc8]/10 transition-all text-[9px] tracking-widest uppercase min-h-[44px] md:min-h-0"
-          >
-            <span className="hidden md:inline">{MODE_META[nextMode].label}</span>
-            <ChevronRight size={12} className="text-[#7aafc8]" />
-=======
             className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 bg-space-deep/80 border border-telemetry-dim text-telemetry-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all text-[8px] md:text-[9px] tracking-widest uppercase"
           >
             <span className="hidden sm:inline lg:hidden">{MODE_META[nextMode].short}</span>
             <span className="hidden lg:inline">{MODE_META[nextMode].label}</span>
             <ChevronRight size={12} className="text-primary" />
->>>>>>> Stashed changes
           </button>
         )}
       </div>
